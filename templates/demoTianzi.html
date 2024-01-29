@@ -2,7 +2,7 @@
 {% load static %}
 <html>
 <head>
-  <title>SAR Projects</title>
+  <title>LEESH Projects</title>
     <style>
         header {
           text-align: center;
@@ -30,7 +30,7 @@
         .image-title {
           text-align: center;
         }
-        
+
         .image-group {
           display: flex;
         }
@@ -39,7 +39,7 @@
           flex: 1;
           margin: 5px;
         }
-        
+
         footer {
           background-color: #f5f5f5;
           padding: 20px;
@@ -49,9 +49,9 @@
 </head>
 <body>
   <header>
-    <h1>SAR Projects</h1>
+    <h1>LEESH Projects</h1>
   </header>
-    
+
     <div class="content">
         <div class="image-container">
             <a href="{% url 'sarweb3DDemo' %}" target="_blank">
@@ -61,16 +61,16 @@
               <p><a href="{% url 'sarweb3D' %}" target="_blank">3D simulation (demo)</a></p>
             </div>
         </div>
-        
+
         <br>
-        
+
         <div class="image-group">
             <div class="image-container">
                 <a href="{% url 'sarwebinit' %}" target="_blank">
                     <img src="{% static 'img/demopage/SAR2D.png' %}" alt="2D UI Simulation" height="150">
                 </a>
                 <div class="image-title">
-                  <p><a href="{% url 'sarwebinit' %}" target="_blank">2D UI Simulation</a></p>
+                  <p><a href="{% url 'sarwebinit' %}" target="_blank">TCIN</a></p>
                 </div>
             </div>
 
@@ -79,7 +79,7 @@
                     <img src="{% static 'img/demopage/SAR2DExp.png' %}" alt="Study one -- Trust" height="150">
                 </a>
                 <div class="image-title">
-                    <p><a href="{% url 'consentform' %}" target="_blank">Study one -- Trust</a></p>
+                    <p><a href="{% url 'consentform' %}" target="_blank">Study one -- TCIN</a></p>
                 </div>
             </div>
 
@@ -101,10 +101,10 @@
                 </div>
             </div>
         </div>
-        
-        
+
+
       </div>
-    
+
   <footer>
     <div>
       <p>Contact Information:</p>
