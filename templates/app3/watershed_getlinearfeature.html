@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>SAR Map Segment</title>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      .esri-popup .esri-popup-header .esri-title {
+        font-size: 18px;
+        font-weight: bolder;
+      }
+
+      .esri-popup .esri-popup-body .esri-popup-content {
+        font-size: 14px;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.12/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.12/"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script type="text/javascript" src="{% static 'data/location.json' %}"></script>
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/TileLayer",
+        "esri/tasks/IdentifyTask",
+        "esri/layers/GraphicsLayer",
+        "esri/tasks/support/IdentifyParameters",
+        "esri/tasks/Geoprocessor",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/SimpleFillSymbol",
+        "esri/Graphic",
+        "esri/tasks/support/FeatureSet",
+        "esri/layers/FeatureLayer",
+        "esri/layers/ElevationLayer",
+        "esri/core/promiseUtils",
+        "esri/geometry/Multipoint",
+        "esri/geometry/SpatialReference",
+        "esri/geometry/projection"
+      ], function(Map, MapView,
+        TileLayer, IdentifyTask,
+        GraphicsLayer,IdentifyParameters,Geoprocessor,
+        SimpleLineSymbol,SimpleMarkerSymbol,SimpleFillSymbol,
+        Graphic,FeatureSet,FeatureLayer,
+        ElevationLayer,promiseUtils,Multipoint,
+        SpatialReference,projection) {
+
+      var m_conditions=bobdata;
+      var m_location=m_conditions.BOB921[{{bobid|safe}}];
+      var leftop=[-80.576448,37.219548];
+      var righbottom=[-80.528222,37.1912];
+      var gcx=0.5*(leftop[0]+righbottom[0]);
+      var gcy=0.5*(leftop[1]+righbottom[1]);
+
+      let dataurl={
+        'electricpowertransmissionlines':"https://services1.arcgis.com/Hp6G80Pky0om7QvQ/ArcGIS/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0",
+        'localroads':"https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/30",
+        'highway':"https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/27",
+        'secondaryhighway':"https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/28",
+        'elevation':"//elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/",
+        'river':"https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6",
+        'river_line':"https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6",
+        'river_wide':"https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/8",
+        'lake':"https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/10",
+        'railroads':"https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/35"
+      };
+      let datafileext={
+        'electricpowertransmissionlines':"_eptl0_powerline",
+        'localroads':"_trans30_localroad",
+        'elevation':"_elevation",
+        'river':"_nhd6_river",
+        'river_wide':"_nhd8_river",
+        'lake':"_nhd10_lake",
+        'railroads':"_trans35_railroads",
+        'highway':"_trans27_highway",
+        'secondaryhighway':"_trans28_2ndhighway"
+      };
+
+      //1: eleveation,electric,
+      //2: river,railroads
+      //3: localroads
+      //4: river_wide,highway
+
+      //5: lake,secondaryhighway
+      let layeravaliable={
+        'elevation':false,
+        'river':false,
+        'general':true,
+        'water':true,
+        'drawmultipoints':false
+      };
+
+      //electricpowertransmissionlines,localroads,railroads,
+      let generallayerinfo={
+        'url':dataurl.secondaryhighway,
+        'fileext':datafileext.secondaryhighway
+      }
+
+      //river_wide, lake
+      let waterlayerinfo={
+        'url':dataurl.lake,
+        'fileext':datafileext.lake
+      }
+      //leftop=[-81.576448,37.219548];
+      //righbottom=[-81.528222,37.1912];
+      var startcenter=m_location.location;
+      var prename=m_location.index.toString()+"_"+m_location.namekey;
+
+      var startcenter1=[-80.4757389347337,37.2040570285143];
+      var startcenter2=[-80.5450562640660,37.1977538769385];
+
+      var gcx=startcenter[0];
+      var gcy=startcenter[1];
+
+      var samplewidth=200;
+      var sampleheight=200;
+
+      var enabledownload=true;
+      //var gcx=-80.556451;
+      //var gcy=37.2;
+
+      const graphicsSegmentLayer = new GraphicsLayer({
+        opacity:0.6
+      });
+
+
+      var map = new Map({
+        basemap: "gray",//"topo",//"osm"//"gray"
+        layers: [graphicsSegmentLayer]
+      });
+
+      var elevLyr,linearfeatureLyr,roadLyr,waterareaLyr;
+      if(layeravaliable.elevation){
+          elevLyr = new ElevationLayer({
+          // Custom elevation service
+          url: "//elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/"//"https://sampleserver6.arcgisonline.com/arcgis/rest/services/Elevation/MtBaldy_Elevation/ImageServer"
+        });
+      }
+
+      if(layeravaliable.river){
+        linearfeatureLyr = new FeatureLayer({
+          url:dataurl.river//"https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6"
+        });
+        map.add(linearfeatureLyr);
+      }
+      if(layeravaliable.general){
+        roadLyr = new FeatureLayer({
+          url: generallayerinfo.url  //"https://carto.nationalmap.gov/arcgis/rest/services/transportation/MapServer/30"//30: local roads, 35: railroads
+        });
+        map.add(roadLyr);
+      }
+
+      if(layeravaliable.water){
+        waterareaLyr = new FeatureLayer({
+          url:waterlayerinfo.url//"https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/8"//8 river wide, 7 fewer river wide, 9 lake
+        });
+        map.add(waterareaLyr);
+      }
+
+
+      const visualization_Multipoints = new GraphicsLayer({
+        opacity:0.9
+      });
+      map.add(visualization_Multipoints);
+
+      var view = new MapView({
+        map: map,
+        container: "viewDiv",
+        center: [gcx, gcy],
+        zoom: 13
+      });
+      //spatialReference:  { wkid: 4326 },
+
+
+      view.when(function() {
+        //display and download elevation data
+        //view.on("click", Elevation);
+
+        //show and download linearfeature
+        //view.on("click", LinearFeature);
+
+        if(layeravaliable.elevation){
+          InitElevation();
+        }
+      });
+      if(layeravaliable.water){
+        view.whenLayerView(waterareaLyr).then(function(layerView){
+          layerView.watch("updating", function(val){
+
+            if(!val){  // wait for the layer view to finish updating
+              layerView.queryFeatures().then(function(results){
+                var outSpatialReference = new SpatialReference({
+                  wkid: 4326
+                });
+
+                projection.load().then(function() {
+                  //var tgeo = projection.project(graphic.geometry, outSpatialReference);
+                  let t_obj={};
+                  let arr_rings=[];
+                  console.log(results.features);
+
+                   results.features.forEach(function(graphic) {
+                     arr_rings=arr_rings.concat(graphic.geometry.rings);
+                   });
+                   //console.log(arr_rings);
+
+                   let tstr=GetUpdatedViewExtentString();
+                   let t_poly={
+                     type:"polygon",
+                     rings:arr_rings,
+                     spatialReference:results.features[0].geometry.spatialReference
+                   };
+                   let t_poly_g=new Graphic({
+                     geometry:t_poly
+                   });
+
+                   t_poly_g.geometry = projection.project(t_poly_g.geometry, outSpatialReference);
+                   //console.log(t_poly_g);
+                   t_obj.type=t_poly_g.geometry.type;
+                   t_obj.rings=t_poly_g.geometry.rings;
+                   t_obj.spatialReference=t_poly_g.geometry.spatialReference;
+                   let jsonContent=JSON.stringify(t_obj);
+                   //console.log(jsonContent);
+
+                   let filename=prename+waterlayerinfo.fileext+".txt";
+                   if(enabledownload){
+                     download(filename,jsonContent);
+                   }
+                  });
+
+              });
+            }
+          });
+        });
+      }
+
+
+      if(layeravaliable.river){
+        view.whenLayerView(linearfeatureLyr).then(function(layerView){
+
+          layerView.watch("updating", function(val){
+            if(!val){  // wait for the layer view to finish updating
+
+              layerView.queryFeatures().then(function(results){
+                //console.log(results.features);
+
+                var outSpatialReference = new SpatialReference({
+                  wkid: 4326
+                });
+
+
+                projection.load().then(function() {
+                  //var tgeo = projection.project(graphic.geometry, outSpatialReference);
+                  let jsonContent = "[";
+                  var t_obj={};
+                  let arr_paths=[];
+                  //console.log(results.features);
+
+                   results.features.forEach(function(graphic) {
+                     //graphic.geometry = projection.project(graphic.geometry, outSpatialReference);
+                     t_obj.type=graphic.geometry.type;
+                     t_obj.paths=graphic.geometry.paths;
+                     t_obj.spatialReference=graphic.geometry.spatialReference;
+                     //console.log(t_obj.paths);
+                     arr_paths=arr_paths.concat(t_obj.paths);
+                     jsonContent+=JSON.stringify(t_obj)+",\r\n";
+                   });
+
+                   let multipoints_linear=[];
+                   for (let i=0;i<arr_paths.length;i++){
+                     multipoints_linear=multipoints_linear.concat(arr_paths[i]);
+                   }
+                   //console.log(multipoints_linear);
+                   if(layeravaliable.drawmultipoints){
+
+                     var tmulpt=new Multipoint({
+                        points: multipoints_linear,
+                        spatialReference:results.features[0].geometry.spatialReference
+                      });
+
+                      DrawMultipoints(tmulpt,[0,255,0],3);
+                    }
+
+
+                   let tstr=GetUpdatedViewExtentString();
+
+                   //console.log(arr_paths);
+                   let t_poly={
+                     type:"polyline",
+                     paths:arr_paths,
+                     spatialReference:results.features[0].geometry.spatialReference
+                   };
+                   let t_poly_g=new Graphic({
+                     geometry:t_poly
+                   });
+                   //console.log(t_poly_g);
+                   t_poly_g.geometry = projection.project(t_poly_g.geometry, outSpatialReference);
+                   t_obj.type=t_poly_g.geometry.type;
+                   t_obj.paths=t_poly_g.geometry.paths;
+                   t_obj.spatialReference=t_poly_g.geometry.spatialReference;
+                   jsonContent=JSON.stringify(t_obj);
+
+
+                   let filename=prename+datafileext.river+".txt";
+                   if(enabledownload){
+                     download(filename,jsonContent);
+                   }
+
+                  });
+
+              });
+            }
+          });
+        });
+      }
+      if(layeravaliable.general){
+        view.whenLayerView(roadLyr).then(function(layerView){
+
+          layerView.watch("updating", function(val){
+            if(!val){  // wait for the layer view to finish updating
+
+              layerView.queryFeatures().then(function(results){
+                //console.log(results.features);
+
+                var outSpatialReference = new SpatialReference({
+                  wkid: 4326
+                });
+
+
+                projection.load().then(function() {
+                  //var tgeo = projection.project(graphic.geometry, outSpatialReference);
+                  let jsonContent = "[";
+                  var t_obj={};
+                  let arr_paths=[];
+                  //console.log(results.features);
+
+                   results.features.forEach(function(graphic) {
+                     //graphic.geometry = projection.project(graphic.geometry, outSpatialReference);
+                     t_obj.type=graphic.geometry.type;
+                     t_obj.paths=graphic.geometry.paths;
+                     t_obj.spatialReference=graphic.geometry.spatialReference;
+                     //console.log(t_obj.paths);
+                     arr_paths=arr_paths.concat(t_obj.paths);
+                     jsonContent+=JSON.stringify(t_obj)+",\r\n";
+                   });
+
+                   if(layeravaliable.drawmultipoints){
+                     //console.log("draw roads");
+                     let multipoints_linear=[];
+                     for (let i=0;i<arr_paths.length;i++){
+                       multipoints_linear=multipoints_linear.concat(arr_paths[i]);
+                     }
+                     //console.log(multipoints_linear);
+                     var tmulpt=new Multipoint({
+                        points: multipoints_linear,
+                        spatialReference:results.features[0].geometry.spatialReference
+                      });
+                     DrawMultipoints(tmulpt,[0,255,255],3);
+                   }
+
+
+                   let tstr=GetUpdatedViewExtentString();
+
+                   //console.log(arr_paths);
+                   let t_poly={
+                     type:"polyline",
+                     paths:arr_paths,
+                     spatialReference:results.features[0].geometry.spatialReference
+                   };
+                   let t_poly_g=new Graphic({
+                     geometry:t_poly
+                   });
+                   //console.log(t_poly_g);
+                   t_poly_g.geometry = projection.project(t_poly_g.geometry, outSpatialReference);
+                   t_obj.type=t_poly_g.geometry.type;
+                   t_obj.paths=t_poly_g.geometry.paths;
+                   t_obj.spatialReference=t_poly_g.geometry.spatialReference;
+                   jsonContent=JSON.stringify(t_obj);
+
+                   let filename=prename+generallayerinfo.fileext+".txt";
+                   if(enabledownload){
+                     download(filename,jsonContent);
+                   }
+
+                  });
+
+              });
+            }
+          });
+        });
+      }
+
+
+
+      function LinearFeature(event){
+        linearfeatureLyr.queryFeatures().then(function(results){
+          // prints an array of all the features in the service to the console
+          //console.log(results.features);
+
+          var outSpatialReference = new SpatialReference({
+            wkid: 4326
+          });
+          projection.load().then(function() {
+            var graphic=results.features[0];
+            //console.log(graphic.geometry);
+            var tgeo = projection.project(graphic.geometry, outSpatialReference);
+            //console.log(tgeo);
+            });
+        });
+
+
+        /*
+        const query = new Query();
+        query.where = "STATE_NAME = 'Washington'";
+        query.outSpatialReference = { wkid: 102100 };
+        query.returnGeometry = true;
+        query.outFields = [ "CITY_NAME" ];
+
+        layer.queryFeatures(query).then(function(results){
+          console.log(results.features);  // prints the array of features to the console
+        });
+        */
+      }
+
+      function GetUpdatedViewExtentString(){
+        var pt1_leftop={
+                      type:'point',
+                      x:view.extent.xmin,
+                      y:view.extent.ymax,
+                      spatialReference:view.spatialReference
+                    };
+        var pt1=new Graphic({
+          geometry:pt1_leftop
+        });
+        //console.log(pt1.geometry);
+
+        var pt2_rightbuttom={
+                      type:'point',
+                      x:view.extent.xmax,
+                      y:view.extent.ymin,
+                      spatialReference:view.spatialReference
+                    };
+        var pt2=new Graphic({
+          geometry:pt2_rightbuttom
+        });
+        //console.log(pt2.geometry);
+
+        var arr=[[pt1.geometry.longitude,pt1.geometry.latitude],[pt2.geometry.longitude,pt2.geometry.latitude]];
+        //console.log(arr);
+        return arr;//.toString();//"["+arr[0].toString()+"],["+arr[0].toString()+"]";
+      }
+
+      function getRandomInt(max) {
+        return Math.floor(Math.random() * Math.floor(max));
+      }
+
+      function AddPolygonToLayer(paths){
+
+        graphicsSegmentLayer.removeAll();
+        let arr_featureset=[];
+        for (let i = 0; i<paths.length;i++){
+          var tmulpt={
+            type:'polygon',
+             rings: paths[i].reverse(),
+             spatialReference: view.spatialReference
+           };
+
+           var polylineGraphic = new Graphic({
+             geometry: tmulpt, // Add the geometry created in step 4
+             symbol: {
+               type: "simple-fill",
+               color:[getRandomInt(255), getRandomInt(255), getRandomInt(255),0.8],
+               style: "solid"
+             }
+           });
+            arr_featureset.push(polylineGraphic);//t_graphic
+        }
+        //console.log(arr_featureset);
+        graphicsSegmentLayer.addMany(arr_featureset);
+        graphicsSegmentLayer.visible=true;
+      }
+      //pt_w: number of points in horizontal, pt_h: number of points in vertical
+      function GetSampleMultipoints(in_extent,pt_w,pt_h){
+        //view.extent.xmin,view.extent.ymax,view.extent.xmax,view.extent.ymax
+        var cell_w=(in_extent.xmax-in_extent.xmin)/pt_w;
+        var cell_h=(in_extent.ymax-in_extent.ymin)/pt_h;
+        var res_array=[];
+        for (var i=0;i<pt_w;i++)  {
+          for (var j=0;j<pt_h;j++){
+            res_array.push([in_extent.xmin+cell_w*i, in_extent.ymin+cell_h*j]);
+          }
+        }
+        return res_array;
+      }
+
+      function download(filename, text) {
+        //console.log(text);
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+      }
+
+      function GetSampleMultipoints_4326(pt_lt,pt_rb,pt_w,pt_h){
+        //view.extent.xmin,view.extent.ymax,view.extent.xmax,view.extent.ymax
+        var cell_w=(pt_rb[0]-pt_lt[0])/pt_w;
+        var cell_h=(pt_lt[1]-pt_rb[1])/pt_h;
+        var res_array=[];
+        for (var i=0;i<pt_w;i++)  {
+          for (var j=0;j<pt_h;j++){
+            res_array.push([pt_lt[0]+cell_w*i, pt_rb[1]+cell_h*j]);
+          }
+        }
+        return res_array;
+      }
+
+      function InitElevation(){
+        var pt_w=200;
+        var pt_h=200;
+
+        // pt1: view.lefttop, pt2: view.rightbuttom
+        // [[pt1.geometry.longitude,pt1.geometry.latitude],[pt2.geometry.longitude,pt2.geometry.latitude]];
+        let t_pts=GetUpdatedViewExtentString();
+        let t_path=[[t_pts[0][0],t_pts[0][1]], [t_pts[1][0],t_pts[0][1]] , [t_pts[1][0],t_pts[1][1]] , [t_pts[0][0],t_pts[1][1]],[t_pts[0][0],t_pts[0][1]]];
+
+        var t_poly={
+          type:'polygon',
+           rings: t_path,//paths[i].reverse(),
+           spatialReference:  { wkid: 4326 }
+         };
+         var polylineGraphic = new Graphic({
+           geometry: t_poly, // Add the geometry created in step 4
+           symbol: {
+             type: "simple-fill",
+             color:[getRandomInt(255), getRandomInt(255), getRandomInt(255),0.1],
+             style: "solid"
+           }
+         });
+         //console.log(polylineGraphic);
+
+        graphicsSegmentLayer.addMany([polylineGraphic]);
+        graphicsSegmentLayer.visible=true;
+
+        var elepoints=GetSampleMultipoints_4326(t_pts[0],t_pts[1],pt_w,pt_h);
+
+        var tmulpt=new Multipoint({
+           points: elepoints,
+           spatialReference: { wkid: 4326  }
+         });
+         //console.log(elepoints);
+         if(layeravaliable.drawmultipoints){
+           DrawMultipoints(tmulpt,[255,0,0],1);
+         }
+
+         var queryBeforeLandslide = elevLyr.queryElevation(tmulpt);
+         //console.log(tmulpt);
+
+         promiseUtils
+           .eachAlways([queryBeforeLandslide])
+           .then(function(results) {
+             //console.log(results);
+             outpt=results[0].value.geometry.points;
+             //console.log(outpt);
+
+             let csvContent = "";
+
+              outpt.forEach(function(rowArray) {
+                  let row = rowArray.join(",");
+                  csvContent += row + "\r\n";
+              });
+              let tstr=GetUpdatedViewExtentString();
+              //let filename=tstr.toString()+"_"+Date.now().toString()+"_elevation.csv";
+              let filename=prename+"_elevation.csv";
+             //let filename=Date.now().toString();
+             download(filename,csvContent);
+
+           });
+
+      }
+
+      function DrawMultipoints(m_pts,t_color=[255,255,255],t_size=1){
+        return;
+        //console.log(m_pts);
+        let arr_visual=[];
+        let t_graphic =  new Graphic({
+          geometry: m_pts,
+          symbol:  {
+               type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+               style:"circle",
+               color: t_color,//[t_mag, 0,0],
+               size:t_size
+             }
+        });
+        arr_visual.push(t_graphic);
+        visualization_Multipoints.addMany(arr_visual);
+      }
+
+
+      function Elevation(event){
+        var position = event.mapPoint;
+        var pt_w=samplewidth;
+        var pt_h=sampleheight;
+
+        var elepoints=GetSampleMultipoints(view.extent,pt_w,pt_h);
+
+        var tmulpt=new Multipoint({
+           points: elepoints,//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+           spatialReference:view.spatialReference
+           //spatialReference: { wkid: 4326  }
+         });
+
+
+        var queryBeforeLandslide = elevLyr.queryElevation(tmulpt);
+        //console.log(tmulpt);
+        promiseUtils
+          .eachAlways([queryBeforeLandslide])
+          .then(function(results) {
+            //console.log(results);
+            //console.log(results[0].value.geometry.points);
+            //results for multipoint: multippoints array[[x,y,z],[x,y,z]...]: results[0].value.geometry.points
+            //post data to backend, use python opencv get watershed area segment
+            var URL = "{% url 'getwatershed' %}";
+            var col3 =  results[0].value.geometry.points.map(function(value,index) { return value[2]; });
+            var data = {
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    'width': pt_w.toString(),
+                    'height': pt_h.toString(),
+                    'elevation_arr': JSON.stringify(col3)
+                   };
+                   //console.log(data);
+            var pt=[];
+           $.post(URL, data, function(response){
+                 var res=JSON.parse(response);
+                 //console.log("elevation sent!");
+
+                   if(res.flag == 'success'){
+                     //console.log(res.watershedpolygon);
+                     //console.log("elevation success!");
+
+                     let w_ratio=(view.extent.xmax-view.extent.xmin)/200;
+                     let h_ratio=(view.extent.ymax-view.extent.ymin)/200;
+                     //console.log([w_ratio,h_ratio]);
+
+                     for (let i=0;i<res.watershedpolygon.length;i++){
+                       let a=[];
+
+                       res.watershedpolygon[i][0].map(function(item){
+                         a.push([view.extent.xmin+parseInt(item[0][0])*w_ratio,view.extent.ymin + (pt_h-parseInt(item[0][1]))*h_ratio]);
+                       });
+                       a.push(a[0]);
+                      //console.log(a);
+                       pt.push(a);
+                     }
+                     AddPolygonToLayer(pt);
+                     //console.log(pt);
+                    }
+                   else{ alert(response); }
+                 });
+
+            //calculate long lat based on w,h,and res.watershedpolygon
+
+          });
+
+         }
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>

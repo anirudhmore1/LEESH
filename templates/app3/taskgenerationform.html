@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+      <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+      <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
+      <meta charset="utf-8">
+      <meta http-equiv="Content-Type" content="text/html">
+      <meta name="author" content="Tianzi">
+
+      <link rel="icon" href="{% static 'img/favicon.ico' %}">
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+      <title> Task Assignment </title>
+    </head>
+
+
+    <body>
+      <div class="page-header mb-3">
+          <h1>Task Assignment</h1>
+      </div>
+      <hr/>
+      <form action="action_page" method="post" target="itestnone">
+        {% csrf_token %}
+        <div class="container-fluid row">
+          <div class="container col-2" >
+            {% for i in subtask_sum %}
+              {% if i == subtask_id %}
+                <div md-1> <button type="button" class="btn btn-outline-dark btn-mid btn-block active" onclick="relocate_subtask( {{i}} )" >Task {{ i }} </button> </div>
+              {% else %}
+                <div md-1> <button type="button" class="btn btn-outline-dark btn-mid btn-block" onclick="relocate_subtask( {{ i }} )" >Task {{ i }} </button> </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          <div class="container col-10">
+            <div class="row">
+              <div class="col-8 ">
+                  <div class="input-group  mb-1 ">
+                    <div  class="input-group-prepend"><label for="resourcetype">Resource Type:</label></div>
+                    <div  class="col-4"><input type="text" class="form-control  form-control-sm"  placeholder="Resource Type"  id="resourcetype" name="resourcetype" value="{{ form.resourcetype}}"></div>
+                  </div>
+                  <div class="input-group mb-1 ">
+                    <div  class="input-group-prepend"><label for="planningno" >Planning #:</label></div>
+                    <div class="col-4">
+                      <input type="text" class="form-control  form-control-sm " placeholder="Planning #" id="planningno" name="planningno" value="{{ form.planningno}}">
+                    </div>
+                  </div>
+
+                  <div class="input-group mb-1  ">
+                    <div class="input-group-prepend"><label for="priority">Priority:</label></div>
+                    <div class="col-4">
+                      <input type="text" class="form-control  form-control-sm"  placeholder="Priority" id="priority" name="priority" value="{{ form.priority}}">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-4">
+                  <div class="form-check mb-1 float-right">
+                    <label for="task_complete">Task Completed</label>
+                    <input type="checkbox" class="checkbox style-2 pull-right" value="Task Completed" id="task_complete" name="task_complete" >
+                  </div>
+                  <div class="form-check mb-1 float-right">
+                    <label for="task_partially_finished">Task Partially Finished</label>
+                    <input type="checkbox" class="checkbox style-2 pull-right"  value="Task Partially Finished" id="task_partially_finished" name="task_partially_finished">
+                  </div>
+                  <div class="form-check mb-1 float-right">
+                    <label for="urgent_follow_up">URGENT Follow-Up !</label>
+                    <input type="checkbox" class="checkbox style-2 pull-right" value="URGENT Follow-Up !" id="urgent_follow_up" name="urgent_follow_up">
+                  </div>
+
+                </div>
+            </div>
+
+            <fieldset class="border p-2">
+              <legend class="w-auto">Task Assignment Form</legend>
+              <div class="row">
+
+                <div class="input-group col-3 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="task_number">Task Number</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder="0000" id="task_number" name="task_number" value="{{ form.task_number }}">
+                </div>
+
+                <div class="input-group col-3 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="team_identifier">Team Identifier</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder=" " id="team_identifier" name="team_identifier" value="{{ form.team_identifier }}">
+                </div>
+
+                <div class="input-group col-3 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="resource_type">Resource Type:</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder=" " id="resource_type" name="resource_type" value="{{ form.resource_type }}">
+                </div>
+
+                <div class="input-group col-3 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="task_map">Task Map(s)</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder=" " id="task_map" name="task_map" value="{{ form.task_map }}">
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="input-group col-4 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="branch">Branch</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder=" " aria-label="branch" id="branch" name="branch" value="{{ form.branch }}">
+                </div>
+
+                <div class="input-group col-4 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="division_group">Division/Group</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder=" " aria-label="division_group" name="division_group" id="division_group" value="{{ form.division_group }}">
+                </div>
+
+                <div class="input-group col-4 mb-1">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="incident_name">Incident Name</label>
+                  </div>
+                  <input type="text" class="form-control" placeholder=" " aria-label="incident_name" name="incident_name" id="incident_name" value="{{ form.incident_name }}">
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="border p-2">
+              <legend class="w-auto">Assignment</legend>
+              <div class="row">
+                <div class="col-8">
+
+                  <div class="input-group mb-1">
+                    <div class="input-group-prepend">
+                      <label class="input-group-text" for="task_instructions">Task Instructions</label>
+                    </div>
+                    <textarea class="form-control"  rows="15" aria-label="Task Instructions" id="task_instructions" name="task_instructions" >{{ form.task_instractions }}</textarea>
+                  </div>
+                  <div class="input-group mb-1">
+                    <div class="input-group-prepend">
+                      <label class="input-group-text" for="previous_search">Previous Search Efforts in Area</label>
+                    </div>
+                    <input type="text" class="form-control" placeholder=" " id="previous_search" name="previous_search" value="{{ form.previous_search }}">
+                  </div>
+                    <div class="input-group mb-1">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="transportation">Transportation</label>
+                      </div>
+                      <input type="text" class="form-control" id="transportation" name="transportation" value="{{ form.transportation }}">
+                    </div>
+                    <div class="input-group mb-1">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="equipment_requirements">Equipment Requirements</label>
+                      </div>
+                      <input type="text" class="form-control" id="equipment_requirements" name="equipment_requirements" value="{{ form.equipment_requirements }}">
+                    </div>
+                </div>
+
+                <div class="input-group col-4">
+                  <div>
+                    <div class="input-group mb-3">
+                      <h4>Briefing Checklist:</h4>
+                    </div>
+                    <div>
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="expected_time_frame" name="expected_time_frame" value="Expected Time Frame">
+                          <label class="form-check-label" for="expected_time_frame">Expected Time Frame</label>
+                        </div>
+                        <div class="col">
+                          <input  type="text"  class="form-control form-control-sm" id="expected_time_frame_input" name="expected_time_frame_input" value="{{ form.expected_time_frame_input }}">
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check" >
+                          <input type="checkbox" id="target_pod_subject" name="target_pod_subject" value="Target POD subject">
+                          <label class="form-check-label" for="target_pod_subject">Target POD subject</label>
+                        </div>
+                        <div class="col">
+                          <input class="form-control form-control-sm" id="target_pod_subject_input" name="target_pod_subject_input" type="text" value="{{ form.target_pod_subject_input }}">
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check"  >
+                          <input type="checkbox" id="target_pod_clues" name="target_pod_clues" value="Target POD clues">
+                          <label class="form-check-label" for="target_pod_clues">Target POD clues</label>
+                        </div>
+                        <div class="col">
+                          <input class="form-control form-control-sm" id="target_pod_clues_input" name="target_pod_clues_input" type="text" value="{{ form.target_pod_clues_input }}">
+                        </div>
+                      </div>
+
+                      <div class="row mb-2">
+                        <div class="form-check" >
+                          <input type="checkbox" id="team_nearby" name="team_nearby" value="Team nearby">
+                          <label class="form-check-label" for="team_nearby">Team nearby</label>
+                        </div>
+                        <div class="col">
+                          <input class="form-control form-control-sm" id="team_nearby_input" name="team_nearby_input" type="text"  value="{{ form.team_nearby_input }}">
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="applicable_clues" name="applicable_clues" value="Applicable clues">
+                          <label class="form-check-label" for="applicable_clues">Applicable clues</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="terrain_hazrds" name="terrain_hazrds" value="Terrain/Hazards">
+                          <label class="form-check-label" for="applicable_clues">Terrain/Hazards</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="weather_safety_issues" name="weather_safety_issues" value="Weather, Safety Issues">
+                          <label class="form-check-label" for="applicable_clues">Weather, Safety Issues</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="press_family_plans" name="press_family_plans" value="Press, Family Plans">
+                          <label class="form-check-label" for="applicable_clues">Press, Family Plans</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="subject_information" name="subject_information" value="Subject Information">
+                          <label class="form-check-label" for="applicable_clues">Subject Information</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="rescue_find_plans" name="rescue_find_plans" value="Rescue/Find Plans">
+                          <label class="form-check-label" for="applicable_clues">Rescue/Find Plans</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group row mb-2">
+                        <div class="form-check">
+                          <input type="checkbox" id="others" name="others" value="Others">
+                          <label class="form-check-label" for="applicable_clues">Others</label>
+                        </div>
+                      </div>
+                      <div>
+                        <textarea class="form-control" rows="2" id="others_input" name="others_input" value="{{ form.others_input }}"></textarea>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+            <div>
+              <div><h3>Personnel</h3><div>
+
+                <div class="row">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Index</th>
+                        <th>Role</th>
+                        <th>Name</th>
+                        <th>Agency</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">1</th>
+                        <td>
+                          <select class="form-control match-content">
+                            <option selected="">Field Team Leader (FTL)</option>
+                            <option>Field Team Member (FTM)</option>
+                            <option>Field Team Signcutting (FTS)</option>
+                            <option>Management Team Member (MTM) </option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="form-control" size="16" value="Jesse"></td>
+                        <td>
+                          <select class="form-control match-content">
+                            <option>Police</option>
+                            <option selected="">Voluntary</option>
+                            <option>Coast guard</option>
+                            <option>Navy</option>
+                          </select>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <th scope="row">2</th>
+                        <td>
+                          <select class="form-control match-content">
+                            <option>Field Team Leader (FTL)</option>
+                            <option>Field Team Member (FTM)</option>
+                            <option>Field Team Signcutting (FTS)</option>
+                            <option selected="">Management Team Member (MTM) </option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="form-control" size="16" value="Johnathan"></td>
+                        <td>
+                          <select class="form-control match-content">
+                            <option>Police</option>
+                            <option selected="">Voluntary</option>
+                            <option>Coast guard</option>
+                            <option>Navy</option>
+                          </select>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <th scope="row">3</th>
+                        <td>
+                          <select class="form-control match-content">
+                            <option>Field Team Leader (FTL)</option>
+                            <option>Field Team Member (FTM)</option>
+                            <option selected="">Field Team Signcutting (FTS)</option>
+                            <option>Management Team Member (MTM) </option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="form-control" size="16" value="Megan"></td>
+                        <td>
+                          <select class="form-control match-content">
+                            <option>Police</option>
+                            <option selected="">Voluntary</option>
+                            <option>Coast guard</option>
+                            <option>Navy</option>
+                          </select>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <th scope="row">4</th>
+                        <td>
+                          <select class="form-control match-content">
+                            <option>Field Team Leader (FTL)</option>
+                            <option selected="">Field Team Member (FTM)</option>
+                            <option>Field Team Signcutting (FTS)</option>
+                            <option>Management Team Member (MTM) </option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="form-control" size="16" value="Will"></td>
+                        <td>
+                          <select class="form-control match-content">
+                            <option selected="">Police</option>
+                            <option>Voluntary</option>
+                            <option>Coast guard</option>
+                            <option>Navy</option>
+                          </select>
+                        </td>
+                      </tr>
+
+                    </tbody>
+                  </table>
+                </div>
+
+            </div>
+
+            <div>
+              <h3>Communication</h3>
+                <div class="row">
+                  <div class=" col ">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="team_call_sign">Team Call Sign</label>
+                      </div>
+                      <input type="text" class="form-control" id="team_call_sign" name="team_call_sign" value="{{ form.team_call_sign }}">
+                    </div>
+                  </div>
+                  <div class=" col ">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="freq_team">Freq.</label>
+                      </div>
+                      <input type="text" class="form-control" placeholder=" " id="freq_team" name="freq_team" value="{{ form.freq_team }}">
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class=" col ">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="base_call_sign">Base Call Sign</label>
+                      </div>
+                      <input type="text" class="form-control" placeholder=" "  id="base_call_sign" name="base_call_sign" value="{{ form.base_call_sign }}">
+                    </div>
+                  </div>
+                  <div class=" col ">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="freq_base">Freq.</label>
+                      </div>
+                      <input type="text" class="form-control" placeholder=" " id="freq_base" name="freq_base" value="{{ form.freq_base }}">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class=" col ">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="pertinent_phone_no">Pertinent Phone Numbers</label>
+                      </div>
+                      <input type="text" class="form-control" placeholder=" " id="pertinent_phone_no" name="pertinent_phone_no" value="{{ form.pertinent_phone_no }}">
+                    </div>
+                  </div>
+                  <div class=" col ">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <label class="input-group-text" for="base">Base:</label>
+                      </div>
+                      <input type="text" class="form-control" placeholder=" " id="base" name="base" value="{{ form.base }}">
+                    </div>
+                  </div>
+                </div>
+                <div class="row col">
+                  <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                      <label class="input-group-text" for="check_in_feq">Check in every</label>
+                    </div>
+                    <input type="text" class="form-control" placeholder=" " id="check_in_feq" name="check_in_feq" value="{{ form.check_in_feq }}">
+
+                    <div class="input-group-prepend">
+                      <label class="input-group-text" for="check_in_hour">on the</label>
+                    </div>
+                    <input type="text" class="form-control" placeholder=" "  id="check_in_hour"  name="check_in_hour" value="{{ form.check_in_hour }}">
+                    <div class="input-group-append">
+                      <label class="input-group-text">hour</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Function</th>
+                        <th>Freq.</th>
+                        <th>Comments</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">
+                          <input type="text" class="form-control" size="16" placeholder="Tactical I" value="{{ form.tactical_1_function }}" id="tactical_1_function" name="tactical_1_function">
+                        </th>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_1_freq }}" id="tactical_1_freq" name="tactical_1_freq"></td>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_1_comments }}" id="tactical_1_comments" name="tactical_1_comments"></td>
+                      </tr>
+
+                      <tr>
+                        <th scope="row">
+                          <input type="text" class="form-control" size="16" placeholder="Tactical II " value="{{ form.tactical_2_function }}" id="tactical_2_function" name="tactical_2_function">
+                        </th>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_2_freq }}" id="tactical_2_freq" name="tactical_2_freq"></td>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_2_comments }}" id="tactical_2_comments" name="tactical_2_comments"></td>
+                      </tr>
+
+                      <tr>
+                        <th scope="row">
+                          <input type="text" class="form-control" size="16" value="{{ form.tactical_3_function }}" placeholder="Tactical III" id="tactical_3_function" name="tactical_3_function">
+                        </th>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_3_freq }}" id="tactical_3_freq" name="tactical_3_freq"></td>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_3_comments }}" id="tactical_3_comments" name="tactical_3_comments"></td>
+                      </tr>
+
+                      <tr>
+                        <th scope="row">
+                          <input type="text" class="form-control" size="16" value="{{ form.tactical_4_function }}" placeholder="Tactical IV" id="tactical_4_function" name="tactical_4_function">
+                        </th>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_4_freq }}" id="tactical_4_freq" name="tactical_4_freq"></td>
+                        <td><input type="text" class="form-control" size="16" value="{{ form.tactical_4_comments }}" id="tactical_4_comments" name="tactical_4_comments"></td>
+                      </tr>
+
+                    </tbody>
+                  </table>
+                </div>
+
+            </div>
+            <div class="mb-3">
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <label class="input-group-text" for="note_safety_message">Notes/Safety Message:</label>
+                </div>
+                <textarea class="form-control" aria-label="With textarea" rows="4" value="{{ form.note_safety_message }}" id="note_safety_message" name="note_safety_message" ></textarea>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="mb-3">SAR TAF 5/96</h3>
+              <div class="row">
+                <div class="input-group col-4 mb-3">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text"  for="prepared_by" >Prepared by:</label>
+                  </div>
+                  <input type="text" class="form-control"  id="prepared_by" aria-label="Username" name="prepared_by" value="{{ form.prepared_by }}">
+                </div>
+
+                <div class="input-group col-4 mb-3">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="briefed_by">Briefed by:</label>
+                  </div>
+                  <input type="text" class="form-control"  id="briefed_by" placeholder=" " aria-label="Username" name="briefed_by" value="{{ form.briefed_by }}">
+                </div>
+
+                <div class="input-group col-4 mb-3">
+                  <div class="input-group-prepend">
+                    <label class="input-group-text" for="time_out">Time out:</label>
+                  </div>
+                  <input type="text" class="form-control"  id="time_out" placeholder=" " aria-label="Username" name="time_out" value="{{ form.time_out }}">
+                </div>
+              </div>
+
+            </div>
+            <hr/>
+            <div class="text-center">
+                <button type="submit" class="btn btn-dark">Save</button>
+                
+                <button class="btn btn-light" onclick="self.close()">Close</button>
+                
+            </div>
+            
+
+          </div>
+        </div>
+      </form>
+            <iframe id="itestnone" name="itestnone" style="display:none"></iframe>
+      <div>
+
+      </div>
+        <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+        <script type="text/javascript">
+        var a = "{{ form|safe }}";
+        function relocate_subtask(subtaskid){
+          location.href="{% url 'taskgenerationform' %}"+"/"+ "{{ task_id }}" +'_'+ subtaskid +'/';
+          console.log(location.href);
+        }
+        //console.log(a);
+        </script>
+      </body>
+  </html>

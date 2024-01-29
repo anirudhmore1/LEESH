@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title>Web App Open-Ended Questions</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+        h1 {text-align: center;}
+        .input-group{
+           width: 100%;
+            text-align:center;
+        }
+        div {
+            line-height:  2;
+            margin-top: 5px;
+        }
+        .input-group-addon{
+            text-align: right;            
+            display:inline-block;
+            float:none;
+            margin-right:10px;
+        }
+        .form-control {
+            display:inline-block;
+            float:none;
+            
+        }
+    </style>
+    <script>
+      function handleClick(cb){
+        bt = document.getElementById("agree");
+        if(cb.checked){
+          bt.disabled=false;
+            cb.value="Ture";
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+            cb.value="False";
+        }
+
+      }
+      function dismissAddAnotherPopup(win) {
+       //window.close();
+      }
+
+      function myFunction(){
+        document.getElementById("participantid").value = Date.now().toString();
+      }
+    </script>
+  </head>
+
+<body>
+    <div class="container bg-light">
+        <div class="text-center">
+            <h1>Web App Open-Ended Questions</h1>        
+        </div>
+                
+        <form action="action" method="post" id="quiz">
+            {% csrf_token %}
+            <div class="p-3 mb-2 bg-white">
+                <h3>Map Division</h3>
+                
+                <div class="input-group">
+                    <label for="q1">What do you like and dislkie about the map division function? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q1" name="q1"></textarea>
+                </div>
+                <div class="input-group" hidden>
+                    <label for="q2">What do you dislike about the map division function? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q2" name="q2"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q3">Which visualization do you like most? The the ring model, heat map, weighted map or trajectory visualization?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q3" name="q3"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q4">Why do you like this visualization?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q4" name="q4"></textarea>
+                </div>
+                
+               
+                
+            </div>
+            
+            <div class="p-3 mb-2 bg-white" hidden>
+                <h3>Tasking</h3>
+                <div class="input-group">
+                    <label for="q5">What do you like about the tasking function? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q5" name="q5"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="q6">What do you dislike about the tasking function? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q6" name="q6"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="q7">What improvements would you make in the re-design this function?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q7" name="q7"></textarea>
+                </div>
+                 
+            </div>
+            
+            <div class="p-3 mb-2 bg-white">
+                <h3>Web Application</h3>
+                
+                <div class="input-group">
+                    <label for="q8">What do you like and dislike about the web application? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q8" name="q8"></textarea>
+                </div>
+                <div class="input-group" hidden>
+                    <label for="q9">What do you dislike about the web application? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q9" name="q9"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q10">How does this web application compared to other IT tools that you have used for SAR missions?  Complementary? Intuitive, or frustrating?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q10" name="q10"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q11">How you like the re-design the web application and what additional features would you like to see?</label>
+                    <br>
+                    <textarea rows="2" cols="140" id="q11" name="q11"></textarea>
+                </div> 
+            </div>
+            
+            
+            <div style="display:none">
+                <input type="text" id="participantid" name="participantid" value={{participantid|safe}} readonly/>
+                <label for="fname">Please enter your name:</label>
+            </div>
+            
+            <div class="text-center">
+              <input type="submit" value="Finish" id="nextstep" onclick="dismissAddAnotherPopup(this)" class="col-md-3"/>
+            </div>
+        </form>
+    </div>    
+  </body>
+</html>

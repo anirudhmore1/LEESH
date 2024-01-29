@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title> ConsentForm</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+      
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+      body {
+            text-align: center;
+        }
+      .button{
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+      }
+      .consent{
+        float:center;
+        display: inline-block;
+        width="500px";
+        vertical-align: middle;
+      }
+        div {
+            line-height:  2;
+            margin-top: 5px;
+        }
+    </style>
+
+  </head>
+
+<body onload="myFunction()">
+    <div id="wrapper" class="page-header mb-3 container">
+              
+        
+        <h2>Consent section</h2>  
+        
+        <div style="float: center;">
+          <input type="checkbox" name="check1" value="False" id="mycheck" onclick="handleClick(this)">
+            <label for="mycheck">Please confirm that you have read the consent form and fully understand your rights.</label>
+        </div>  
+        
+        <form action="https://virginiatech.qualtrics.com/jfe/form/SV_cvjhA08jCrEvcDH" target="_blank">
+            <input type="submit" value="View Consent Form" class="col-md-7"/>
+        </form>
+                
+        
+      <div>
+        <form action="consentform_action" method="post" id="quiz">
+          {% csrf_token %}
+            
+        <br>
+        <h2>Please watch the training video</h2>        
+        <iframe width="896" height="504" src="https://www.youtube.com/embed/NyeSzbHD8GA" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <br>
+            
+            
+          <div>
+            <input type="submit" value="Start Experiment" id="agree" class="col-md-7" disabled/>
+          </div>
+        
+            <div hidden>
+                <input type="text" id="participantid" name="participantid" value="test">
+                <label for="fname">Please enter your name:</label>
+                <input type="text" id="participantname" name="participantname" value="test">
+            </div>
+            
+        </form>
+
+      </div>
+
+    </div>
+    <script>
+      function handleClick(cb){
+          bt = document.getElementById("agree");
+          bt.disabled=false;
+          /*
+           
+        if(cb.checked){
+          bt.disabled=false;
+            cb.value="Ture";
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+            cb.value="False";
+        }
+          */
+       
+
+      }
+      function dismissAddAnotherPopup(win) {
+       window.close();
+      }
+
+      function myFunction(){
+        document.getElementById("participantid").value = Date.now().toString();
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Experiment 1 - TCIN</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.28/"></script>
+
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/Graphic",
+      "esri/geometry/Point",
+      "esri/geometry/Polyline",
+      "esri/geometry/Polygon"
+    ], (Map, MapView, Graphic, Point, Polyline, Polygon) => {
+      const map = new Map({
+        basemap: "hybrid"
+      });
+
+      const view = new MapView({
+        center: [-80, 35],
+        container: "viewDiv",
+        map: map,
+        zoom: 9
+      });
+
+      // Define the symbol for drawing the points
+      const markerSymbol1 = {
+        type: "simple-marker",
+        color: "blue",
+        size: "8px"
+      };
+
+      const markerSymbol2 = {
+        type: "simple-marker",
+        color: "red",
+        size: "8px"
+      };
+
+      // Create multiple point graphics - Drones
+      const pointGraphics = [
+        new Graphic({
+          geometry: new Point({ longitude: -84.75, latitude: 35.25 }), // Quadrant 1
+          symbol: markerSymbol1
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -85.25, latitude: 35.25 }), // Quadrant 2
+          symbol: markerSymbol1
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -85.25, latitude: 34.75 }), // Quadrant 3
+          symbol: markerSymbol2
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -84.75, latitude: 34.75 }), // Quadrant 4
+          symbol: markerSymbol2
+        })
+      ];
+
+         //Line 1 - Xaxis
+         const Xaxis = {
+           type: "polyline", // autocasts as new Polyline()
+           paths: [[-100, 35], [-70, 35]]
+         };
+
+         // Line 2 - Yaxis
+         const Yaxis = {
+           type: "polyline", // autocasts as new Polyline()
+           paths: [[-85, 30], [-85, 40]]
+         };
+
+         // Symbol for drawing the lines
+         const lineSymbol = {
+           type: "simple-line", // autocasts as SimpleLineSymbol()
+           color: [226, 119, 40],
+           width: 4
+         };
+
+         // Symbol for grid lines
+         const gridLineSymbol = {
+             type: "simple-line",
+             color: [0, 0, 0, 0.3], // Semi-transparent black
+             width: "1px"
+           };
+
+         const XaxisGraphic = new Graphic({
+           geometry: Xaxis,
+           symbol: lineSymbol
+         });
+
+         const YaxisGraphic = new Graphic({
+           geometry: Yaxis,
+           symbol: lineSymbol
+         });
+
+         // Function to create a grid in a quadrant
+         function createGrid(xStart, yStart, xEnd, yEnd, cellSize) {
+           const gridGraphics = [];
+           for (let x = xStart; x < xEnd; x += cellSize) {
+             for (let y = yStart; y < yEnd; y += cellSize) {
+               const cell = new Polygon({
+                 rings: [
+                   [
+                     [x, y],
+                     [x + cellSize, y],
+                     [x + cellSize, y + cellSize],
+                     [x, y + cellSize],
+                     [x, y] // Close the polygon
+                   ]
+                 ]
+               });
+
+               const cellGraphic = new Graphic({
+                 geometry: cell,
+                 symbol: {
+                   type: "simple-fill",
+                   color: [0, 0, 0, 0], // Transparent fill
+                   outline: gridLineSymbol
+                 }
+               });
+
+               gridGraphics.push(cellGraphic);
+             }
+           }
+           return gridGraphics;
+         }
+
+           // Create grids for each quadrant
+           const gridSize = 0.5; // Size of each grid cell
+           const quadrant1 = createGrid(-85, 35, -70, 40, gridSize);
+           const quadrant2 = createGrid(-100, 35, -85, 40, gridSize);
+           const quadrant3 = createGrid(-100, 30, -85, 35, gridSize);
+           const quadrant4 = createGrid(-85, 30, -70, 35, gridSize);
+
+         // Add the point graphics to the view's graphics layer
+           view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+
+           // Define paths for each drone to follow
+           const dronePaths = {
+             drone1: [
+               [-84.75, 35.25], [-84.25, 35.25], [-84.25, 39.75], [-84.75, 39.75], // Top row of Quadrant 1
+               [-84.75, 39.25], [-84.25, 39.25], [-84.25, 35.25] // Return to start
+             ],
+             drone2: [
+               [-85.25, 35.25], [-85.75, 35.25], [-85.75, 39.75], [-85.25, 39.75], // Top row of Quadrant 2
+               [-85.25, 39.25], [-85.75, 39.25], [-85.75, 35.25] // Return to start
+             ],
+             drone3: [
+               [-85.25, 34.75], [-85.75, 34.75], [-85.75, 30.25], [-85.25, 30.25], // Bottom row of Quadrant 3
+               [-85.25, 30.75], [-85.75, 30.75], [-85.75, 34.75] // Return to start
+             ],
+             drone4: [
+               [-84.75, 34.75], [-84.25, 34.75], [-84.25, 30.25], [-84.75, 30.25], // Bottom row of Quadrant 4
+               [-84.75, 30.75], [-84.25, 30.75], [-84.25, 34.75] // Return to start
+             ]
+           };
+
+           // Function to move drones along their paths
+           function moveDrone(drone, path) {
+             const currentLocationIndex = path.findIndex(point =>
+               point[0] === drone.geometry.longitude && point[1] === drone.geometry.latitude
+             );
+             const nextLocationIndex = (currentLocationIndex + 1) % path.length;
+             drone.geometry = new Point({
+               longitude: path[nextLocationIndex][0],
+               latitude: path[nextLocationIndex][1]
+             });
+           }
+
+           // Animation function to update point positions
+           function animate() {
+             moveDrone(pointGraphics[0], dronePaths.drone1);
+             moveDrone(pointGraphics[1], dronePaths.drone2);
+             moveDrone(pointGraphics[2], dronePaths.drone3);
+             moveDrone(pointGraphics[3], dronePaths.drone4);
+
+             // Refresh the graphics on the view
+             view.graphics.removeAll();
+             view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+
+             // Request the next frame in the animation with a delay
+             setTimeout(() => {
+               requestAnimationFrame(animate);
+             }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
+           }
+
+           // Start the animation
+           requestAnimationFrame(animate);
+
+           // Stop the animation when the view is destroyed
+           view.on("destroy", () => {
+             if (animationFrameId) {
+               cancelAnimationFrame(animationFrameId);
+             }
+           });
+         });
+       </script>
+     </head>
+
+     <body>
+       <div id="viewDiv"></div>
+       <a <a href="TCIN_Experiment_1.html">TCIN Experiment 1</a>
+     </body>
+     </html>

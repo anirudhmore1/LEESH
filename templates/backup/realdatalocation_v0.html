@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Search and rescue filter data
+    </title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.16/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.16/"></script>
+    <script type="text/javascript" src="{% static 'data/location.json' %}"></script>
+
+    <script>
+      require(["esri/Map", "esri/Graphic","esri/layers/GraphicsLayer","esri/geometry/Point","esri/views/MapView"], function (
+        Map, Graphic, GraphicsLayer, Point, MapView
+      ) {
+        let gc_longitude=-81.556451;
+        let gc_latitude=37.2;
+        let m_scale=15;
+
+        var m_conditions=bobdata.bob160;
+        const graphicInitLayer= new GraphicsLayer();
+
+        var map = new Map({
+          basemap: "topo-vector",
+          layers: [
+            graphicInitLayer
+          ]
+        });
+
+        var view = new MapView({
+          container: "viewDiv",
+          map: map,
+          zoom: m_scale,
+          center: [gc_longitude, gc_latitude] // longitude, latitude
+        });
+
+        DrawAllPoints();
+
+        function DrawAllPoints(){
+          graphicInitLayer.removeAll();
+          let t_feature=[];
+
+          for(let i=0;i<158;i++){
+            //console.log(i);
+            let in_symbol=getSymbol(m_conditions[i].subject);
+            let t_pt=GetPoints(i,in_symbol)
+            //console.log(t_pt);
+            t_feature.push(t_pt);
+          }
+
+           graphicInitLayer.addMany(t_feature);
+        }
+        function getSymbol(keywords){
+          let res={
+            type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+            style:"triangle",
+            color: [255,255,0],
+            size: 10
+          };
+          let symbol_hiker={
+               type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+               style:"circle",
+               color: [255,0,0],
+               size: 10
+             };
+          let symbol_child={
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"circle",
+                  color: [0,255,0],
+                  size: 10
+                };
+          let symbol_others={
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"circle",
+                  color: [0,0,255],
+                  size: 10
+                };
+          if(keywords.includes("Child")){
+            res=symbol_child
+          }
+          else if(keywords.includes("Hiker")){
+            res=symbol_hiker
+          }
+          else if(keywords.includes("Dementia")){
+            res=symbol_others
+          }
+          return res;
+        }
+
+        function GetInitPoint(t_longitude,t_latitude,in_symbol){
+          let in_point=new Point({
+            longitude:t_longitude,
+            latitude:t_latitude,
+            spatialReference:view.spatialReference
+          });
+
+          let t_graphic =  new Graphic({
+            geometry: in_point,
+            symbol:  in_symbol,
+             attributes:{
+               Name:"findlocation"
+             },
+             popupTemplate:{
+                title: "init point",
+                content: "init point"}
+
+          });
+          return t_graphic;
+        }
+
+        function generatehtml(obj){
+          let res="<ul> ";
+          Object.keys(obj).forEach(function(key,index) {
+              // key: the name of the object key
+              // index: the ordinal position of the key within the object
+              res=res+"<li>"+key+":"+obj[key].toString()+"</li>";
+          });
+          res=res+"</ul>";
+          return res;
+          //for (const item in obj){  }
+        }
+        function GetPoints(in_index=0,in_symbol={}){
+
+          //translate m_location
+          let t_longitude=gc_longitude-m_conditions[in_index].distanceew;
+          let t_latitude=gc_latitude-m_conditions[in_index].distancens;
+          let in_point=new Point({
+            longitude:t_longitude,
+            latitude:t_latitude,
+            spatialReference:view.spatialReference
+          });
+
+          let t_graphic =  new Graphic({
+            geometry: in_point,
+            symbol:  in_symbol,
+             attributes:{
+               Name:"findlocation"
+             },
+             popupTemplate:{
+                title: m_conditions[in_index].subject,
+                content: generatehtml(m_conditions[in_index])
+              }
+
+          });
+          return t_graphic;
+        }
+
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>

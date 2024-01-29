@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title> ConsentForm</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+      body {
+            text-align: center;
+        }
+      .button{
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+      }
+      .consent{
+        float:center;
+        display: inline-block;
+        width="500px";
+        vertical-align: middle;
+      }
+    </style>
+
+  </head>
+
+  <body onload="myFunction()">
+    <div id="wrapper" class="page-header mb-3">
+      <h1>Please take this questionnaire for the previous assignment task.</h1>
+
+      <embed src="{% static 'files/consentform.pdf' %}" width="100%" height="800px">
+
+
+      <div class="consent" >
+        <form action="consentform_action" method="post" target="_blank" id="quiz">
+          {% csrf_token %}
+          <div style="display:none">
+            <input type="text" id="participantid" name="participantid" value="I Agree">
+          </div>
+
+          <div style="float: left;">
+            <label for="fname">Please enter your name:</label>
+            <input type="text" id="participantname" name="participantname">
+          </div>
+
+          <div style="float: right; width: 130px;">
+            <input type="submit" value="I Agree" id="agree" onclick="dismissAddAnotherPopup(this)"/>
+          </div>
+
+
+        </form>
+
+      </div>
+
+    </div>
+    <script>
+      function handleClick(cb){
+        bt = document.getElementById("agree");
+        if(cb.checked){
+          bt.disabled=false;
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+        }
+
+      }
+      function dismissAddAnotherPopup(win) {
+       window.close();
+      }
+
+      function myFunction(){
+        document.getElementById("participantid").value = Date.now().toString();
+      }
+    </script>
+  </body>
+</html>

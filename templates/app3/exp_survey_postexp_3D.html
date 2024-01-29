@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title>Open-Ended Questions</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+        h1 {text-align: center;}
+        .input-group{
+           width: 100%;
+            text-align:center;
+        }
+        div {
+            line-height:  2;
+            margin-top: 5px;
+        }
+        .input-group-addon{
+            text-align: right;
+            display:inline-block;
+            float:none;
+            margin-right:10px;
+        }
+        .form-control {
+            display:inline-block;
+            float:none;
+
+        }
+        label { display: block; cols="150"; text-align: left; }
+    </style>
+    <script>
+      function handleClick(cb){
+        bt = document.getElementById("agree");
+        if(cb.checked){
+          bt.disabled=false;
+            cb.value="Ture";
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+            cb.value="False";
+        }
+
+      }
+      function dismissAddAnotherPopup(win) {
+       //window.close();
+      }
+
+      function myFunction(){
+        document.getElementById("participantid").value = Date.now().toString();
+      }
+    </script>
+  </head>
+
+<body>
+    <div class="container bg-light">
+        <div class="text-center">
+            <h1>Open-Ended Questions</h1>
+        </div>
+
+        <form action="action" method="post" id="quiz">
+            {% csrf_token %}
+            <div class="p-3 mb-2 bg-white">
+                <div class="input-group">
+                    <label for="q1">1. Which visualization do you like the most? The least? Why? (A: Basic map, B: Blue map, C: Heat map, D: Adaptive mode)</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q1" name="q1"></textarea>
+                </div>
+
+                <div class="input-group text-left">
+                    <label for="q2">2. Which visualization helps you understand the path planning most effectively? Least effectively? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q2" name="q2"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="q3">3. Which visualization helps you understand the path recommendation most effectively? Least effectively? Why?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q3" name="q3"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="q4">4. What graphical elements are helpful or distracting? (e.g., Color? Lines? Cones?)</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q4" name="q4"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="q5">5. What is your strategy for deciding to lower the UAV, raise the UAV, or send the human search team? On what condition?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q5" name="q5"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="q6">6. Do you understand the reward and penalty when you make decisions? Do you have any particular strategy in maximizing rewards and penalties? What is confusing to you?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q6" name="q6"></textarea>
+                </div>
+            </div>
+
+            <div style="display:none">
+                <input type="text" id="participantid" name="participantid" value={{participantid|safe}} readonly/>
+                <label for="fname">Please enter your name:</label>
+            </div>
+
+            <div class="text-center">
+              <input type="submit" value="Finish" id="nextstep" onclick="dismissAddAnotherPopup(this)" class="col-md-3"/>
+            </div>
+        </form>
+    </div>
+  </body>
+</html>

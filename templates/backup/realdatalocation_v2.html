@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
+  <title>SAR MAPPING DEMO</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.12/esri/themes/light/main.css"/>
+
+  <script src="{% static 'js/d3.v4.min.js' %}"></script>
+  <script src="{% static 'js/d3-polygon-clip.js' %}"></script>
+
+  <script src="https://js.arcgis.com/4.12/"></script>
+  <script src="{% static 'js/jquery-1.12.4.js' %}"></script>
+  <script src="{% static 'js/jquery.csv.js' %}"></script>
+  <script src="{% static 'js/sarfunctions.js' %}"></script>
+  <script type="text/javascript" src="{% static 'data/scenariodetails.json' %}"></script>
+  <script type="text/javascript" src="{% static 'data/location.json' %}"></script>
+
+  <script>
+
+//https://developers.arcgis.com/javascript/latest/sample-code/sketch-geometries/index.html
+//https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=sketch-update-validation
+    require([
+      "esri/widgets/Sketch/SketchViewModel",
+      "esri/Graphic",
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/GraphicsLayer",
+      "esri/geometry/Polygon",
+      "esri/geometry/geometryEngine",
+      "esri/widgets/Expand",
+      "esri/widgets/BasemapToggle",
+      "esri/widgets/CoordinateConversion",
+      "esri/geometry/Extent",
+      "esri/geometry/Point",
+      "esri/widgets/Track",
+      "esri/widgets/Search",
+      "esri/geometry/Multipoint",
+      "esri/geometry/Polyline",
+      "esri/geometry/Circle",
+      "esri/core/promiseUtils"
+    ], function(
+      SketchViewModel, Graphic, Map, MapView,GraphicsLayer, Polygon, geometryEngine, Expand, BasemapToggle,CoordinateConversion,Extent,Point,Track,Search,Multipoint,Polyline,Circle,promiseUtils
+    ) {
+      let gc_longitude=-80.556451;
+      let gc_latitude=37.2;
+      let m_scale=16;
+
+      var m_conditions=bobdata.bob160;
+      const graphicInitLayer= new GraphicsLayer();
+      const map = new Map({
+        basemap: "hybrid",//"hybrid",//"satellite",
+        layers: [
+          graphicInitLayer
+        ]
+      });
+
+      setUpView();
+
+      view.when(function() {
+        //DrawAllPoints();
+      });
+
+
+      // Create new view, map and layers... set up the view
+      function setUpView() {
+        view = new MapView({
+          container: "viewDiv",
+          map: map,
+          zoom: m_scale,
+          center: [gc_longitude,gc_latitude] //longitude/latitude pair [-100.4593, 36.9014]
+        });
+        validSymbol = createSymbol([212,221,222, 0.2], "solid", 2, [255,255, 255]);//task generation
+      }
+
+      function DrawAllPoints(){
+        graphicInitLayer.removeAll();
+        let t_feature=[];
+        for(let i=0;i<150;i++){
+          let in_symbol=getSymbol(m_conditions[i].subject);
+          t_feature.push(GetPoints(i,in_symbol));
+        }
+
+         graphicInitLayer.addMany(t_feature);
+      }
+      function getSymbol(keywords){
+        let res={
+          type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+          style:"cross",
+          color: [255,255,255],
+          size: 5
+        };
+        let symbol_hiker={
+             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+             style:"circle",
+             color: [255,0,0],
+             size: 2
+           };
+        let symbol_child={
+                type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                style:"circle",
+                color: [0,255,0],
+                size: 3
+              };
+        let symbol_others={
+                type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                style:"circle",
+                color: [0,0,255],
+                size: 4
+              };
+        if(keywords.includes("Child")){
+          res=symbol_child
+        }
+        else if(keywords.includes("Hiker")){
+          res=symbol_hiker
+        }
+        else if(keywords.includes("Dementia")){
+          res=symbol_others
+        }
+        return res;
+      }
+      function DrawLocations(in_index=0,in_symbol={}){
+
+        //translate m_location
+        let t_longitude=gc_longitude-m_conditions[in_index].distanceew;
+        let t_latitude=gc_latitude-m_conditions[in_index].distancens;
+
+        //draw target location as [point]
+        // lpp[0]:longitude y, lpp[1]:latitude:x
+        let in_point=new Point({
+          longitude:t_longitude,
+          latitude:t_latitude,
+          spatialReference:view.spatialReference
+        });
+        let t_graphic =  new Graphic({
+          geometry: in_point,
+          symbol:  {
+               type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+               style:"circle",
+               color: [255,0,0],
+               size: 40
+             },
+           attributes:{
+             Name:"findlocation",
+             Rank:JSON.stringify(m_conditions[in_index])
+           },
+           popupTemplate:{
+              title: JSON.stringify(m_conditions[in_index].subject),
+              content: JSON.stringify(m_conditions[in_index])}
+
+        });
+        return t_graphic;
+      }
+
+     function getResolution() {
+       m_experimentres["resolution"]={"width":screen.width,"height":screen.height};
+        //alert("Your screen resolution is: " + screen.width + "x" + screen.height);
+      }
+    });
+
+
+  </script>
+</head>
+
+<body>
+
+
+  <div id="editArea" class="editArea-container">
+
+  </div>
+
+  <div id="viewDiv">
+    <div id="sidebar" class="esri-widget" style="display:none">
+    </div>
+  </div>
+</body>
+</html>

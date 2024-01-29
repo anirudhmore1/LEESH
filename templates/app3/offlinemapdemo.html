@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+    <title>Offline TPK</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
+    <link rel="stylesheet" type="text/css" href="//esri.github.io/bootstrap-map-js/src/css/bootstrapmap.css">
+    <style>
+        body {
+            background-color: #000000;
+        }
+
+        #mapDiv {
+            min-height: 300px;
+            max-height: 1000px;
+        }
+
+        .btn-file {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-file input[type=file] {
+            position: absolute;
+            top: 0;
+            right: 0;
+            min-width: 100%;
+            min-height: 100%;
+            font-size: 100px;
+            text-align: right;
+            filter: alpha(opacity=0);
+            opacity: 0;
+            background: red;
+            cursor: inherit;
+            display: block;
+        }
+        input[readonly] {
+            background-color: white !important;
+            cursor: text !important;
+        }
+
+        .container { padding: 20px;}
+        .blackBack { color: #ffffff; background-color: #000000;}
+        .pad-top-20px { padding-top: 20px;}
+    </style>
+
+    <!--
+        Include a reference to IndexedDBShim for library to work on Safari 7.x.
+        May not be required for all Safari browsers.
+     -->
+    <!--<script src="//nparashuram.com/IndexedDBShim/dist/indexeddbshim.min.js"></script>-->
+
+    <script src="http://js.arcgis.com/3.14/"></script>
+</head>
+
+<body>
+<div class="container">
+
+    <div class="well blackBack">
+        <h4>Browse for a .TPK file locally or retrieve one via URL</h4>
+        <p>You'll need to rename the file type from .tpk to .zip</p>
+    </div>
+    <!-- We provide two input types for demonstration purposes. Choose whichever one you want. -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="input-group">
+                <span class="input-group-btn">
+                    <span class="btn btn-primary btn-file">
+                        Browse... <input type="file" id="file-input" name="files[]"  accept="application/zip">
+                    </span>
+                </span>
+                <input id="file-input-field" type="text" class="form-control" readonly>
+            </div>
+        </div>
+    </div>
+    <div class="row pad-top-20px">
+        <div class="col-lg-12">
+            <div class="form form-group input-group">
+                <span class="input-group-btn">
+                    <button id="url-btn" class="btn btn-success" type="button">Go!</button>
+                </span>
+                <input id="url-input" type="text" class="form-control"
+                       value="../samples/tpks/Beirut.zip">
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <div id="mapDiv"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // Make sure to reference the tpk library within the require statement!
+    require([
+                "esri/map",
+                "dojo/on",
+                "//esri.github.com/bootstrap-map-js/src/js/bootstrapmap.js",
+                "{% static 'js/offline-tpk-min.js' %}",
+                "dojo/domReady!"],
+            function(Map,on,BootstrapMap) {
+
+                var map, tpkLayer = null;
+                var fileInput, fileInputField;
+
+                var url = document.getElementById("url-input");
+                var urlInputBtn = document.getElementById("url-btn");
+                urlInputBtn.onclick = function(){
+                    getTPK();
+                };
+
+                initChooseLocalFile();
+
+                /**
+                 * Choose a TPK file from your local filesystem
+                 */
+                function initChooseLocalFile(){
+                    fileInputField = document.getElementById("file-input-field");
+                    fileInput = document.getElementById("file-input");
+                    fileInput.addEventListener('change', function() {
+                        console.log("File success");
+                        fileInputField.value = fileInput.files[0].name;
+                        zipParser(fileInput.files[0]);
+                    },false);
+                }
+
+                // Retrieve the TPK file via an HTTP request
+                function getTPK(){
+                    urlInputBtn.innerHTML = "Get file via url";
+
+                    var xhrRequest = new XMLHttpRequest();
+                    xhrRequest.open("GET", url.value, true);
+                    xhrRequest.responseType = "blob";
+                    xhrRequest.onprogress = function(evt){
+                        var percent = 0;
+
+                        if("total" in evt){
+                            percent = (parseFloat(evt.loaded / evt.total) * 100).toFixed(0);
+                        }
+                        else{
+                            percent = (parseFloat(evt.loaded / evt.totalSize) * 100).toFixed(0);
+                        }
+                        urlInputBtn.innerHTML = "Get file via url " + percent + "%";
+                        console.log("Begin downloading remote tpk file...")
+                    }
+
+                    xhrRequest.error = function(err){
+                        console.log("ERROR retrieving TPK file: " + err.toString());
+                        alert("There was a problem retrieve the file.");
+                    }
+
+                    xhrRequest.onload = function(oEvent) {
+                        if(this.status == 200) {
+                            console.log("Remote tpk download finished.")
+                            zipParser(this.response);
+                        }
+                        else{
+                            alert("There was a problem loading the file. " + this.status + ": " + this.statusText )
+                        }
+                    };
+
+                    xhrRequest.send();
+                }
+
+                // Parse the zip file contents into a zip.Entries object
+                function zipParser(blob){
+
+                    O.esri.zip.createReader(new O.esri.zip.BlobReader(blob), function (zipReader) {
+                        zipReader.getEntries(function (entries) {
+                            initMap(entries);
+                            //if(entries)alert("TPK downloaded and unzipped!");
+                            zipReader.close(function(evt){
+                                console.log("Done reading zip file.")
+                            })
+                        }, function (err) {
+                            alert("There was a problem reading the file!: " + err);
+                        })
+                    })
+                }
+
+                // Initialize the Map and the TPKLayer
+                function initMap(entries){
+
+                    //Destroy the old map so we can reload a new map
+                    if(tpkLayer != null){
+                        map.removeLayer(tpkLayer);
+                        map.destroy();
+                        tpkLayer = null;
+                    }
+
+                    map = BootstrapMap.create("mapDiv",{});
+
+                    tpkLayer = new O.esri.TPK.TPKLayer();
+                    tpkLayer.on("progress", function (evt) {
+                        console.log("TPK loading...");
+                    })
+                    tpkLayer.extend(entries);
+
+                    map.addLayer(tpkLayer);
+                }
+
+            }
+    );
+</script>
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+</body>
+</html>

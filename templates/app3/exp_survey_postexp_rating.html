@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title> Web Application Survey </title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+      .radiocontainer label {
+        display: block;
+        position: relative;
+        float: right;
+        text-align: center;
+        width: 12%;
+      }
+      input[type="radio"] {
+          width:1.5em;
+          height:1.5em;
+      }
+      .vertical {
+        border-left: 1px solid black;
+        height: 900px;
+        }
+        input[readonly]{
+          background-color:transparent;
+          border: 0;
+          font-size: 1em;
+        }
+       .shortlabel {
+           font-size: 1em;
+           margin: auto;
+           color: #B4886B;
+        }
+        .backsection{
+           border: 1px solid #000000;
+        }
+        br{
+            content: "";
+              margin: 2em;
+              display: block;
+              font-size: 24%;
+        }
+    </style>
+    <script>
+
+          function resetAnswer() {
+            var answerbox = document.getElementById('answer');
+            answerbox.innerHTML = "Your result will show up here!";
+          }
+          function dismissAddAnotherPopup(win) {
+              win.close();
+              top.window.close();
+          }
+    </script>
+  </head>
+<body>
+<div id="wrapper" class="page-header mb-3">
+  <h1 class="text-center" id="scenetitle">Web Application Rating</h1>
+
+  <form action="rating_action" method="post" target="_blank" id="quiz">
+    {% csrf_token %}
+    <div class="mx-auto">
+      <label >Participant ID:</label>
+      <input type="text" class=".asd"  value={{participantid}} name="participantid" readonly/>
+
+    </div>
+    <div class="container-fluid text-center">
+
+    <div class="row">
+        <div class="col-sm-10">
+          {% for t_ms in measurement_left %}
+            <br>
+            <div class="container-fluid backsection">
+                <div class="row">
+                    <p>{{t_ms.question}}</p>
+                </div>
+                <div class="row">
+                    <label class="shortlabel col-sm-2">{{t_ms.left}}</label>
+                    <div class="radiocontainer col-sm-7">
+                        <div class="row">
+                            {% with ''|center:7 as range %}
+                            {% for i in range %}
+                            <div class="shortlabel">
+                               <input type="radio" name={{t_ms.name}}  value={{forloop.counter}}>
+                                <label >{{ forloop.counter }}</label>
+                            </div>
+                            {% endfor %}
+                            {% endwith %}   
+                        </div>                        
+                    </div>
+                    <label class="shortlabel col-sm-3">{{t_ms.right}}</label>
+                </div>
+            </div>
+          {% endfor %}
+        </div>
+        
+        <div class="col-sm-1">
+          {% for t_ms in measurement_right %}
+            <br>
+            <div class="container-fluid backsection">
+                
+                <div class="row">
+                    <p>{{t_ms.question}}</p>
+                </div>
+                <div class="row">
+                    <label class="shortlabel col-sm-2">{{t_ms.left}}</label>
+                    <div class="radiocontainer col-sm-7">
+                        <div class="row">
+                          {% with ''|center:7 as range %}
+                          {% for i in range %}
+                            <div class="shortlabel">
+                               <input type="radio" name={{t_ms.name}}  value={{forloop.counter}}>
+                                <label >{{ forloop.counter }}</label>
+                            </div>
+                          {% endfor %}
+                          {% endwith %}    
+                        </div>
+                    </div>
+                    <label class="shortlabel col-sm-3">{{t_ms.right}}</label>
+                </div>
+            </div>
+          {% endfor %}
+        </div>
+    </div>
+    </div>
+<br>
+    <div class="container-fluid">
+      <div class="col-md-12 text-center">
+        <button  type="submit" id="submit" onclick="tabulateAnswers()">Submit Your Answers</button>
+        <button type="reset" id="reset" onclick="resetAnswer()">Reset</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>

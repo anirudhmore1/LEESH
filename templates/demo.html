@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+  <title>LEESH Projects</title>
+    <style>
+        header {
+          text-align: center;
+        }
+        body {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 100vh;
+          margin: 0;
+        }
+
+        .content {
+          flex: 1;
+        }
+        .image-container {
+          text-align: center;
+        }
+
+        .image-container img {
+          display: block;
+          margin: 0 auto;
+        }
+
+        .image-title {
+          text-align: center;
+        }
+
+        .image-group {
+          display: flex;
+        }
+
+        .image-group div {
+          flex: 1;
+          margin: 5px;
+        }
+
+        footer {
+          background-color: #f5f5f5;
+          padding: 20px;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+  <header>
+    <h1>LEESH Projects</h1>
+  </header>
+
+    <div class="content">
+            <div class="image-group">
+            <div class="image-container">
+                <a href="{% url 'sarwebinit' %}" target="_blank">
+                    <img src="{% static 'img/demopage/SAR2D.png' %}" alt="2D UI Simulation" height="150">
+                </a>
+                <div class="image-title">
+                  <p><a href="{% url 'sarwebinit' %}" target="_blank">TCIN</a></p>
+                </div>
+            </div>
+
+            <div class="image-container">
+                <a href="{% url 'consentform' %}" target="_blank">
+                    <img src="{% static 'img/demopage/SAR2DExp.png' %}" alt="Study one -- Trust" height="150">
+                </a>
+                <div class="image-title">
+                    <p><a href="{% url 'consentform' %}" target="_blank">Study one -- TCIN</a></p>
+                </div>
+            </div>
+
+
+        </div>
+
+
+      </div>
+
+  <footer>
+    <div>
+      <p>Contact Information:</p>
+      <p>Email: anirudh1@vt.edu</p>
+    </div>
+
+    <div>
+      <p>&copy; 2024 SCEL. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

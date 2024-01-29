@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
+  <title>SAR MAPPING DEMO</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.12/esri/themes/light/main.css"/>
+
+  <script src="{% static 'js/d3.v4.min.js' %}"></script>
+  <script src="{% static 'js/d3-polygon-clip.js' %}"></script>
+
+  <script src="https://js.arcgis.com/4.12/"></script>
+  <script src="{% static 'js/jquery-1.12.4.js' %}"></script>
+  <script src="{% static 'js/jquery.csv.js' %}"></script>
+  <script src="{% static 'js/sarfunctions.js' %}"></script>
+  <script type="text/javascript" src="{% static 'data/scenariodetails.json' %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static 'taskgeneration.css' %}"  />
+  <style>
+  html,
+  body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #sidebar {
+        z-index: 99;
+        position: absolute;
+        top: 10%;
+        left: 1%;
+        height: 80%;
+        background: rgba(0, 0, 0, 0.05);
+        width: 80.2%;
+      }
+
+      #text {
+        color: white;
+        padding: 3%;
+      }
+      .slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 25px;
+        background: #d3d3d3;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+      }
+
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+      .bt_save{
+        padding: 8px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+        height: 32px;
+        margin-top: 10px;
+        background-color: transparent;
+        border: 1px solid #0079c1;
+        color: #0079c1;
+        width:30%;
+      }
+      .bt_save_edit{
+        padding: 8px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+        height: 32px;
+        margin-top: 10px;
+        border: 1px solid black;
+        color: black;
+        width:66%;
+      }
+      h3{
+        margin:2px;
+      }
+      .sel_options{
+        margin-top: 6px;
+        margin-bottom: 6px;
+      }
+      .scenebutton{
+        padding: 10px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+      }
+      .sceneblock{
+        float:center;
+        display: inline-block;
+        width="500px";
+        vertical-align: middle;
+      }
+  </style>
+  <script>
+
+//https://developers.arcgis.com/javascript/latest/sample-code/sketch-geometries/index.html
+//https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=sketch-update-validation
+    require([
+      "esri/widgets/Sketch/SketchViewModel",
+      "esri/Graphic",
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/GraphicsLayer",
+      "esri/geometry/Polygon",
+      "esri/geometry/geometryEngine",
+      "esri/widgets/Expand",
+      "esri/widgets/BasemapToggle",
+      "esri/widgets/CoordinateConversion",
+      "esri/geometry/Extent",
+      "esri/geometry/Point",
+      "esri/widgets/Track",
+      "esri/widgets/Search",
+      "esri/geometry/Multipoint",
+      "esri/geometry/Polyline",
+      "esri/geometry/Circle",
+      "esri/core/promiseUtils"
+    ], function(
+      SketchViewModel, Graphic, Map, MapView,GraphicsLayer, Polygon, geometryEngine, Expand, BasemapToggle,CoordinateConversion,Extent,Point,Track,Search,Multipoint,Polyline,Circle,promiseUtils
+    ) {
+      let view, newDevelopmentGraphic,taskassignment_sketchViewModel,instructionsExpand;
+      let updated_polygonring=[];
+      //let width=1600*1.5;
+      //let height=900*1.5;
+      let m_d=new Date();
+      let m_scale=16;//15
+      let m_experimentres={
+        "scenario":null,
+        "lostpersontype":null,
+        "traildatacenter":null,
+        "participantid":Date.now(),
+        "participant_index":(m_d.getMonth()+1).toString()+m_d.getDate().toString()+m_d.getHours().toString(),
+        "teamnumber":5,
+        "taskid":m_d.getHours().toString()+m_d.getMinutes().toString()+m_d.getSeconds().toString(),
+        "taskstart":Date.now(),
+        "taskstop":null,
+        "taskduration":100,
+        "targetcellindex":0,
+        "polygonnumbers":0,
+        "stophour":0,
+        "visualization_type":"probability",
+        "step_number":0,
+        "step_details":[],//visualresponsetime: time between (the heatmap is loaded) and (active the first team icon)
+        "actions":[],//#id and timestamp, {"id":"btn...","timestamp": Date.now(), "description":"click button generate task"}
+        "allpolygons":null,
+        "mapscale":m_scale,
+        "totaltaskround":5 // after 5 rounds of try, the task will be complet
+      };
+      let m_experimentlog={
+
+      };
+      let m_expsetupobj=g_experiment;
+      /*
+      $.getJSON("{% static 'data/scenariodetails.json' %}", function(json) {
+        m_expsetupobj=json;
+      });
+      */
+      let m_exp_participantindex={{participantindex|safe}};
+      //console.log(m_exp_participantindex);
+      let m_exp_lostpersontype={"index":0,"type":"child10to12","name":"child", "ring":[800,1600,3200,9000]};
+      let m_exp_location={"index":0,"name":"ic1","center":[-80.4757389347337, 37.2040570285143],"target":[-80.4757389347337, 37.4040570285143]};
+      let m_exp_visualization={"index":0,"name":"ring","type":"clueipp","description":"IPP & Rings"};
+      //console.log(m_experimentres);
+      //kentlane farm (-80.572567,37.203604)
+
+      let gcx=-80.556451;
+      let gcy=37.2;
+
+      let eacharea=500000;//240000;//60 acer;
+      let activeWidget = null;
+
+      let allpolygons=[];
+      let allpolygons_text=[];
+
+      let area_extent;
+      let arr_featureset=[];
+      let validSymbol;
+
+      let m_lpdata_con=[];
+      let m_lpdata_trajectory=[];
+      let m_lpdata_tra_colormap=[];
+      let m_colormap=0;//0: rainbow, 1: yellow-red, 2: blue-red
+      let t_rgb=[];
+      let m_visualizationtype='byhour';// or 'byclue' if any clue is found
+
+      let m_teamiconlocation=null;
+
+      //let m_searchedarea=[];//all polygon marked gray
+      let m_teamassign=[null,null,null,null,null];//
+      let m_targetpolygon;
+      let m_taskstarttime=null;
+      let m_tasktrials=0;//how many time the operator tried to assign teams
+      let epsg4326_voronoiarr=[];
+
+      const graphicInitLayer= new GraphicsLayer();
+      const graphicsLayer = new GraphicsLayer({
+        opacity:0.6//0.6
+      });
+
+      const visualization_Contourmap_Layer = new GraphicsLayer({
+        opacity:0.8
+      });
+
+      const visualization_Segmentheat_Layer = new GraphicsLayer({
+        opacity:0.5
+      });
+
+      const visualization_Trajectories_Layer = new GraphicsLayer({
+        opacity:0.5
+      });
+
+      const teamgraphicsLayer=new GraphicsLayer({
+        opacity:1.0
+      });
+      const graphicInteractionLayer =new GraphicsLayer();
+
+      // display task information
+      const temperalgraphicLayer = new GraphicsLayer();
+
+      const map = new Map({
+        basemap: "hybrid",//"hybrid",//"satellite",
+        //ground: "world-elevation",
+        layers: [
+          visualization_Contourmap_Layer,//
+          visualization_Segmentheat_Layer,
+          graphicsLayer,//
+          graphicInitLayer,//
+          teamgraphicsLayer,//
+          visualization_Trajectories_Layer,//
+          graphicInteractionLayer,//
+          temperalgraphicLayer// temperal layer include target
+        ]
+      });
+
+      setUpView();
+      // This function is called when a user clicks on the view.
+      function setUpGraphicClickHandler() {
+        view.on("click", function(event) {
+          if (taskassignment_sketchViewModel.state === "active") {
+            //testing forbid mover
+            return;
+          }
+
+          view.hitTest(event).then(function(response) {
+            let results = response.results;
+            // Check if the new development graphic was clicked and pass
+            // the graphic to sketchViewModel.update() with reshape tool.
+            results.forEach(function(result) {
+              //set the assignment: cell to team
+              //result
+              $("#cellname").val("S"+result.graphic.attributes.cellindex);//result.graphic.attributes.cellindex;
+
+              if(result.graphic.layer === taskassignment_sketchViewModel.layer){
+                taskassignment_sketchViewModel.update([result.graphic],{
+                  tool:"point"//move
+                });
+              }
+            });
+          });
+        });
+
+      }
+      setUpGraphicClickHandler();
+
+      view.when(function() {
+        area_extent=view.extent;
+
+        //drag and drop teams icon for task assignment
+        taskassignment_sketchViewModel = new SketchViewModel({
+          view: view,
+          layer: teamgraphicsLayer,
+          updatePointSymbol:{
+            type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+             url: "{% static 'img/user_o_glow.png' %}",//user_glow.png
+             width: "64px",
+             height: "64px"
+          },
+          updateOnGraphicClick: false,
+          defaultUpdateOptions: { // set the default options for the update operations
+            toggleToolOnClick: false//false // only reshape operation will be enabled
+          }
+        })
+        taskassignment_sketchViewModel.on(["update", "undo", "redo"], onTaskAssignmentGraphicUpdate);
+
+      });
+
+
+      function addVoronoi(){
+        let textend;
+        let wholearea;
+        if(activeWidget){
+          textent=activeWidget.viewModel.measurement.geometry.extent;
+          wholearea=activeWidget.viewModel.measurement.area;
+        }
+        else{
+          let jsonextent=view.extent.toJSON();
+          textent=Extent.fromJSON(jsonextent);
+          let ori_xmin=textent.xmin;
+          let ori_wid=textent.width*0.01;
+          textent=textent.expand(0.8);
+          let centerpoint = textent.center.clone();
+          centerpoint.x= textent.center.x-(textent.xmin-ori_xmin-ori_wid);
+          textent=textent.centerAt(centerpoint);
+          area_extent=textent;
+          wholearea=geometryEngine.planarArea(Polygon.fromExtent(textent));
+        }
+        let npoints=2*Math.round(wholearea/eacharea+0.5);      //wholearea=wholetask.area;//metric   240  : acre  60
+        let lbx=textent.xmin,
+            lby=textent.ymin,
+            rtx=textent.xmax,
+            rty=textent.ymax;
+            gwidth=textent.width;
+            gheight=textent.height;
+
+        let sites = d3.range(npoints)//15
+                   .map(function(d) { return [Math.random() * gwidth+lbx, Math.random() * gheight+lby]; });
+        let in_point=new Point({
+          x:textent.center.x+ 0.1*(Math.random()-0.5)*textent.width,
+          y:textent.center.y+ 0.1*(Math.random()-0.5)*textent.height,
+          spatialReference:view.spatialReference
+        });
+
+        sites = GetSites(npoints,textent);
+        let voronoi = d3.voronoi().extent([[lbx,lby], [rtx,rty]]);
+        let diagram = voronoi(sites),
+            links = diagram.links(),
+            vpolygons = diagram.polygons();
+        if(activeWidget){
+          vpolygons=ClipPolygongsByPoints(vpolygons,activeWidget.viewModel.measurement.geometry.rings[0].slice(0,activeWidget.viewModel.measurement.geometry.rings[0].length-1));
+        }
+        ClearAll();
+        addGraphics(vpolygons);
+      }
+
+      function ClipPolygongsByPoints(vpolygons,points){
+        let cpy=[];
+        for(let i=0;i<vpolygons.length;i++){
+          let temp=d3.polygonClip(vpolygons[i],polygonClone(points.reverse()));
+          if(temp.length>0){ cpy.push(temp); }
+        }
+        return cpy;
+      }
+
+      function addGraphics(vtriangles) {
+        // transfer the voronoi polygon:vpolygons to gispolygon
+        let text_symbol = {
+          type: "text",  // autocasts as new TextSymbol()
+          color: "white",
+          haloColor: "black",
+          haloSize: "1px",
+          text: "You are here",
+          xoffset: 3,
+          yoffset: 3,
+          font: {  // autocast as new Font()
+            size: 12,
+            family: "sans-serif",
+            weight: "bold"
+          }
+        };
+        for (let i=0;i<vtriangles.length;i++){
+          vtriangles[i].push(vtriangles[i][0]);
+          let polygon = createGeometry(vtriangles[i]);
+          let newDevelopmentGraphic = new Graphic({
+            geometry: polygon,
+            symbol: validSymbol,
+            attributes: {
+              newDevelopment: "new store",
+              cellindex:(i+1).toString(),
+              polygonindex:i.toString()
+            }
+          });
+          text_symbol.text="S"+(i+1).toString();
+          let t_point=new Graphic ({
+            geometry:newDevelopmentGraphic.geometry.centroid,
+            symbol:text_symbol
+          });
+          allpolygons.push(newDevelopmentGraphic);
+          allpolygons_text.push(t_point);
+        }
+        updated_polygonring=vtriangles;
+
+        graphicsLayer.addMany(allpolygons);
+        graphicsLayer.addMany(allpolygons_text);
+      }
+
+      function createGeometry(vertices) {
+        return new Polygon({
+          rings: vertices,
+          //spatialReference: {wkid: 102100 }
+          spatialReference: view.spatialReference
+        });
+      }
+
+      function createSymbol(color, style, width, outlineColor) {
+        return {
+          type: "simple-fill",
+          style: style,
+          color: color,
+          outline: {
+            color: outlineColor,
+            width: width
+          }
+        }
+      }
+
+      // Create new view, map and layers... set up the view
+      function setUpView() {
+        view = new MapView({
+          container: "viewDiv",
+          map: map,
+          zoom: m_scale,
+          center: [gcx,gcy]
+        });
+
+
+        let toggle = new BasemapToggle({
+          view: view, // view that provides access to the map's 'topo' basemap
+          nextBasemap: "topo" // allows for toggling to the 'hybrid' basemap
+        });
+        // Add widget to the top right corner of the view
+        view.ui.add(toggle, "bottom-left");
+        //add track widget
+        let trackWidget = new Track({
+          view: view
+        });
+        view.ui.add(trackWidget, "top-left");
+        let searchWidget = new Search({
+          view: view
+        });
+        view.ui.add(searchWidget, {
+          position: "bottom-right",
+          index: 5
+        });
+        setupEditing();
+        validSymbol = createSymbol([212,221,222, 0.2], "solid", 2, [255,255, 255]);//task generation
+
+      }
+
+      document.getElementById("btntaskassignment").onclick=function() {
+        m_tasktrials=m_tasktrials+1;
+        m_experimentres["step_number"]=m_tasktrials;
+        let i_hr=document.getElementById("myRange").value;
+        //console.log(m_tasktrials);
+
+        m_experimentres["actions"].push({"id":"btntaskassignment","timestamp": Date.now(), "description":"click task assign", 'trial':m_tasktrials,'hourslide':i_hr});
+
+        //console.log(m_experimentres);
+        //save to the database
+        AddTeams();
+
+        let t_stoptime=Date.now();
+        //console.log(m_teamassign);
+        let team_detail=[];
+        for (let i =0; i<m_teamassign.length;i++){
+          if (m_teamassign[i]){
+            team_detail.push({"team_index":i,"cellindex":m_teamassign[i].attributes.cellindex,"polygonindex":m_teamassign[i].attributes.polygonindex});
+          }
+          else{
+            team_detail.push({"team_index":i,"cellindex":null,"polygonindex":null});
+          }
+        }
+
+        m_experimentres["step_details"].push({
+          "step_index":m_experimentres["step_details"].length+1,
+          "team_cell":team_detail,//m_teamassign,
+          "starttime":m_taskstarttime,
+          "stoptime":t_stoptime,
+          "duration":t_stoptime-m_taskstarttime
+        });
+
+
+        for(let i=0;i<m_teamassign.length;i++){
+          //console.log(m_teamassign[i]);
+          if(m_teamassign[i]){
+            //check if the clue are in the assigned area
+            for(let j=0;j<m_exp_location.clue.length;j++){
+
+              let t_pt=new Point({
+                latitude: m_exp_location.clue[j].location[1],
+                longitude: m_exp_location.clue[j].location[0],
+                spatialReference: view.spatialReference
+              });
+              if(geometryEngine.contains(m_teamassign[i].geometry,t_pt)){
+                m_visualizationtype='byclue';
+
+                let t_clueobj;
+                let URL = "{% url 'getcluemedia' %}";
+                let data = {
+                 csrfmiddlewaretoken: '{{ csrf_token }}',
+                 'photoid': m_exp_location.clue[j].photoid.toString()
+                };
+                $.post(URL, data, function(response){
+                  t_clueobj=JSON.parse(response);
+                  if(t_clueobj.flag == 'success'){
+                     DrawClueToInitLayer(t_pt,t_clueobj,[0, 102, 255, 0.8]);
+                  }
+                  else{ alert(response); }
+                });
+                // change the clue status from "unfound" to "show"
+                m_exp_location.clue[j].status="show";
+                let t_contour_value=0;
+                if(m_exp_location.clue[0].status=="show" && m_exp_location.clue[1].status=="show"){
+                  t_contour_value=3;
+                }
+                else if(m_exp_location.clue[0].status=="show"){
+                  t_contour_value=2;
+                }
+                else if(m_exp_location.clue[1].status=="show"){
+                  t_contour_value=1;
+                }
+                document.getElementById("myClues").value=t_contour_value;
+                $("#lmyClues").text("Clue(0-3): "+t_contour_value);
+                UpdateVisualization();
+              }
+            }
+
+            //check if the target is in the array
+            if(m_teamassign[i].attributes.cellindex==m_targetpolygon.attributes.cellindex){
+              //display the targetarea
+              DrawPolygonToInitLayer(m_targetpolygon,"red");
+              DrawcongratulationsToInitLayer();
+
+              //name:unixtime_participantid_taskid
+              let filename=m_experimentres["participant_index"]+"_"+Date.now().toString();
+              m_experimentres["taskstop"]=Date.now();
+              m_experimentres["taskduration"]=m_experimentres["taskstop"]-m_experimentres["taskstart"];
+              download(filename+".txt",JSON.stringify(m_experimentres));
+
+              // upload data to database
+              m_tasktrials=0;
+            }
+            else{
+              DrawPolygonToInitLayer(m_teamassign[i]);
+            }
+          }
+        }
+        if(m_tasktrials==m_experimentres.totaltaskround){
+          //
+          DrawCompletTaskToInitLayer();
+          let filename=m_experimentres["participant_index"]+"_"+Date.now().toString();
+          m_experimentres["taskstop"]=Date.now();
+          m_experimentres["taskduration"]=m_experimentres["taskstop"]-m_experimentres["taskstart"];
+          download(filename+".txt",JSON.stringify(m_experimentres));
+
+          // upload data to database
+
+          m_tasktrials=0;
+        }
+
+        //After five times, the experiment stops.
+
+        m_teamassign=[null,null,null,null,null];
+        m_taskstarttime=null;
+        i_hr+=2;
+      }
+      function DrawcongratulationsToInitLayer(){
+        let graphic = new Graphic({
+          geometry: area_extent.center,//view.extent.center,
+          symbol: {
+            type: "text",
+            color: [255,125,0],
+            haloColor: "black",
+            haloSize: "2px",
+            text: "Congratulations!",
+            xoffset: 3,
+            yoffset: 50,
+            font: { // autocast as Font
+              size: 100,
+              family: "sans-serif"
+            }
+          }
+        });
+        graphicInitLayer.add(graphic);
+
+        graphic = new Graphic({
+          geometry: area_extent.center,//view.extent.center,
+          symbol: {
+            type: "text",
+            color: [255,125,0],
+            haloColor: "black",
+            haloSize: "2px",
+            text: "Target is found: S"+m_targetpolygon.attributes.cellindex.toString(),
+            xoffset: 3,
+            yoffset: 0,
+            font: { // autocast as Font
+              size: 50,
+              family: "sans-serif"
+            }
+          }
+        });
+        graphicInitLayer.add(graphic);
+
+      }
+      function DrawCompletTaskToInitLayer(){
+        let graphic = new Graphic({
+          geometry: area_extent.center,//view.extent.center,
+          symbol: {
+            type: "text",
+            color: [255,125,0],
+            haloColor: "black",
+            haloSize: "2px",
+            text: "This round is finished,",
+            xoffset: 0,
+            yoffset: 60,
+            font: { // autocast as Font
+              size: 50,
+              family: "sans-serif"
+            }
+          }
+        });
+        graphicInitLayer.add(graphic);
+        graphic = new Graphic({
+          geometry: area_extent.center,//view.extent.center,
+          symbol: {
+            type: "text",
+            color: [255,125,0],
+            haloColor: "black",
+            haloSize: "2px",
+            text: "please start a new search.",
+            xoffset: 0,
+            yoffset: 0,
+            font: { // autocast as Font
+              size: 50,
+              family: "sans-serif"
+            }
+          }
+        });
+        graphicInitLayer.add(graphic);
+      }
+      function DrawPolygonToInitLayer(t_obj,t_color=[0, 102, 255, 0.8]){
+        //draw the polygon into graphicInitLayer
+        let graphic = new Graphic({
+          geometry: t_obj.geometry,
+          symbol: {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: t_color,//[0, 102, 255, 0.8],//[178, 102, 234, 0.1],
+            style: "backward-diagonal"
+          }
+        });
+        graphicInitLayer.add(graphic);
+      }
+
+      // DrawClueToInitLayer
+      function DrawClueToInitLayer(t_pt,t_clueobj,t_color=[0, 102, 255, 0.8]){
+        let graphic = new Graphic({
+          geometry: t_pt,
+          symbol:  {
+            type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+            url: "{% static 'img/clue2.png' %}",//user.png
+            width: "32px",
+            height: "32px"
+             },
+          popupTemplate:{
+              title: "Clue_"+t_clueobj.cluephotoid+", ("+ t_clueobj.lon +","+t_clueobj.lat+")",
+              content:[{
+                type: "media",
+                mediaInfos: [{
+                  title: t_clueobj.name,
+                  type: "image",
+                  caption: t_clueobj.detail,
+                  value: {sourceURL: t_clueobj.url}
+                }]
+              }]
+          }
+        });
+        graphicInitLayer.add(graphic);
+      }
+
+      document.getElementById("btndisplaytarget").onclick=function() {
+        DrawToTemperalGraphicLayer(m_exp_location.target,type="point");
+        m_experimentres["actions"].push({"id":"btndisplaytarget","timestamp": Date.now(), "description":"click dislpay"});
+
+      }
+        //generate voronoi
+      document.getElementById("btngeneratearea").onclick=function() {
+        TaskGenerateArea();
+      }
+
+      function TaskGenerateArea(){
+        m_experimentres["actions"].push({"id":"btngeneratearea","timestamp": Date.now(), "description":"generate task"});
+        graphicsLayer.removeAll();
+        view.graphics.removeAll();
+
+        m_tasktrials=0;
+        epsg4326_voronoiarr=[];
+        allpolygons=[];
+        allpolygons_text=[];
+        addVoronoi();
+        AddTeams(true);
+        DisplayLostPersonInfo();
+
+        m_experimentres["polygonnumbers"]=allpolygons.length;
+        //load target and calculate their regions.
+        SetTargetpolygon();
+        if(m_targetpolygon){
+          m_experimentres["targetcellindex"]=m_targetpolygon.attributes.cellindex;
+        }
+
+        m_experimentres["scenario"]=m_exp_location;
+
+      };
+
+
+      // function updated after the clue updates v2.1
+      function SetTargetpolygon(){
+        let t_pt=new Point({
+          latitude: m_exp_location.target[1],
+          longitude: m_exp_location.target[0],
+          spatialReference: view.spatialReference
+        });
+        for(let i=0;i<allpolygons.length;i++){
+          if(geometryEngine.contains(allpolygons[i].geometry,t_pt)){
+            m_targetpolygon=allpolygons[i];
+            break;
+          }
+        }
+      }
+
+      function setupEditing() {
+        // input boxes for the attribute editing
+        editArea = document.getElementById("editArea");
+        // Listen to the feature form's submit event.
+        // Expand widget for the editArea div.
+        const editExpand = new Expand({
+          expandIconClass: "esri-icon-edit",
+          expandTooltip: "Expand Edit",
+          expanded: true,
+          view: view,
+          content: editArea
+        });
+        view.ui.add(editExpand, "top-right");
+      }
+
+      let ccWidget = new CoordinateConversion({
+        view: view
+        //container: "coordinatesdiv"
+      });
+      view.ui.add(ccWidget, "bottom-left");
+
+      function onTaskAssignmentGraphicUpdate(event){
+        let graphic = event.graphics[0];
+        //detect the overlap area
+        if (event.state=="active"){
+          mover=event.toolEventInfo.mover.geometry;
+          if(event.toolEventInfo.type=="move-start"){
+            if(m_taskstarttime ==null){
+              m_taskstarttime=Date.now();
+            }
+          }
+          else if(event.toolEventInfo.type=="move"){
+          }
+          else if(event.toolEventInfo.type=="move-stop"){
+            //console.log(mover);
+            //console.log(graphic);
+            for(let i=0;i<allpolygons.length;i++){
+
+              if(geometryEngine.contains(allpolygons[i].geometry,mover)){
+                //document.getElementById(graphic.attributes.htmlid).text("S"+allpolygons[i].attributes.cellindex.toString());
+                //console.log(mover);
+                $(graphic.attributes.htmlid).text("S"+allpolygons[i].attributes.cellindex.toString());
+                m_teamassign[graphic.attributes.Teamindex-1]=allpolygons[i];
+                break;
+              }
+            }
+          }
+        }
+
+      }
+
+      document.getElementById("clearall").addEventListener("click",
+       function () {
+         m_experimentres["actions"].push({"id":"clearall","timestamp": Date.now(), "description":"clearall"});
+         m_lpdata_con=[];
+         m_lpdata_trajectory=[];
+         m_lpdata_tra_colormap=[];
+
+         ClearAll();
+         area_extent=view.extent;
+       });
+
+       function ClearAll(){
+         allpolygons=[];
+         allpolygons_text=[];
+         updated_polygonring=[];
+         m_taskstarttime=null;
+         m_visualizationtype='byhour';
+
+         // change clue status from 'show' to 'unfound'
+         for (let j=0;j<m_exp_location.clue.length;j++){
+           m_exp_location.clue[j].status='unfound';
+         }
+         //area_extent=view.extent;
+         graphicsLayer.removeAll();
+         view.graphics.removeAll();
+         graphicInitLayer.removeAll();
+         teamgraphicsLayer.removeAll();
+         visualization_Contourmap_Layer.removeAll();
+         visualization_Trajectories_Layer.removeAll();
+         temperalgraphicLayer.removeAll();
+         visualization_Segmentheat_Layer.removeAll();
+         //taskassignment_sketchViewModel.complete();
+         view.ui.remove(activeWidget);
+         //activeWidget.destroy();
+         activeWidget = null;
+       }
+
+       function PolyArrayToJson(polyarray)
+       {
+         if(polyarray.length<1){
+           return "";
+         }
+         res_json={};
+         for (let i=0;i<polyarray.length;i++){
+           res_json[i]=polyarray[i];
+         }
+         return JSON.stringify(res_json);
+       }
+
+       document.getElementById("savetasks").addEventListener("click",
+         function () {
+           m_experimentres["actions"].push({"id":"savetasks","timestamp": Date.now(), "description":"savetasks"});
+           let py_task_all_array={{ task_all |safe }}
+           let t_tasknotes=document.getElementById("tasknotes").value;
+           t_tasknotes=t_tasknotes.split(' ').join('_');
+           //console.log(py_task_all_array);
+           if(py_task_all_array.includes(t_tasknotes)){
+             //task_all
+             alert("Please try another task name.");
+             //console.log(document.getElementById("tasknotes").value+" is already exist, please enter another one!");
+           }
+           else {
+             let URL = "{% url 'tasksave' %}";
+             let dbpolystr=PolyArrayToJson(updated_polygonring);
+             let data = {
+                     csrfmiddlewaretoken: '{{ csrf_token }}',
+                     'task_notes': t_tasknotes,
+                     'task_id': t_tasknotes,
+                     'Taskarea': updated_polygonring.length.toString(),
+                     'task_polygon': dbpolystr
+                    };
+             $.post(URL, data, function(response){
+               let res=JSON.parse(response);
+
+                 if(res.flag == 'success'){
+                   //console.log(res.Taskarea);
+                   //add date and task number and a random number
+                   //task name:
+                   let task_url="{% url 'taskgenerationform' %}"+"/"+t_tasknotes+'_'+'0/';
+                   //console.log(task_url);
+                   //let win = window.open("{% url 'taskgenerationform' %}", '_blank');
+                   let win = window.open(task_url, '_blank');
+                   win.focus();
+                   //open a new tab for task TaskGeneration
+
+                  }
+                 else{ alert(response); }
+             });
+           }
+         });
+         function LoadLPFromCSV_Tra_Item(t_url,t_rank=0,t_index=0){
+           let t_data;
+            $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+                 t_data = $.csv.toArrays(response).map(function(item){
+                   return item.map(Number);
+                 });
+                 m_lpdata_trajectory.push({'index':t_index,'notes':'clue','clue':t_index,'data':t_data});
+
+              }
+            });
+            return true;
+         }
+         function LoadLPFromCSV_Tra_All(t_url,t_rank=0,t_index=0){
+
+           let t_data;
+            $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+                 t_data = $.csv.toArrays(response).map(function(item){
+                   return item.map(Number);
+                 });
+                 // column: time by hour, lon,lat,index of trajectory
+                 // cut t_data into 2 dimentional array every 13 items [ [t_data[1],t_data[2]],[],..,[] ]
+
+                 let all_obj={};
+                 let sizeoftrajectory=100;
+                 let startpoint=1;
+                 //initialize all_obj
+                 for (let i=startpoint;i<sizeoftrajectory+1;i++){
+                   let t_obj={};
+                   all_obj[i]=t_obj;
+                 }
+                 // clean the data
+                for(let i=0;i<t_data.length;i++){
+                  all_obj[t_data[i][3]][t_data[i][0]]=[t_data[i][1],t_data[i][2]];
+                }
+
+                // trans obj to arr
+                let res_arr=[];
+                for(let i=0;i<=GetObjectLength(all_obj);i++){
+                  if (i in all_obj){
+                    res_arr.push(Object.values(all_obj[i]));
+                  }
+
+                }
+                //console.log(res_arr);
+
+                 m_lpdata_trajectory.push({'index':-1,'notes':'all','data':res_arr});
+
+                 m_colormap=document.getElementById("sel_colormap").selectedIndex;
+                 let t_color_arr=[];
+                 let t_ratio=1.0/sizeoftrajectory;
+
+                 for (let j=0;j<sizeoftrajectory;j++){
+                   t_rgb=hslToRgb(1-t_ratio*j, 1, 1-0.6*t_ratio*j);//rainbow
+                   t_color_arr.push(t_rgb);
+                   //t_color_arr.push([getRandomInt(255), getRandomInt(255), getRandomInt(255)]);
+                 }
+                 m_lpdata_tra_colormap.push(t_color_arr);
+
+                 t_color_arr=[];
+                 for (let j=0;j<sizeoftrajectory;j++){
+                   t_rgb=hslToRgb(0.2*(1-t_ratio*j), 1, 1-t_ratio*j);
+                   t_color_arr.push(t_rgb);
+                   //t_color_arr.push([255-255*t_ratio*j,0,0]);
+                 }
+                 m_lpdata_tra_colormap.push(t_color_arr);
+                 t_color_arr=[];
+                 for (let j=0;j<sizeoftrajectory;j++){
+                  t_rgb=hslToRgb(0.6, 1, 1-0.5*t_ratio*j);
+                  t_color_arr.push(t_rgb);
+                }
+                m_lpdata_tra_colormap.push(t_color_arr);
+              }
+            });
+            return true;
+         }
+         // Loading contour map
+         function LoadLPFromCSV_con(t_url,t_arr_count,t_hour=0,t_rank=0,t_type='byhour'){
+           let t_data;
+            $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+                 t_data = $.csv.toArrays(response).map(function(item){
+                   return item.map(Number);
+                 });
+                 m_lpdata_con.push({'type':t_type,'hour':t_hour,'rank':t_rank,'data':t_data});
+
+                 if (m_lpdata_con.length == t_arr_count){
+
+                   document.getElementById("loadlpmcsv").value="Load LPM Data (Loaded)";
+                   m_experimentres["actions"].push({"id":"loadlpmcsv","timestamp": Date.now(), "description":"loaded"});
+
+                   SetTargetClues();
+                 }
+              }
+            });
+            return true;
+         }
+
+         function AddTeams(init=false,teamcount=5){
+           teamgraphicsLayer.removeAll();
+           if(init){
+             m_teamiconlocation=null;
+           }
+           //team 1,2,3,4,5
+           if (m_teamiconlocation){
+             for(let i=0;i<m_teamiconlocation.length;i++){
+               $(m_teamiconlocation[i].attributes.htmlid).text("SX");
+             }
+
+           }
+           else{
+             m_teamiconlocation=[];
+             let t_y=0.95*view.extent.ymax+0.05*view.extent.ymin;
+             let t_start=0.2*view.extent.xmax+0.8*view.extent.xmin;
+             let t_stop=0.5*view.extent.xmax+0.5*view.extent.xmin;
+             let t_steps=(t_stop-t_start)/teamcount;
+             for(let i=0;i<teamcount;i++){
+               //console.log(view);
+               let in_point=new Point({
+                 x:t_start+i*t_steps,
+                 y:t_y,
+                 spatialReference:view.spatialReference
+               });
+
+               let t_graphic =  new Graphic({
+                 geometry: in_point,
+                 symbol:  {
+                   type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+                    url: "{% static 'img/user_o.png' %}",//user.png
+                    width: "64px",
+                    height: "64px"
+                  },
+                  attributes:{
+                    Name:"Team",
+                    Teamindex:i+1,
+                    Status:"Assigned",
+                    htmlid:"#th_team"+(i+1).toString()
+                  }
+                });
+                m_teamiconlocation.push(t_graphic);
+                $(t_graphic.attributes.htmlid).text("SX");
+             }
+           }
+           teamgraphicsLayer.addMany(m_teamiconlocation);
+         }
+
+         function AddCluetoInteractionImagelayer(){
+           graphicInteractionLayer.removeAll();
+           //display all clue points
+           arr_featureset=[];
+           for (let i=0;i<m_exp_location.clue.length;i++){
+             if(m_exp_location.clue[i].status=="show"){
+               let in_point=new Point({
+                 longitude:m_exp_location.clue[i].location[0],
+                 latitude:m_exp_location.clue[i].location[1],
+                 spatialReference:view.spatialReference
+               });
+               let t_graphic =  new Graphic({
+                 geometry: in_point,
+                 symbol:  {
+                      type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                      style:"circle",
+                      color: [255,0,0],
+                      size: 40
+                    },
+                  attributes:{
+                    Name:"Clue",
+                    Rank:1
+                  }
+               });
+               arr_featureset.push(t_graphic);
+             }
+           }
+           graphicInteractionLayer.addMany(arr_featureset);
+           graphicInteractionLayer.visible=true;
+         }
+
+         // this function has delay
+         function getClueImageByPhotoid(photoid){
+           let URL = "{% url 'getcluemedia' %}";
+           let data = {
+                   csrfmiddlewaretoken: '{{ csrf_token }}',
+                   'photoid': photoid.toString()
+                  };
+           $.post(URL, data, function(response){
+             let res=JSON.parse(response);
+               if(res.flag == 'success'){
+                 //console.log(res);
+                }
+               else{ alert(response); }
+           });
+         }
+         function DrawToTemperalGraphicLayer(obj,type){
+           temperalgraphicLayer.removeAll();
+           // ajax load image from database aka ClueMedia
+
+           // lost person target position
+           if(type==="point"){
+             // draw obj to temperalgraphicLayer
+             let in_point=new Point({
+                     latitude:obj[1],//lat,
+                     longitude:obj[0],//long,
+                     spatialReference:view.spatialReference
+                   });
+             let t_graphic1=  new Graphic({
+               geometry: in_point,
+               symbol:  {
+                    type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                    style:"circle",
+                    color: [getRandomInt(255), getRandomInt(255), getRandomInt(255)],//[t_mag, 0,0],
+                    size:20
+                  },
+                attributes:{
+                  Name:"Target",
+                  Hour:0,
+                  Rank:1
+                }
+             });
+             temperalgraphicLayer.add(t_graphic1);
+             let t_clue=m_exp_location;
+             for (let i=0;i<m_exp_location.clue.length;i++){
+               let in_point=new Point({
+                 longitude:m_exp_location.clue[i].location[0],
+                 latitude:m_exp_location.clue[i].location[1],
+                 spatialReference:view.spatialReference
+               });
+
+               let t_clueobj;
+
+               let URL = "{% url 'getcluemedia' %}";
+               let data = {
+                 csrfmiddlewaretoken: '{{ csrf_token }}',
+                 'photoid': m_exp_location.clue[i].photoid.toString()
+               };
+               $.post(URL, data, function(response){
+                 t_clueobj=JSON.parse(response);
+                 if(t_clueobj.flag == 'success'){
+
+                   let t_graphic =  new Graphic({
+                     geometry: in_point,
+                     symbol:  {
+                       type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+                       url: "{% static 'img/clue2.png' %}",//user.png
+                       width: "32px",
+                       height: "32px"
+                        },
+                      attributes:{
+                        Name:"Clue",
+                        Hour:0,
+                        Rank:1
+                      },
+                      popupTemplate:{
+                          title: "Clue_"+t_clueobj.cluephotoid+", ("+ t_clueobj.lon +","+t_clueobj.lat+")",
+                          content:[{
+                            type: "media",
+                            mediaInfos: [{
+                              title: t_clueobj.name,
+                              type: "image",
+                              caption: t_clueobj.detail,
+                              value: {
+                                sourceURL: t_clueobj.url
+                              }
+                            }]
+                          }
+                        ]
+                      }
+                   });
+                   temperalgraphicLayer.add(t_graphic);
+                  }
+                 else{ alert(response); }
+               });
+
+
+             }
+           }
+
+           temperalgraphicLayer.visible=true;
+         }
+
+         function AddLPDataToTrajectorylayer(t_type = "byhour"){
+           let i_hr=parseInt(document.getElementById("myRange").value);
+           m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           let clueindex=0;
+           let t_arr=m_lpdata_trajectory.filter(obj=>{ return obj.index === -1;});
+           let t_data=t_arr[0].data;
+
+           if (t_type == "byclue"){
+             clueindex=parseInt(document.getElementById("myClues").value);
+             //console.log(clueindex);
+             if(clueindex<4){
+               let t_reduced_arr=[];
+               // trajectory: 0: all, 1: clue 1, 2:clue2,3:clue1,2
+               // contourmap: 0: clue1, 1: clue2, 2: clue1,2, 3: all
+               let t_reduced_index_arr=m_lpdata_trajectory.filter(obj=>{ return obj.index === clueindex;});
+
+               for(let i=0;i<t_reduced_index_arr[0].data.length;i++){
+                 //console.log(t_data[t_reduced_index_arr[0].data[i]-1]);
+                 t_reduced_arr.push(t_data[t_reduced_index_arr[0].data[i]-1]);
+               }
+               //console.log(t_reduced_arr);
+               t_data=t_reduced_arr;
+               //console.log(t_data);
+             }
+             else{
+               clueindex=0;
+             }
+           }
+           else if(t_type == "byhour"){
+             clueindex=0;
+           }
+           visualization_Trajectories_Layer.removeAll();
+           //console.log(t_data);
+
+           // display all 100 trajectories
+           let arr_visual=[];
+
+           let t_case = document.getElementById("displaytype").checked;  // default unchecked: bypath, checked: byhour
+
+           if(t_case){ //byhour
+             let mid_data=[];//13 items
+
+             for (let j=0;j<12;j++){
+               mid_data.push([]);
+             }
+             for(let i=0;i<t_data.length;i++){
+               for (let j=1;j< t_data[i].length;j++){
+                 mid_data[j-1].push([ [t_data[i][j][0],t_data[i][j][1]],[t_data[i][j-1][0],t_data[i][j-1][1]] ]);
+                 // color map
+
+               }
+             }
+             //t_data=mid_data;
+             //console.log(m_lpdata_tra_colormap);
+             for(let i=0;i<mid_data.length;i++){
+               let polyline = {
+                   type:'polyline',
+                  paths: mid_data[i],
+                  spatialReference: { wkid: 4326 }
+                };
+                let polylineGraphic=new Graphic({
+                  geometry: polyline,
+                  symbol:{
+                          type: "simple-line", // autocasts as new SimpleLineSymbol()
+                          color: m_lpdata_tra_colormap[m_colormap][(11-i)*9], // RGB color values as an array
+                          width: 1
+                        }
+                });
+                                //console.log(polylineGraphic);
+                arr_visual.push(polylineGraphic);
+             }
+             for(let i=0;i<mid_data[i_hr].length;i++){
+               let t_color= m_lpdata_tra_colormap[m_colormap][(11-i_hr)*9];
+               if (i_hr>=t_data.length){
+                 i_hr=t_data.length-1;
+                 t_color=[125,125,125,0.1];
+               }
+               else if( i_hr >0){
+                 // compare
+                 if(mid_data[i_hr][i][0][1]==mid_data[i_hr][i][1][1] && mid_data[i_hr][i][0][0]==mid_data[i_hr][i][1][0])
+                 {
+                   t_color=[125,125,125,0.1];
+                 }
+
+               }
+               let t_pt={
+                 type:'point',
+                 latitude: mid_data[i_hr][i][0][1],
+                 longitude: mid_data[i_hr][i][0][0]
+               }
+               let t_ptgraphic =  new Graphic({
+                 geometry: t_pt,
+                 symbol:  {
+                      type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                      style:"circle",
+                      color: t_color,// t_color,//[t_mag, 0,0],
+                      size: 10
+                    }
+               });
+               arr_visual.push(t_ptgraphic);
+             }
+
+           }
+           else{
+             //console.log(t_data);
+             for(let i=0;i<t_data.length;i++){
+
+               let polyline = {
+                   type:'polyline',
+                  paths: t_data[i],
+                  spatialReference: { wkid: 4326 }
+                };
+                let polylineGraphic=new Graphic({
+                  geometry: polyline,
+                  symbol:{
+                          type: "simple-line", // autocasts as new SimpleLineSymbol()
+                          color: m_lpdata_tra_colormap[m_colormap][i], // RGB color values as an array
+                          width: 1
+                        }
+                });
+                //console.log(polylineGraphic);
+                arr_visual.push(polylineGraphic);
+             }
+             for(let i=0;i<t_data.length;i++){
+               let t_color=m_lpdata_tra_colormap[m_colormap][i];
+               if (i_hr>=t_data.length){
+                 i_hr=t_data.length-1;
+                 t_color=[125,125,125,0.1];
+               }
+               else if( i_hr >0){
+
+                 if(t_data[i][i_hr]!=null && t_data[i][i_hr-1]!=null){
+                   if(t_data[i][i_hr][0]==t_data[i][i_hr-1][0] && t_data[i][i_hr][1]==t_data[i][i_hr-1][1]){
+                     t_color=[125,125,125,0.1];
+                   }
+                 }
+               }
+               if(t_data[i][i_hr]!=null){
+                 let t_pt={
+                   type:'point',
+                   latitude: t_data[i][i_hr][1],
+                   longitude: t_data[i][i_hr][0]
+                 }
+                 let t_ptgraphic =  new Graphic({
+                   geometry: t_pt,
+                   symbol:  {
+                        type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                        style:"circle",
+                        color: t_color,//[t_mag, 0,0],
+                        size: 10
+                      }
+                 });
+                 arr_visual.push(t_ptgraphic);
+               }
+
+             }
+           }
+
+           visualization_Trajectories_Layer.addMany(arr_visual);
+           visualization_Trajectories_Layer.visible=true;
+         }
+
+         function AddLPDataToSegmentheatlayer(t_type = "byhour"){
+           visualization_Segmentheat_Layer.removeAll();
+           contourring_arr=[]
+           arr_featureset=[];
+           if(m_lpdata_con == null){
+             return;
+           }
+
+           let t_data_con,t_hour;
+
+           if (t_type == "byclue"){
+             t_hour=document.getElementById("myClues").value;
+           }
+           else if(t_type == "byhour"){
+             t_hour=document.getElementById("myRange").value;
+           }
+
+           let t_rank=parseInt(document.getElementById("sel_rank").value)-1;
+           arr_heatpoints=[];
+
+           let t_break=m_lpdata_con.length;
+           let i=0;
+           while(i<t_break){
+             if(m_lpdata_con[i]['type']==t_type){
+               if(m_lpdata_con[i]['hour']==t_hour && m_lpdata_con[i]['rank']==t_rank){
+                 arr_heatpoints=m_lpdata_con[i]['data'];
+                 break;
+               }
+             }
+             i++;
+           }
+
+           m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           //loop to find rings
+           let t_rings=[];//
+           let all_paths=[];
+           let t_startprobability=arr_heatpoints[0][0];
+
+           let col3 = arr_heatpoints.map(function(value,index) { return value[0]; });
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_range=t_max-t_min;
+
+           let t_mag=(t_startprobability-t_min)/t_range;
+
+           let t_distance=0.0001;//define as a circle
+           let t_len=0;
+           m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           arr_heatpoints.map(function(item){
+             t_len=t_rings.length-1;
+             if(item[0]==t_startprobability){
+               if(t_len>3){
+                 if(t_distance<((item[1]-t_rings[t_len][0])*(item[1]-t_rings[t_len][0])+ (item[2]-t_rings[t_len][1])*(item[2]-t_rings[t_len][1]))){
+                   t_rings.push(t_rings[0]);
+                   contourring_arr.push(t_rings);
+                   t_rings=[];
+                 }
+               }
+             }
+             else{
+               t_rings.push(t_rings[0]);
+               contourring_arr.push(t_rings);
+               t_rings=[];
+               t_startprobability=item[0];
+               t_mag=(t_startprobability-t_min)/t_range;
+             }
+             t_rings.push(item.slice(1));
+           });
+           if(t_rings.length>0){
+             t_rings.push(t_rings[0]);
+             contourring_arr.push(t_rings);
+             t_rings=[];
+           }
+           // send contourring_arr to back for process
+
+           let voronoiarr=[];
+           let markspatialreference="epsg3857";
+           if(epsg4326_voronoiarr.length>1){
+             markspatialreference="epsg4326";
+             voronoiarr=epsg4326_voronoiarr;
+           }
+           else{
+             markspatialreference="epsg3857";
+             for(i=0;i<allpolygons.length;i++){
+               voronoiarr.push(allpolygons[i].geometry.rings[0]);
+             }
+           }
+
+           //console.log(voronoiarr);
+           //console.log(contourring_arr);
+
+           let URL = "{% url 'getsegmentVal' %}";
+           let data = {
+             csrfmiddlewaretoken: '{{ csrf_token }}',
+             'contourarr': JSON.stringify(contourring_arr),
+             'voronoiarr': JSON.stringify(voronoiarr),
+             'spatialReference': markspatialreference
+           };
+           $.post(URL, data, function(response){
+             t_obj=JSON.parse(response);
+             if(t_obj.flag == 'success'){
+               //console.log(t_obj);
+               let colorarr=t_obj.segmentval;
+               let updatevoronoiarr=t_obj.updatevoronoi;
+               if (updatevoronoiarr.length>0){
+                 epsg4326_voronoiarr=updatevoronoiarr;
+               }
+
+               for(let j=0;j<allpolygons.length;j++){
+                 let polygonGraphic = new Graphic({
+                   geometry: allpolygons[j].geometry,
+                   symbol: {
+                           type: "simple-fill",
+                           color: [0, 0, 255,colorarr[j]/150],//[0, 0, colorarr[j]*0.5+125,colorarr[j]/255],
+                           outline: {
+                             style:"none"
+                           }
+                         }
+                 });
+                 //console.log(colorarr[j]);
+                 arr_featureset.push(polygonGraphic);//t_graphic
+
+               }
+               //console.log(arr_featureset);
+               visualization_Segmentheat_Layer.addMany(arr_featureset);
+               visualization_Segmentheat_Layer.visible=true;
+              }
+             else{ alert(response); }
+           });
+
+
+         }
+
+         function AddLPDataToContourlayer(t_type = "byhour"){
+           visualization_Contourmap_Layer.removeAll();
+           arr_featureset=[];
+           if(m_lpdata_con == null){
+             return;
+           }
+           //console.log(m_lpdata_con);
+           let t_data_con,t_hour;
+
+           if (t_type == "byclue"){
+             t_hour=document.getElementById("myClues").value;
+           }
+           else if(t_type == "byhour"){
+             t_hour=document.getElementById("myRange").value;
+           }
+           //console.log(m_lpdata_con);
+
+
+           let t_rank=parseInt(document.getElementById("sel_rank").value)-1;
+           arr_heatpoints=[];
+
+           let t_break=m_lpdata_con.length;
+           let i=0;
+           while(i<t_break){
+             if(m_lpdata_con[i]['type']==t_type){
+               if(m_lpdata_con[i]['hour']==t_hour && m_lpdata_con[i]['rank']==t_rank){
+                 arr_heatpoints=m_lpdata_con[i]['data'];
+                 //console.log(m_lpdata_con[i]);
+                 break;
+               }
+             }
+             i++;
+           }
+           //console.log(arr_heatpoints);
+
+           m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           //loop to find rings
+           let t_rings=[];//
+           let all_paths=[];
+           let t_startprobability=arr_heatpoints[0][0];
+
+           let col3 = arr_heatpoints.map(function(value,index) { return value[0]; });
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_range=t_max-t_min;
+
+           let t_mag=(t_startprobability-t_min)/t_range;
+
+           let markerSymbol = {
+             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+             color: [226, 119, 40],
+             outline: {
+               style:"none"
+             }
+           };
+          let fillSymbol= {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: [226, 119, 40],
+            outline: { // autocasts as SimpleLineSymbol
+
+              style:"none"
+            }
+          };
+          let t_distance=0.0001;//define as a circle
+          let t_len=0;
+          let t_index=0;
+          let t_oppacity=3;//0.8
+
+          m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           arr_heatpoints.map(function(item){
+             t_len=t_rings.length-1;
+             if(item[0]==t_startprobability){
+               if(t_len>3){
+                 if(t_distance<((item[1]-t_rings[t_len][0])*(item[1]-t_rings[t_len][0])+ (item[2]-t_rings[t_len][1])*(item[2]-t_rings[t_len][1]))){
+                   //console.log((item[1]-t_rings[0][0])*(item[1]-t_rings[0][0])+ (item[2]-t_rings[0][1])*(item[2]-t_rings[0][1]));
+                   // if two points are two far away, define them as different circles
+                   t_rings.push(t_rings[0]);
+                   let tmulpt=new Polygon({
+                      rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                      spatialReference: { wkid: 4326 }
+                    });
+                    if (m_colormap==0){
+                      t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+                    }
+                    else if (m_colormap==1){
+                      t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+                    }
+                    else{
+                      t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+                    }
+                    t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+                    fillSymbol.color=t_rgb;
+                    let polylineGraphic = new Graphic({
+                      geometry: tmulpt, // Add the geometry created in step 4
+                      symbol: fillSymbol
+                    });
+                     arr_featureset.push(polylineGraphic);//t_graphic
+
+                     //ContourRingdownload(t_rings,t_index);
+                     t_index=t_index+1;
+
+                   t_rings=[];
+                 }
+               }
+             }
+             else{
+               //ori:t_rings.push(t_rings[t_rings.length-1]);
+               t_rings.push(t_rings[0]);
+               //console.log(t_rings);
+
+               let tmulpt=new Polygon({
+                  rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                  spatialReference: { wkid: 4326 }
+                });
+                if (m_colormap==0){
+                  t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+                }
+                else if (m_colormap==1){
+                  t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+                }
+                else{
+                  t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+                }
+                t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+                fillSymbol.color=t_rgb;
+                let polylineGraphic = new Graphic({
+                  geometry: tmulpt, // Add the geometry created in step 4
+                  symbol: fillSymbol
+                });
+                 arr_featureset.push(polylineGraphic);//t_graphic
+
+                 //ContourRingdownload(t_rings,t_index);
+                 t_index=t_index+1;
+
+                 t_rings=[];
+                 t_startprobability=item[0];
+                 t_mag=(t_startprobability-t_min)/t_range;
+             }
+             t_rings.push(item.slice(1));
+           });
+           if(t_rings.length>0){
+
+             //ori:t_rings.push(t_rings[t_rings.length-1]);
+             t_rings.push(t_rings[0]);
+             //console.log(t_rings);
+
+             let tmulpt=new Polygon({
+                rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                spatialReference: { wkid: 4326 }
+              });
+              if (m_colormap==0){
+                t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+              }
+              else if (m_colormap==1){
+                t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+              }
+              else{
+                t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+              }
+              t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+              fillSymbol.color=t_rgb;
+              let polylineGraphic = new Graphic({
+                geometry: tmulpt, // Add the geometry created in step 4
+                symbol: fillSymbol
+              });
+               arr_featureset.push(polylineGraphic);//t_graphic
+
+               //ContourRingdownload(t_rings,t_index);
+               t_index=t_index+1;
+
+               t_rings=[];
+           }
+           //console.log(arr_featureset);
+           visualization_Contourmap_Layer.addMany(arr_featureset);
+           visualization_Contourmap_Layer.visible=true;
+
+         }
+         function SetTargetClues(){
+           // need m_lpdata_trajectory
+           let t_plitphase=0.618;
+           let t_targetarr=m_lpdata_trajectory.filter(obj=>{ return obj.index === -1;});
+           // pick two point from t_targetarr
+           let t_cluearr=m_lpdata_trajectory.filter(obj=>{ return obj.index === 3;});
+           let tcluedata_len=t_cluearr[0].data.length;
+
+           let tlen_target=0;
+           let tlen_clue=tcluedata_len-1;
+           //let tlen_clue2=Math.floor(tcluedata_len * t_plitphase);
+
+           let index_tar=Math.floor(t_targetarr[0].data[tlen_target].length * t_plitphase);
+           if(index_tar==0 || index_tar==4){
+             index_tar==3;
+           }
+           let index_clue1=0;
+           let index_clue2=4;
+
+           m_exp_location.target=t_targetarr[0].data[tlen_target][index_tar];
+           m_exp_location.clue=[{"clue_index":0,"status":"unfound","info":"cloth","data":t_targetarr[0].data[tlen_clue][index_clue1],'photoid':1},
+                  {"clue_index":1,"status":"unfound","info":"drink","data":t_targetarr[0].data[tlen_clue][index_clue2],'photoid':2}];
+
+          TaskGenerateArea();
+         }
+
+         function DisplayLostPersonInfo(){
+           graphicInitLayer.removeAll();
+           let t_feature=[];
+
+           let t_center=new Point({
+             longitude:m_exp_location.center[0],
+             latitude:m_exp_location.center[1],
+             spatialReference:view.spatialReference
+           });
+
+           let t_graphic =  new Graphic({
+             geometry: t_center,//area_extent.center,//view.extent.center,
+             symbol:  {
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"triangle",
+                  color: [255,0,0],//[t_mag, 0,0],
+                  size:10
+                },
+              attributes:{
+                Name:"Last known position",
+                LostHour:2,
+                Type:"hiker"
+              },
+              popupTemplate:{
+                  title: "{Name}",
+                  content: [
+                    {
+                      type: "fields",
+                      fieldInfos: [{fieldName: "Name"},{fieldName: "LostHour"},{fieldName: "Type"}]
+                    }
+                  ]
+              }
+           });
+           t_feature.push(t_graphic);
+
+            //draw 25%,50%,75% ring
+
+           let rings_arr=m_exp_lostpersontype.ring;
+           let ringsname_arr=["25% ring","50% ring","75% ring","95% ring"];
+           for(let i=0;i<4;i++){
+             let t_circle=new Circle({
+               center:t_center,//area_extent.center,
+               radius:rings_arr[i]
+             });
+             t_graphic =  new Graphic({
+               geometry: t_circle,//view.extent.center,
+               symbol:  {
+                    type: "simple-fill", // autocasts as new SimpleMarkerSymbol()
+                    style:"none",
+                    outline:{
+                      color:[255,i*50,0,0.6-0.4*i/4],
+                      width:2
+                    }
+                  },
+                attributes:{
+                  Name:ringsname_arr[i],
+                  LostHour:2,
+                  Type:"hiker"
+                }
+             });
+
+             t_feature.push(t_graphic);
+            }
+            // draw team rectangle
+            //from x: 0.05-0.6
+            //from y: 0.1 - 0.3
+            let t_rect=new Polygon({
+              rings:[
+                [0.85*view.extent.xmin+0.15*view.extent.xmax,0.02*view.extent.ymin+0.98*view.extent.ymax],
+                [0.5*view.extent.xmin+0.5*view.extent.xmax,0.02*view.extent.ymin+0.98*view.extent.ymax],
+                [0.5*view.extent.xmin+0.5*view.extent.xmax,0.08*view.extent.ymin+0.92*view.extent.ymax],
+                [0.85*view.extent.xmin+0.15*view.extent.xmax,0.08*view.extent.ymin+0.92*view.extent.ymax],
+                [0.85*view.extent.xmin+0.15*view.extent.xmax,0.02*view.extent.ymin+0.98*view.extent.ymax],
+              ],
+              spatialReference:view.spatialReference
+            });
+
+            t_graphic =  new Graphic({
+              geometry: t_rect,//view.extent.center,
+              symbol:  {
+                   type: "simple-fill", // autocasts as new SimpleMarkerSymbol()
+                   style:"none",
+                   outline:{
+                     color:[255,125,0,1],
+                     width:2
+                   }
+                 },
+               attributes:{
+                 Name:"team group"
+               }
+            });
+            //t_feature.push(t_graphic);
+
+            let t_point=new Point({
+              x:0.9*view.extent.xmin+0.1*view.extent.xmax,
+              y:0.07*view.extent.ymin+0.93*view.extent.ymax,
+              spatialReference:view.spatialReference
+            });
+            t_graphic=new Graphic ({
+              geometry:t_point,
+              symbol:{
+                type: "text",  // autocasts as new TextSymbol()
+                color: [255,125,0],//"white",
+                haloColor: "black",
+                haloSize: "1px",
+                text: "Teams: ",
+                xoffset: 3,
+                yoffset: 3,
+                font: {  // autocast as new Font()
+                  size: 50,
+                  family: "sans-serif",
+                  weight: "bold"
+                }
+              }
+            });
+            t_feature.push(t_graphic);
+            //draw the polygon into graphicInitLayer
+            //console.log(m_searchedarea);
+
+           graphicInitLayer.addMany(t_feature);
+         }
+
+         document.getElementById("loadlpmcsv").onclick=function() {
+           LoadLPMData();
+         }
+
+         function LoadLPMData(){
+           if(document.getElementById("loadlpmcsv").value=="Load LPM Data (Loaded)"){
+             //clear everything before loading anything
+
+           }
+           //draw initial condition centerpoints
+           m_experimentres["actions"].push({"id":"loadlpmcsv","timestamp": Date.now(), "description":"start loading"});
+
+           document.getElementById("lpmmodeldisplay").disabled=true;
+           document.getElementById("loadlpmcsv").value="Load LPM Data (Loading)";
+
+          // time duration
+          let ih_start = 1;//1
+          let ih_stop = 12;//12;
+
+          // number of clue files
+          let count_clues=4;
+
+          // number of contour map files
+          let totalfiles=1*(ih_stop-ih_start+1)+count_clues;
+
+          //folder of files
+          let lpmfolder="/static/data/LPMdata5/"+m_exp_location.name+"/"+m_exp_lostpersontype.type;//"LPMdata3"
+          //console.log(lpmfolder);
+          //load 2 types of data: contour map, trajectory
+          for(let i=ih_start;i<=ih_stop;i++){
+            for(let t_rank=1;t_rank<=1;t_rank++){
+              // m_lpdata_con.push
+              let csvfilename=lpmfolder+"/best fits/contour data csv/con_"+m_exp_lostpersontype.type+"bf"+t_rank.toString()+"_t"+i.toString()+".csv";
+              LoadLPFromCSV_con(csvfilename,totalfiles,i-1,t_rank-1,'byhour');
+            }
+          }
+
+          // clue1:t1, clue2:t2, clue12:t3, final: t4, final is the overall
+          let cluenames=['final','clue1','clue2','clue12'];
+          for(let i=0;i<count_clues;i++){
+            let csvfilename= lpmfolder+"/clues/contour data csv/con_"+m_exp_lostpersontype.type+"_bf1_"+cluenames[i]+".csv";
+            LoadLPFromCSV_con(csvfilename,totalfiles,i,0,'byclue');
+            //console.log(csvfilename);
+          }
+          let csvfilename= lpmfolder+"/clues/traj_"+m_exp_lostpersontype.type+"_bf1.csv";
+          LoadLPFromCSV_Tra_All(csvfilename,0,0);
+
+          for(let i=0;i<count_clues;i++){
+            let csvfilename= lpmfolder+"/clues/"+cluenames[i]+"index_"+m_exp_lostpersontype.type+"_bf1.csv";
+            LoadLPFromCSV_Tra_Item(csvfilename,0,i);
+            //console.log(csvfilename);
+          }
+
+
+          document.getElementById("lpmmodeldisplay").disabled=false;
+         }
+
+         document.getElementById("sel_lpm").onchange=function(){
+
+           m_lpdata_con=[];
+           m_lpdata_trajectory=[];
+           m_lpdata_tra_colormap=[];
+
+           ClearAll();
+           document.getElementById("loadlpmcsv").value="Load LPM Data";
+           DisableAllGraphicLayers();
+         }
+         document.getElementById("sel_rank").onchange=function(){
+           DisableAllGraphicLayers();
+           UpdateVisualization();
+         }
+
+          document.getElementById("sel_lpmodel").onchange=function(){
+            let t_index=document.getElementById("sel_lpmodel").value;
+            m_exp_visualization=m_expsetupobj.visualizationtype[t_index];
+            DisableAllGraphicLayers();
+            UpdateVisualization();
+          }
+
+         document.getElementById("myRange").onchange=function(){
+           //console.log("change");
+           m_experimentres["actions"].push({"id":"myRange","timestamp": Date.now(), "description":"Change hour to "+document.getElementById("myRange").value.toString()});
+           let t_hour=parseInt(document.getElementById("myRange").value)+1;
+            $("#lmyRange").text("Hour(1-12): "+t_hour);
+            SetTargetpolygon();
+           UpdateVisualization();
+         }
+
+         document.getElementById("myClues").onchange=function(){
+           //console.log("change");
+           m_experimentres["actions"].push({"id":"myClues","timestamp": Date.now(), "description":"Change hour to "+document.getElementById("myClues").value.toString()});
+           let t_clue=parseInt(document.getElementById("myClues").value);
+            $("#lmyClues").text("Clue(0-3): "+t_clue);
+           UpdateVisualization();
+         }
+
+         document.getElementById("sel_ic").onchange=function(){
+           ClearAll();
+           view.goTo([m_exp_location.center]);
+
+           m_lpdata_con=[];
+           m_lpdata_trajectory=[];
+           m_lpdata_tra_colormap=[];
+
+           document.getElementById("loadlpmcsv").value="Load LPM Data";
+           DisableAllGraphicLayers();
+         }
+
+         document.getElementById("sel_colormap").onchange=function(){
+             DisableAllGraphicLayers();
+             UpdateVisualization();
+         }
+         //--------------------------------------------------
+           document.getElementById("lpmmodeldisplay").onclick=function() {
+             m_experimentres["actions"].push({"id":"lpmmodeldisplay","timestamp": Date.now(), "description":"diplay model"});
+             DisableAllGraphicLayers();
+             UpdateVisualization();
+           }
+
+           document.getElementById("btmoreinfo").onclick=function() {
+             //show more
+             let t_menu=document.getElementById("menudetail").style.display;
+             if(t_menu=='none'){
+               document.getElementById("menudetail").style.display='block';
+               document.getElementById("btmoreinfo").value="Hide Control Pannel";
+               document.getElementById("experimentpannel").style.display='none';
+             }
+             else{
+               document.getElementById("menudetail").style.display='none';
+               document.getElementById("btmoreinfo").value="Show Control Pannel";
+               document.getElementById("experimentpannel").style.display='block';
+             }
+           }
+           function DisableAllGraphicLayers(){
+             visualization_Contourmap_Layer.visible=false;
+             visualization_Trajectories_Layer.visible=false;
+             temperalgraphicLayer.visible=false;
+             visualization_Segmentheat_Layer.visible=false;
+           }
+
+           function UpdateVisualization(){
+             if(m_exp_visualization.index==0){
+               // ring
+
+             }
+             else if(m_exp_visualization.index==1){
+               // weighted maps
+               AddLPDataToSegmentheatlayer(m_visualizationtype);
+             }
+             else if(m_exp_visualization.index==2){
+               //contour map
+               AddLPDataToContourlayer(m_visualizationtype);
+             }
+             else if(m_exp_visualization.index==3){
+               // trajectories
+               AddLPDataToTrajectorylayer(m_visualizationtype);
+             }
+           }
+
+         document.getElementById('visualizationtype').addEventListener('click',function(){
+           if(document.getElementById("visualizationtype").checked){
+                 m_visualizationtype='byclue';
+               }
+               else{
+                 m_visualizationtype='byhour';
+               }
+         });
+
+         document.getElementById('q_scene_1').addEventListener('click',function(){
+           // open a new page
+           //questionnaireform/participantid_taskid/
+           let participantid={{ participantid |safe }};
+           let task_id="0";
+           let task_url="{% url 'questionnaireform' %}"+"/"+participantid+'/'+task_id+'/';
+           //console.log(task_url);
+           let win = window.open(task_url, '_blank');
+           win.focus();
+         });
+
+         function InitializeExperiment(task=0){
+           //console.log(m_expsetupobj);
+           let taskindex=m_expsetupobj.participantsetup[m_exp_participantindex].taskorder[task];
+
+           //{"index":0,"loc":0,"lpt":0,"vt":0},
+           let expindex=m_expsetupobj.experimentsetup[taskindex];
+           m_exp_lostpersontype=m_expsetupobj.lostpersontype[expindex.lpt];
+           m_exp_location=m_expsetupobj.location[expindex.loc];
+           m_exp_visualization=m_expsetupobj.visualizationtype[expindex.vt];
+           //console.log(m_exp_lostpersontype,m_exp_location);
+           console.log(m_exp_location.center);
+           ClearAll();
+           view.goTo([m_exp_location.center]);
+           m_lpdata_con=[];
+           m_lpdata_trajectory=[];
+           m_lpdata_tra_colormap=[];
+           document.getElementById("loadlpmcsv").value="Load LPM Data";
+           DisableAllGraphicLayers();
+
+           // load data
+           LoadLPMData();
+           // generate task after loaded
+         }
+
+         for(let expindex=0;expindex<12;expindex++){
+           let tstr_id="exp_scene_"+(expindex+1).toString();
+           document.getElementById(tstr_id).addEventListener('click',function(){
+             InitializeExperiment(expindex);
+             document.getElementById(tstr_id).style.color='gray';
+           });
+         }
+
+      //--------------------------------------------------
+    });
+
+
+  </script>
+</head>
+
+<body>
+
+
+  <div id="editArea" class="editArea-container">
+    <h2 class="list-heading">Search & Rescue Tools</h2>
+    <div>
+      <h3 class="list-heading">Experiments</h3>
+
+      <div id="experimentpannel">
+        {% with ''|center:12 as range %}
+        {% for i in range %}
+          <div class-"sceneblock">
+            <button type="button" class="scenebutton" id="exp_scene_{{ forloop.counter }}">Scene {{ forloop.counter }}</button>
+            <button type="button" class="scenebutton" id="q_scene_{{ forloop.counter }}">Questionnaire</button>
+          </div>
+        {% endfor %}
+        {% endwith %}
+        <div>
+          <input type="button" class="scenebutton" value="Post Experiment Questionnaire" id="exp_post">
+        </div>
+      </div>
+      <hr>
+      <input type="button" class="edit-button" value="More Info" id="btmoreinfo">
+    </div>
+
+    <div id="menudetail" style="display:none">
+      <div>
+        <h3 class="list-heading">Map Division</h3>
+        <div>
+          <label >Load a scene: </label>
+          <select id="sel_ic">
+            <option value="0">Scene 1</option>
+            <option value="1">Scene 2</option>
+            <option value="2">Scene 3</option>
+          </select>
+          <input type="button" id="label_ic" value="Load" style="display:none"></input>
+        </div>
+
+        <div>
+          <label >Lost person type: </label>
+          <select id="sel_lpm">
+            <option value="child10to12">Child</option>
+            <option value="dementia">Dementia</option>
+            <option value="hiker" selected>Hiker</option>
+
+          </select>
+          <input type="button" id="label_lpt" value="Switch" style="display:none"></input>
+        </div>
+
+        <div>
+          <input type="button" class="edit-button" value="Load LPM Data" id="loadlpmcsv">
+        </div>
+        <input type="button" class="edit-button" value="Generate task" id="btngeneratearea"/>
+
+        <div  style="display:none">
+          <input type="text" class="bt_save_edit" id="tasknotes" value="Task_name"></input>
+          <input type="button" class="bt_save" value="Save Task" id="savetasks"></input>
+        </div>
+      </div>
+
+      <hr/>
+      <div>
+        <h3>Lost person model</h3>
+        <div>
+          <label id="colormap">Color map: </label>
+          <select id="sel_colormap" class="sel_options">
+            <option value="o_rainbow">Rainbow</option>
+            <option value="o_yr">Yellow-red</option>
+            <option value="o_br">Blue-red</option>
+          </select>
+          <input type="button" id="colormap" value="Switch" style="display:none"></input>
+        </div>
+
+        <div>
+          <label >Model best fit: </label>
+          <select id="sel_rank">
+            <option value="1">bf1</option>
+            <option value="2">bf2</option>
+            <option value="3">bf3</option>
+          </select>
+          <input type="button" id="label_rank" value="Switch" style="display:none"></input>
+        </div>
+
+        <div class="slidecontainer">
+          <label for="myRange" id="lmyRange">Hour(1-12): 1</label>
+          <input type="range" min="0" max="11" value="0" class="slider" id="myRange">
+        </div>
+
+        <div>
+          <select id="sel_lpmodel">
+            <option value=0>IPP & Rings</option>
+            <option value=1>Weighted map</option>
+            <option value=2>Contour map</option>
+            <option value=3>Trajectories</option>
+          </select>
+          <input type="button" id="lpmmodeldisplay" value="Display" disabled></input>
+          <input type="checkbox" id="displaytype" name="displaytype" value="byhour">
+          <label for="displaytype">Groupbyhr</label>
+        </div>
+      </div>
+
+
+      <hr/>
+      <div>
+        <h3>Task Assignment</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>1</th>
+              <th>2</th>
+              <th>3</th>
+              <th>4</th>
+              <th>5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Cell</th>
+              <th id="th_team1">SX</th>
+              <th id="th_team2">SX</th>
+              <th id="th_team3">SX</th>
+              <th id="th_team4">SX</th>
+              <th id="th_team5">SX</th>
+            </tr>
+          </tbocy>
+        </table>
+        <input type="button"  class="edit-button" id="btntaskassignment" value="Assign"></input>
+      </div>
+
+      <div>
+        <input type="checkbox" id="visualizationtype" name="visualizationtype" value="byhour">
+        <label for="visualizationtype">Filter data by clue(none,1,2,12)</label>
+        <div class="slidecontainer">
+          <label for="myClues" id="lmyClue">Clue(0-3): 0</label>
+          <input type="range" min="0" max="3" value="0" class="slider" id="myClues">
+        </div>
+        <input type="button"  class="edit-button" id="btndisplaytarget" value="Show Target"></input>
+        <div><input type="button" class="edit-button" value="Clear All" id="clearall"></input></div>
+        <p id="daytime"></p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="viewDiv">
+    <div id="sidebar" class="esri-widget" style="display:none">
+    </div>
+  </div>
+</body>
+</html>

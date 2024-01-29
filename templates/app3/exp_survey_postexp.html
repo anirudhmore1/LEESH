@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title>Open-Ended Questions</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+        h1 {text-align: center;}
+        .input-group{
+           width: 100%;
+            text-align:center;
+        }
+        div {
+            line-height:  2;
+            margin-top: 5px;
+        }
+        .input-group-addon{
+            text-align: right;            
+            display:inline-block;
+            float:none;
+            margin-right:10px;
+        }
+        .form-control {
+            display:inline-block;
+            float:none;
+            
+        }
+        label { display: block; cols="150"; text-align: left; }
+    </style>
+    <script>
+      function handleClick(cb){
+        bt = document.getElementById("agree");
+        if(cb.checked){
+          bt.disabled=false;
+            cb.value="Ture";
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+            cb.value="False";
+        }
+
+      }
+      function dismissAddAnotherPopup(win) {
+       //window.close();
+      }
+
+      function myFunction(){
+        document.getElementById("participantid").value = Date.now().toString();
+      }
+    </script>
+  </head>
+
+<body>
+    <div class="container bg-light">
+        <div class="text-center">
+            <h1>Open-Ended Questions</h1>        
+        </div>
+                
+        <form action="action" method="post" id="quiz">
+            {% csrf_token %}
+            <div class="p-3 mb-2 bg-white">
+                <h3>Visualization</h3>
+                
+                <div class="input-group">
+                    <label for="q1">1. What is your strategy to assign the teams？</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q1" name="q1"></textarea>
+                </div>      
+                
+                <div class="input-group text-left">
+                    <label for="q2">2. Which aspects of how the lost-person was portrayed to travels appear most realistic or accurate to you? Least accurate? Why? 
+                        <ul>
+                          <li>Direction of travel? (Where people choose to go?)</li>
+                          <li>Speed of travel? (How far they can travel given the landscape?)</li>
+                          <li>The stop or where the person was found?</li>
+                        </ul> 
+                    </label>
+                    <textarea rows="2" cols="150" id="q2" name="q2"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q3">3. How would you change any of the above aspects in how lost person travel to be more realistic or accurate? </label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q3" name="q3"></textarea>
+                </div>
+                                
+                <div class="input-group">                    
+                    <label for="q4">4. Which visualization do you like most? The least? Why? 1. No visualization; 2. Heat map; 3. Weighted map; 4. Trajectory visualization?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q4" name="q4"></textarea>
+                </div>                
+                                
+                <div class="input-group">
+                    <label for="q5">5. Which one helps you understand where the lost person travels most effectively? Least effectively?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q5" name="q5"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q6">6. What graphical elements are helpful or distracting? Color? Lines?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q6" name="q6"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q7">7. How would you change the graphics to represent how a lost person travel more effectively?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q7" name="q7"></textarea>
+                </div>         
+            </div>
+                        
+            <div class="p-3 mb-2 bg-white">
+                <h3>Model visualization</h3>
+                
+                <div class="input-group">
+                    <label for="q8">8. Do you think the purpose of modeling lost person behaviors is useful? Why or why not?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q8" name="q8"></textarea>
+                </div>      
+                
+                <div class="input-group text-left">
+                    <label for="q9">9. May you tell me how you think the model generated the results? What additional information do you think would be helpful to understand the model? What information would you eliminate? Which visualization helps you understand the most about: a) the input parameters of the model, b) the mechanism of how the model is generated, and c) the output of the model?
+                    </label>
+                    <textarea rows="2" cols="150" id="q9" name="q9"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q10">10. Does the model provide useful information when you are deciding on a search team assignment? What other information do you need in addition to the model results? And how does the model fit into the workflow in the actual SAR mission? </label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q10" name="q10"></textarea>
+                </div>
+                
+                <div class="input-group text-left">
+                    <label for="q11">11. How would you decide on whether the model output in any visualizations is accurate or inaccurate (as no model is perfect)?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q11" name="q11"></textarea>
+                </div>
+                
+                <div class="input-group">                    
+                    <label for="q12">12. Which of the four visualizations work best? How does each influence your decision making? Does any one of them include too much/little detail? (What information that is provided by the ring/trajectory/weighted map/heat map is important for your decision making?)</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q12" name="q12"></textarea>
+                </div>                
+                
+                <div class="input-group">
+                    <label for="q13">13. Do you think the visualization can be presented in a more efficient way for understanding and using the model? And how would you do that?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q13" name="q13"></textarea>
+                </div>
+            </div>
+            
+            <div class="p-3 mb-2 bg-white">
+                <h3>Search and rescue task</h3>
+                <div class="input-group">
+                    <label for="q14">14. The lost person model does not account for time (i.e., amount of time a person is lost) in all visualizations just like the most adopted ring model. How do you or SAR professional account for the time factor in your decision making? How do you integrate time in the ring model and possibly our lost-person model in any of the visualizations presented to you? (For example, the ring model doesn’t have time, how would you deal with the time issue?)</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q14" name="q14"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q15">15. What additional parameters do you think the model can factor in for improving its utility for deciding on search team assignment? What kind of additional outputs would be desirable (E.g., directions of travel, time)?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q15" name="q15"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q16">16. What other information should be presented to you for deciding on a search team assignment? (Other maps, geographical features.)</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q16" name="q16"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="q17">17. How do you try to work around this imperfect tool or decision aids? For example, the ring model provides probability of detection without accounting for time.</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q17" name="q17"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q18">18. How do you determine that an observation represents a real clue? E.g., track/footprint, objects)?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q18" name="q18"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q19">19. New clue changes the model results; does it make sense for you? What will you do after you find a new clue in an actual SAR mission? How does that influence the search assignment/tasking?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q19" name="q19"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="q20">20. Do you have any design input for our SAR application? For example, new features? different map division? or task assigning function? other improvements?</label>
+                    <br>
+                    <textarea rows="2" cols="150" id="q20" name="q20"></textarea>
+                </div>
+                
+            </div>
+            
+            <div style="display:none">
+                <input type="text" id="participantid" name="participantid" value={{participantid|safe}} readonly/>
+                <label for="fname">Please enter your name:</label>
+            </div>
+            
+            <div class="text-center">
+              <input type="submit" value="Finish" id="nextstep" onclick="dismissAddAnotherPopup(this)" class="col-md-3"/>
+            </div>
+        </form>
+    </div>    
+  </body>
+</html>

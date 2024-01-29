@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      3D map for study 3
+    </title>
+    <link rel="stylesheet" href="{% static '/css/pathplan.css' %}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.22/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.22/"></script>
+    <style>
+      html,
+      body,
+      .viewContainer {
+        display: grid;
+        grid-template-columns: 24vw 75vw;
+        grid-template-rows: 99vh;
+        grid-column-gap: 5px;
+      }
+      .InfoDiv {
+        background: #ededed;
+      }
+      .mapDiv {
+        background: #ededed;
+      }
+      #viewDiv2D {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 50%;
+      }
+      #viewDiv3D {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+      }
+      #editArea {
+        padding: 10px;
+        width: 275px;
+      }
+
+      #menu {
+        padding: 1em;
+      }
+
+      #menu > div {
+        padding: 0.4em;
+      }
+      .esri-button {
+        margin-top: 10px;
+        border: 1px solid #0079c1;
+      }
+      #bt_getpath {
+        background: white;
+        padding: 9px;
+        border: 1px solid #005e95;
+        margin: 5px;
+        color: #005e95;
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        margin-left: -100px;
+      }
+
+      #bt_getpath {
+        background: #005e95;
+        color: white;
+        cursor: pointer;
+      }
+      #bt_getcameraposition {
+        position: absolute;
+        bottom: 20px;
+        margin-left: 10px;
+      }
+    </style>
+
+    <script src="{% static 'js/jquery-1.12.4.js' %}"></script>
+    <script type="text/javascript" src="{% static 'data/scenariosetup.json' %}"></script>
+
+    <script>
+      //ArcGIS API for JavaScript API Reference : https://developers.arcgis.com/javascript/latest/api-reference/esri-views-SceneView.html
+      require([
+      "esri/Map",
+      "esri/config",
+      "esri/widgets/Expand",
+      "esri/WebScene",
+      "esri/views/MapView",
+      "esri/views/SceneView",
+      "esri/layers/GraphicsLayer",
+      "esri/widgets/Sketch/SketchViewModel",
+      "esri/widgets/Slider",
+      "esri/geometry/geometryEngine",
+      "esri/Graphic",
+      "esri/renderers/SimpleRenderer",
+      "esri/symbols/LineSymbol3DLayer",
+      "esri/symbols/LineSymbol3D",
+      "esri/symbols/patterns/LineStylePattern3D",
+      "esri/core/promiseUtils"], (
+      Map,
+      esriConfig,
+      Expand,
+      WebScene,
+      MapView,
+      SceneView,
+      GraphicsLayer,
+      SketchViewModel,
+      Slider,
+      geometryEngine,
+      Graphic,
+      SimpleRenderer,
+      LineSymbol3DLayer,
+      LineSymbol3D,
+      LineStylePattern3D,
+      promiseUtils,
+      ) => {
+        //sandbox: https://developers.arcgis.com/javascript/latest/sample-code/sandbox/?sample=webmap-basic
+        esriConfig.apiKey = "AAPKe16eba93913249a69ece454d60c498bbTJBjBUN0FAWC3xKYJ9uhSf9CBiqbiAFOb0Ylly-bmHRlwuLuH-KEhBxQYaQ8U75e";
+        // initialize 2D map view -- viewDiv2D
+        const map2D = new Map({
+          basemap: "hybrid"
+        });
+        const view2D = new MapView({
+          container: "viewDiv2D",
+          map: map2D,
+          zoom: 15,
+          center: [-80.5675,37.2015]
+        });
+        const graphicsLayer2D = new GraphicsLayer({
+        });
+        map2D.add(graphicsLayer2D);
+
+
+        // initialize 3D map view
+        const map = new Map({
+          basemap: "arcgis-imagery",//"topo-vector","arcgis-topographic",
+          ground: "world-elevation"
+        });
+        const view = new SceneView({
+          container: "viewDiv3D",
+          map: map,
+          // camera: https://developers.arcgis.com/javascript/latest/api-reference/esri-Camera.html#heading
+          camera: {
+            position: {
+              x: -80.56,
+              y: 37.1949,
+              z: 850 // meters
+            },//position: [4.84361, 45.75561, 270],
+            tilt: 74.3,
+            heading: 322,//The compass heading of the camera in degrees. Heading is zero when north is the top of the screen. It increases as the view rotates clockwise. The angles are always normalized between 0 and 360 degrees.
+            fov:55
+          },
+          //scale: 10,
+          //center: [-80.572567,37.203604]
+        });
+        //---------------------------
+        // right side bar
+        const editArea = document.getElementById("editArea");
+        const editExpand = new Expand({
+            expandIconClass: "esri-icon-edit",
+            expandTooltip: "Expand Edit",
+            expanded: true,
+            view: view,
+            content: editArea
+        });
+        view.ui.add(editExpand, "top-right");
+        //--------------------------
+
+        var m_path; // have data of one path
+        var layer_path;
+        var m_step=0;
+
+        const colors = {
+          A: [255, 0, 16],
+          B: [0, 170, 227],
+          C: [248, 150, 29],
+          D: [0, 166, 63],
+          F1: [189, 239, 133],
+          F2: [189, 239, 133]
+        };
+
+        //3D line
+        const graphicsLayer3D = new GraphicsLayer({
+          // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+          elevationInfo: {
+            mode: "relative-to-ground",
+            offset: 10
+          }
+        });
+        map.add(graphicsLayer3D);
+
+        // hiking example : https://developers.arcgis.com/javascript/latest/sample-code/sandbox/?sample=visualization-line-patterns
+        const gridsLayer3D = new GraphicsLayer({
+          // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+          elevationInfo: {
+            mode: "on-the-ground"
+          }
+        });
+        map.add(gridsLayer3D);
+
+        const graphicsLayer3D_point = new GraphicsLayer({
+          elevationInfo: {
+            mode: "relative-to-ground",
+            offset: 10
+          }
+        });
+        map.add(graphicsLayer3D_point);
+
+        // Create a symbol for rendering the graphic
+        const fillSymbol = {
+          type: "simple-fill", // autocasts as new SimpleFillSymbol()
+          color: [0, 96, 255, 0.5],
+          outline: {
+            // autocasts as new SimpleLineSymbol()
+            color: [255, 255, 255],
+            width: 1
+          }
+        };
+        Display2DGrid(fillSymbol);
+        Display3DGrid(fillSymbol);
+
+        function ShowPath(id=0){
+          let t_path3D=[[-80.5652,37.201,100],[-80.5652,37.202,200],[-80.5652,37.203,300],[-80.5655,37.203,300],[-80.5675,37.203,300],[-80.5675,37.202,200],[-80.5675,37.201,200]];
+          let t_path1=[[-80.5662,37.2001,100],[-80.5662,37.202,120],[-80.5662,37.2025,150],[-80.5665,37.2025,150],[-80.5685,37.2025,150],[-80.5685,37.202,150],[-80.5685,37.2001,150]];
+          Display3DPath(t_path1);
+
+          let path_2D=[[-80.5662,37.2001],[-80.5662,37.202],[-80.5662,37.2025],[-80.5665,37.2025],[-80.5685,37.2025],[-80.5685,37.202],[-80.5685,37.2001]];
+          DisplayDPath(path_2D);
+        }
+
+        function CleanAll(){
+          graphicsLayer3D.removeAll();
+          graphicsLayer2D.removeAll();
+        }
+
+
+        document.getElementById("bt_getcameraposition").addEventListener("click",function(){
+          let t_path=[[-80.5662,37.2001,100],[-80.5662,37.202,120],[-80.5662,37.2025,150],[-80.5665,37.2025,150],[-80.5685,37.2025,150],[-80.5685,37.202,150],[-80.5685,37.2001,150]];
+          let nmax=t_path.length;
+          let center=t_path[m_step%nmax];
+          //let center=[-80.5675,37.2015,100+m_step*20];
+          m_step=m_step+1;
+          DisplayPoint3D(center);
+          //console.log(view);
+        });
+        document.getElementById("bt_getpath").addEventListener("click",function () {
+            ShowPath(1);
+
+        });
+        var testres;
+        document.getElementById("bt_load3Dpath").addEventListener("click",function(){
+          // load larkin's path
+
+          LoadTxtFromFile("{% static 'data/app3_waypointsdata.txt' %}");
+        });
+        document.getElementById("bt_test3Dpath").addEventListener("click",function(){
+
+          let res=JSON.parse(testres);
+          console.log(res);
+          let startpoint=[res[0].long,res[0].lat];
+          view.goTo(startpoint);
+          let path_3D=[];
+          let path_direction=[];
+          for (let i in res){
+            path_3D.push([res[i].long,res[i].lat,res[i].altitude]);
+            path_direction.push(res[i].direction+180);
+          }
+          console.log(path_3D);
+          DisplayArrowGroup(path_3D,path_direction);
+          Display3DPath(path_3D);
+        });
+
+        function Display2DPath(path_2D){
+          const grids2DG=new Graphic({
+            geometry: {
+              type:"polyline",
+              paths:path_2D
+            },
+            symbol:{
+                    type: "simple-line", // autocasts as new SimpleLineSymbol()
+                    color: [252, 194, 1] , // RGB color values as an array
+                    width: 2,
+                    style: "dot"
+                  }
+          });
+          graphicsLayer2D.add(grids2DG);
+
+          const polylineGraphic3D= new Graphic({
+            geometry: {
+              type:"polyline",
+              paths:path_2D//[[-80.5662,37.2001],[-80.5662,37.202],[-80.5662,37.2025],[-80.5665,37.2025],[-80.5685,37.2025],[-80.5685,37.202],[-80.5685,37.2001]]
+            },
+            symbol: {
+              type: "simple-line", // autocasts as SimpleLineSymbol()
+              color: [226, 119, 40],
+              width: 4,
+              style: "dot"
+            }
+          });
+
+          gridsLayer3D.add(polylineGraphic3D);
+        }
+        function Display2DGrid(fillSymbol){
+          const testpolygon2D = {
+            type: "polygon", // autocasts as new Polygon()
+            rings: [
+              [-80.565,37.2],
+              [-80.565,37.203],
+              [-80.57,37.203],
+              [-80.57,37.2],
+              [-80.565,37.2]
+            ]
+          };
+          const testpolygonGraphic = new Graphic({
+            geometry: testpolygon2D,
+            symbol: fillSymbol
+          });
+          graphicsLayer2D.add(testpolygonGraphic);
+        }
+
+        function Display3DPath(path_3D){
+          //t_path1=path_3D
+          //t_path1=[[-80.5662,37.2001,100],[-80.5662,37.202,120],[-80.5662,37.2025,150],[-80.5665,37.2025,150],[-80.5685,37.2025,150],[-80.5685,37.202,150],[-80.5685,37.2001,150]];
+          // 3D draw example: https://developers.arcgis.com/javascript/latest/sample-code/sandbox/?sample=graphics-basic-3d
+          const polyline = {
+            type: "polyline", // autocasts as new Polyline()
+            paths: path_3D
+          //t_path.path //[[-80.572567,37.18,100],[x,y,z]...]
+          };
+
+          const roundTubeSymbol = {
+            type: "line-3d",
+            symbolLayers: [{
+              type: "path",
+              profile: "circle",
+              material: {
+                color: [255, 156, 0]
+              },
+              width: 3, // the width in m
+              height: 3 // the height in m
+            }]
+          };
+
+          const polylineGraphic = new Graphic({
+            geometry: polyline,
+            symbol: roundTubeSymbol
+          });
+          graphicsLayer3D.add(polylineGraphic);
+        }
+
+        function Display3DGrid(fillSymbol){
+          const gridsSymbol = new LineSymbol3D({
+            symbolLayers: [
+              new LineSymbol3DLayer({
+                material: { color: [200, 200, 200] },
+                size: "5px"
+              }),
+              new LineSymbol3DLayer({
+                material: { color: [252, 194, 1] },
+                size: "4px"
+              }),
+              new LineSymbol3DLayer({
+                pattern: new LineStylePattern3D({
+                  style: "dash"
+                }),
+                material: { color: [200, 200, 200] },
+                size: "4px"
+              })
+            ]
+          });
+
+          const testpolygon3D = {
+            type: "polygon", // autocasts as new Polygon()
+            rings: [
+              [-80.565,37.2,0],
+              [-80.565,37.203,0],
+              [-80.57,37.203,0],
+              [-80.57,37.2,0],
+              [-80.565,37.2,0]
+            ]
+          };
+          const testpolygonGraphic3D = new Graphic({
+            geometry: testpolygon3D,
+            symbol: fillSymbol
+          });
+          gridsLayer3D.add(testpolygonGraphic3D);
+        }
+
+        function DisplayArrowGroup(arrow_arr,path_direction){
+          const arrowymbol = {
+             type: "point-3d",
+             symbolLayers: [
+               {
+                 type: "object",
+                 height: 7,
+                 heading:90,
+                 resource: {
+                   href: "{% static 'img/arrowf.gltf' %}"//"./tent.glb"
+                 }
+               }
+             ]
+           };
+
+           let arr_res=[];
+           //console.log(arrow_arr);
+           for (let i in arrow_arr){
+             const pointGraphic = new Graphic({
+               geometry: {
+                 type: "point", // autocasts as new Point()
+                 x: arrow_arr[i][0],
+                 y: arrow_arr[i][1],
+                 z: arrow_arr[i][2]
+               },
+               symbol: {
+                  type: "point-3d",
+                  symbolLayers: [
+                    {
+                      type: "object",
+                      height: 7,
+                      heading:path_direction[i],
+                      resource: {
+                        href: "{% static 'img/arrowf.gltf' %}"//"./tent.glb"
+                      }
+                    }
+                  ]
+                }
+             });
+             arr_res.push(pointGraphic);
+           }
+
+           graphicsLayer3D_point.removeAll();
+           graphicsLayer3D_point.addMany(arr_res);
+           console.log(arr_res);
+        }
+
+        function DisplayPoint3D(cetner){
+          const point = {
+            type: "point", // autocasts as new Point()
+            x: cetner[0],
+            y: cetner[1],
+            z: cetner[2]
+          };
+          console.log(point);
+
+          const markerSymbol = {
+            type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+            color: [226, 119, 40],
+            outline: {
+              // autocasts as new SimpleLineSymbol()
+              color: [255, 255, 255],
+              width: 2
+            }
+          };
+
+          const dronesymbol = {
+            type: "point-3d",
+            symbolLayers: [
+              {
+                type: "object",
+                height: 7,
+                resource: {
+                  href: "{% static 'img/Dronedraft.gltf' %}"//"./tent.glb"
+                }
+              }
+            ]
+          };
+
+          const pointGraphic = new Graphic({
+            geometry: point,
+            symbol: dronesymbol//markerSymbol
+          });
+          graphicsLayer3D_point.removeAll();
+          graphicsLayer3D_point.add(pointGraphic);
+        }
+
+        function GetOtherStyles3D(){
+          const lineSymbol = {
+            type: "simple-line", // autocasts as SimpleLineSymbol()
+            color: [226, 119, 40],
+            width: 5
+          };
+          // 3D path example: https://developers.arcgis.com/javascript/latest/sample-code/visualization-path-3d/
+          const wallSymbol = {
+            type: "line-3d",
+            symbolLayers: [{
+              type: "path",
+              profile: "quad",
+              material: {
+                color: [100, 100, 100]
+              },
+              width: 5, // the width in m
+              height: 30, // the height in m
+              anchor: "bottom", // the vertical anchor is set to the lowest point of the wall
+              profileRotation: "heading"
+            }]
+          };
+
+          const stripSymbol = {
+            type: "line-3d",
+            symbolLayers: [{
+              type: "path",
+              profile: "quad",
+              material: {
+                color: [100, 100, 100]
+              },
+              width: 30, // the width in m
+              height: 5, // the height in m
+              profileRotation: "heading"
+            }]
+          };
+
+          const roundTubeSymbol = {
+            type: "line-3d",
+            symbolLayers: [{
+              type: "path",
+              profile: "circle",
+              material: {
+                color: [255, 156, 0]
+              },
+              width: 5, // the width in m
+              height: 5 // the height in m
+            }]
+          };
+
+          const squareTubeSymbol = {
+            type: "line-3d",
+            symbolLayers: [{
+              type: "path",
+              profile: "quad",
+              material: {
+                color: [100, 100, 100]
+              },
+              width: 30, // the width in m
+              height: 30 // the height in m
+            }]
+          };
+        }
+        function LoadTxtFromFile(t_url){
+          $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+				            testres= response;
+                    return true;
+              }
+            });
+            return true;
+        }
+
+    });
+    </script>
+  </head>
+
+  <body>
+    <div class="viewContainer">
+      <div class="InfoDiv">
+        <div id="viewDiv2D"></div>
+        <div>
+          <p id="infotitle">Information Display</p>
+        </div>
+      </div>
+      <div class="mapDiv">
+        <div id="viewDiv3D"></div>
+        <button id="bt_getpath">Get 3D Path (Testing)</button>
+        <button id="bt_getcameraposition">Get Camera</button>
+      </div>
+    </div>
+    <div id="editArea">
+      <h1> Path planning</h1>
+      <button id="bt_getgrids" class="esri-button">1. Get Grids</button>
+      <button id="bt_senduav" class="esri-button">2. Send the UAV to a cell (testing)</button>
+      <button id="bt_showres" class="esri-button">3. Show Results</button>
+      <button id="bt_showrec" class="esri-button">4. Show Recommendation</button>
+      <button id="bt_nextdec" class="esri-button">5. Decision for the next move</button>
+      <button id="bt_load3Dpath" class="esri-button">N. Load 3D path</button>
+      <button id="bt_test3Dpath" class="esri-button">N+1. Testing 3D path</button>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>SAR Map Segment</title>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      .esri-popup .esri-popup-header .esri-title {
+        font-size: 18px;
+        font-weight: bolder;
+      }
+
+      .esri-popup .esri-popup-body .esri-popup-content {
+        font-size: 14px;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.12/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.12/"></script>
+      <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/TileLayer",
+        "esri/tasks/IdentifyTask",
+        "esri/layers/GraphicsLayer",
+        "esri/tasks/support/IdentifyParameters",
+        "esri/tasks/Geoprocessor",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/SimpleFillSymbol",
+        "esri/Graphic",
+        "esri/tasks/support/FeatureSet",
+        "esri/layers/FeatureLayer",
+        "esri/geometry/Polyline",
+        "esri/layers/ElevationLayer",
+        "esri/core/promiseUtils",
+        "esri/geometry/Multipoint"
+      ], function(Map, MapView,
+        TileLayer, IdentifyTask,
+        GraphicsLayer,IdentifyParameters,Geoprocessor,
+      SimpleLineSymbol,SimpleMarkerSymbol,SimpleFillSymbol,
+    Graphic,FeatureSet,FeatureLayer,
+    Polyline,ElevationLayer,promiseUtils,Multipoint) {
+
+      var gcx=-80.556451;
+      var gcy=37.2;
+
+      const graphicsSegmentLayer = new GraphicsLayer({
+        opacity:0.6
+      });
+
+        var map = new Map({
+          basemap: "topo",//"osm"
+          layers: [graphicsSegmentLayer]
+        });
+        var elevLyr = new ElevationLayer({
+          // Custom elevation service
+          url: "//elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/"//"https://sampleserver6.arcgisonline.com/arcgis/rest/services/Elevation/MtBaldy_Elevation/ImageServer"
+        });
+
+
+        var view = new MapView({
+          map: map,
+          container: "viewDiv",
+          center: [gcx, gcy],
+          zoom: 15
+        });
+
+        view.when(function() {
+          view.on("click", Elevation);
+        });
+        function getRandomInt(max) {
+          return Math.floor(Math.random() * Math.floor(max));
+        }
+        function AddPolygonToLayer(paths){
+          graphicsSegmentLayer.removeAll();
+          let arr_featureset=[];
+          for (let i = 0; i<paths.length;i++){
+            var tmulpt={
+              type:'polygon',
+               rings: paths[i].reverse(),
+               spatialReference: view.spatialReference
+             };
+
+             var polylineGraphic = new Graphic({
+               geometry: tmulpt, // Add the geometry created in step 4
+               symbol: {
+                 type: "simple-fill",
+                 color:[getRandomInt(255), getRandomInt(255), getRandomInt(255),0.8],
+                 style: "solid"
+               }
+             });
+              arr_featureset.push(polylineGraphic);//t_graphic
+          }
+          //console.log(arr_featureset);
+          graphicsSegmentLayer.addMany(arr_featureset);
+          graphicsSegmentLayer.visible=true;
+        }
+        //pt_w: number of points in horizontal, pt_h: number of points in vertical
+        function GetSampleMultipoints(in_extent,pt_w,pt_h){
+          //view.extent.xmin,view.extent.ymax,view.extent.xmax,view.extent.ymax
+          var cell_w=(in_extent.xmax-in_extent.xmin)/pt_w;
+          var cell_h=(in_extent.ymax-in_extent.ymin)/pt_h;
+          var res_array=[];
+          for (var i=0;i<pt_w;i++)  {
+            for (var j=0;j<pt_h;j++){
+              res_array.push([in_extent.xmin+cell_w*i, in_extent.ymin+cell_h*j]);
+            }
+          }
+          return res_array;
+        }
+
+
+        function Elevation(event){
+          var position = event.mapPoint;
+          var pt_w=200;
+          var pt_h=200;
+          var tpoly=new Polyline({
+            paths: [[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax],[view.extent.xmax,view.extent.ymin],[view.extent.xmin,view.extent.ymin]],
+            spatialReference: view.spatialReference
+          });
+
+          var elepoints=GetSampleMultipoints(view.extent,pt_w,pt_h);
+
+          var tmulpt=new Multipoint({
+             points: elepoints,//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+             spatialReference:view.spatialReference
+             //spatialReference: { wkid: 4326  }
+           });
+
+          var queryBeforeLandslide = elevLyr.queryElevation(tmulpt);
+          //console.log(tmulpt);
+          promiseUtils
+            .eachAlways([queryBeforeLandslide])
+            .then(function(results) {
+              console.log(results);
+              //console.log(results[0].value.geometry.points);
+              //results for multipoint: multippoints array[[x,y,z],[x,y,z]...]: results[0].value.geometry.points
+              //post data to backend, use python opencv get watershed area segment
+              var URL = "{% url 'getwatershed' %}";
+              var col3 =  results[0].value.geometry.points.map(function(value,index) { return value[2]; });
+              var data = {
+                      csrfmiddlewaretoken: '{{ csrf_token }}',
+                      'width': pt_w.toString(),
+                      'height': pt_h.toString(),
+                      'elevation_arr': JSON.stringify(col3)
+                     };
+                     //console.log(data);
+              var pt=[];
+             $.post(URL, data, function(response){
+                   var res=JSON.parse(response);
+                   //console.log("elevation sent!");
+
+                     if(res.flag == 'success'){
+                       //console.log(res.watershedpolygon);
+                       console.log("elevation success!");
+
+                       let w_ratio=(view.extent.xmax-view.extent.xmin)/200;
+                       let h_ratio=(view.extent.ymax-view.extent.ymin)/200;
+                       console.log([w_ratio,h_ratio]);
+
+                       for (let i=0;i<res.watershedpolygon.length;i++){
+                         let a=[];
+
+                         res.watershedpolygon[i][0].map(function(item){
+                           a.push([view.extent.xmin+parseInt(item[0][0])*w_ratio,view.extent.ymin + (pt_h-parseInt(item[0][1]))*h_ratio]);
+                         });
+                         a.push(a[0]);
+                        //console.log(a);
+                         pt.push(a);
+                       }
+                       AddPolygonToLayer(pt);
+                       //console.log(pt);
+                      }
+                     else{ alert(response); }
+                   });
+
+              //calculate long lat based on w,h,and res.watershedpolygon
+
+            });
+
+           }
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>

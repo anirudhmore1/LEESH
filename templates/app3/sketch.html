@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Using Esri Icon Fonts with map graphics - 4.10</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
+
+  <script src="https://js.arcgis.com/4.10/"></script>
+
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/PopupTemplate",
+      "esri/views/MapView",
+      "esri/Graphic",
+      "esri/geometry/Point"
+    ], function(
+      Map, PopupTemplate, MapView,
+      Graphic, Point
+    ) {
+
+      const map = new Map({
+        basemap: "gray"
+      });
+
+      const view = new MapView({
+        center: [-97.63, 38.34],
+        container: "viewDiv",
+        map: map,
+        zoom: 4
+      });
+
+      /*************************
+       * Create point graphics
+       *************************/
+
+      // First create a point geometry
+      const point1 = new Point({
+        longitude: -117.19,
+        latitude: 34.05
+      });
+
+      // Then create another point geometry
+      const point2 = new Point({
+        longitude: -87.63,
+        latitude: 41.88
+      });
+
+      // Then create another point geometry
+      const point3 = new Point({
+        longitude: -71.06,
+        latitude: 42.36
+      });
+
+      // Then create another point geometry
+      const point4 = new Point({
+        longitude: -122.33,
+        latitude: 47.60
+      });
+
+      // Then create a final point geometry
+      const point5 = new Point({
+        longitude: -104.99,
+        latitude: 39.74
+      });
+
+      // Create a symbol for drawing the point
+      const textSymbol = {
+        type: "text",  // autocasts as new TextSymbol()
+        color: "white",
+        haloColor: "black",
+        haloSize: "1px",
+        text: "You are here",
+        xoffset: 3,
+        yoffset: 3,
+        font: {  // autocast as new Font()
+          size: 12,
+          family: "sans-serif",
+          weight: "bold"
+        }
+      };
+
+      // Create a graphic and add the geometry and symbol to it
+      const pointGraphic1 = new Graphic({
+        geometry: point1,
+        symbol: textSymbol
+      });
+
+      // Create another graphic and add the geometry and symbol to it
+      const pointGraphic2 = new Graphic({
+        geometry: point2,
+        symbol: textSymbol
+      });
+
+      // Create another graphic and add the geometry and symbol to it
+      const pointGraphic3 = new Graphic({
+        geometry: point3,
+        symbol: textSymbol
+      });
+
+      // Create another graphic and add the geometry and symbol to it
+      const pointGraphic4 = new Graphic({
+        geometry: point4,
+        symbol: textSymbol
+      });
+
+      // Create one last graphic and add the geometry and symbol to it
+      const pointGraphic5 = new Graphic({
+        geometry: point5,
+        symbol: textSymbol
+      });
+
+      // Add the graphics to the view's graphics layer
+      view.graphics.addMany([pointGraphic1, pointGraphic2, pointGraphic3,
+        pointGraphic4, pointGraphic5
+      ]);
+
+    });
+  </script>
+</head>
+
+<body>
+  <div id="viewDiv"></div>
+</body>
+</html>

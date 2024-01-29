@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>OpenStreetMapLayer - 4.11</title>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.11/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.11/"></script>
+
+    <script>
+      require([
+        "esri/layers/OpenStreetMapLayer",
+        "esri/Map",
+        "esri/views/SceneView",
+        "esri/layers/FeatureLayer"
+      ], function(OpenStreetMapLayer, Map, SceneView,FeatureLayer) {
+
+        //query data from featurelayer
+        //https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=featurelayer-query
+        var map = new Map({
+          ground: "world-elevation"
+        });
+
+        var view = new SceneView({
+          map: map,
+          container: "viewDiv"
+        });
+
+        var osmLayer = new OpenStreetMapLayer();
+        console.log(osmLayer.tileInfo);
+        console.log(osmLayer.urlTemplate);
+
+        map.add(osmLayer);
+
+
+        var riverLayer = new FeatureLayer({
+          url: "https://services8.arcgis.com/ZXMBUOxDBbivoAgJ/arcgis/rest/services/RiverMiles/FeatureServer/0/query?outFields=*&where=1%3D1",
+          // This property can be used to uniquely identify the layer
+          id: "river",
+          visible: true
+        });
+      //  map.add(riverLayer);
+
+
+
+
+
+        view.on("click", function(event){
+          // event is the event handle returned after the event fires.
+          console.log(osmLayer.tileInfo);
+          console.log(osmLayer.gdbVersion);
+
+        });
+
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>

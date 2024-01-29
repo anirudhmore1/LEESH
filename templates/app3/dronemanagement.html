@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+<style>
+	thead td{
+		background-color:#FFFF00;
+
+
+	}
+</style>
+<script>
+
+	window.onload=function(){
+		var oTBody=document.getElementById("itbody");
+		var oBtnAdd=document.getElementById("btnadd");
+		registerEvent();//注册事件
+		oBtnAdd.onclick=function(){
+			//alert(oTBody);
+			oTBody.innerHTML+="<tr><td class=\"tdOrder\">0001</td><td  class=\"tdName\">书籍</td><td class=\"sendName\">0001-1</td><td>2018-9-29 18:43:13</td><td>小张</td><td><button class=\"btndel\">删除</button><button class=\"btnupdate\" >修改</button><button class=\"btnsave\">保存</button></td></tr>";
+			registerEvent();//注册事件
+		}
+
+		//oBtndel.parentElement.parentElement.remove(oBtndel.parentElement);
+	}
+function registerEvent(){
+	var oBtndels=document.getElementsByClassName("btndel");
+		for(i=0;i<oBtndels.length;i++)
+		{
+			oBtndels[i].onclick=function()
+			{
+				this.parentElement.parentElement.remove(this.parentElement);
+			}
+		}
+   //-------
+   var oBtnUpdate=document.getElementsByClassName("btnupdate");
+   for(i=0;i<oBtnUpdate.length;i++)
+   {
+   	   oBtnUpdate[i].onclick=function()
+   	   {
+			//alert("修改");
+			var oTdOrder=this.parentElement.parentElement.getElementsByClassName("tdOrder");
+			oTdOrder[0].innerHTML="<input type=\"text\" class=\"iorder\"  value="+oTdOrder[0].innerText+" />";
+			var otdName=this.parentElement.parentElement.getElementsByClassName("tdName");
+		    otdName[0].innerHTML="<input type=\"text\" class=\"iname\"  value="+otdName[0].innerText+" />";
+   	   }
+   }
+   var obtnsave=document.getElementsByClassName("btnsave");
+   for(i=0;i<obtnsave.length;i++)
+   {
+   	  obtnsave[i].onclick=function()
+   	  {
+   	  	//更改订单号
+   	  	var oTdOrders=  this.parentElement.parentElement.getElementsByClassName("tdOrder");
+   	  	//alert(oTdOrders);
+   	  	var ivalue=oTdOrders[0].getElementsByClassName("iorder")[0].value;
+   	  	oTdOrders[0].removeChild(oTdOrders[0].getElementsByClassName("iorder")[0]);
+   	  	oTdOrders[0].innerText=ivalue;
+   	  	//更改商品名称
+   	  	var oTdNames=  this.parentElement.parentElement.getElementsByClassName("tdName");
+   	  	//alert(oTdOrders);
+   	  	var iname=oTdNames[0].getElementsByClassName("iname")[0].value;
+   	  	oTdNames[0].removeChild(oTdNames[0].getElementsByClassName("iname")[0]);
+   	  	oTdNames[0].innerText=iname;
+   	  }
+   }
+
+
+}
+</script>
+	</head>
+
+<body>
+	<button id="btnadd">添加</button><br />
+		<table width="700">
+			<thead>
+				<td>订单号</td>
+				<td>商品名称</td>
+				<td>发货名称</td>
+				<td>到达时间</td>
+				<td>签收人</td>
+				<td>详情</td>
+			</thead>
+			<tbody id="itbody">
+				<tr>
+					<td class="tdOrder">0001</td>
+					<td class="tdName">书籍</td>
+					<td class="sendName">0001-1</td>
+					<td class="tdTime">2018-9-29 18:43:13</td>
+					<td class="tdPName">小张</td>
+					<td><button class="btndel">删除</button>
+						<button class="btnupdate" >修改</button>
+						<button class="btnsave">保存</button>
+					</td>
+				</tr>
+
+			</tbody>
+		</table>
+	</body>
+</html>

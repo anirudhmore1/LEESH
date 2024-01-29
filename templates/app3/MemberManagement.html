@@ -1,0 +1,26 @@
+{% extends 'app3/base.html' %}
+{% block title %}
+<title> Home </title>
+{% endblock %}
+
+{% block pagehead %}
+Django List Members
+{% endblock %}
+
+{% block content %}
+  <div class = "container">
+
+    {% if object_list %}
+    <ul>
+      {% for member in object_list %}
+        <li>
+          {{member.id}}, {{ member.first_name }}, {{ member.last_name }}
+        </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      <p>There are no members in the database.</p>
+    {% endif %}
+
+  </div>
+{% endblock %}

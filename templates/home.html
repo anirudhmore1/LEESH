@@ -1,0 +1,21 @@
+<!-- templates/home.html -->
+<h1>SAR Project Login</h1>
+
+<body>
+  {% if user.is_authenticated %}
+  <p>Welcome {{ user.username }} !!!</p>
+  <p><a href="{% url 'logout' %}">Log out</a></p>
+  {% else %}
+  <p><a href="{% url 'signup' %}">Sign Up</a></p>
+  <p><a href="{% url 'login' %}">Log In </a></p>
+  {% endif %}
+
+  <hr/>
+  <p><a href="{% url 'mapdivisioninit' %}">Map Division (Default page)</a></p>
+  <p><a href="{% url 'experiment' %}">Experiment Page</a></p>
+  <p><a href="{% url 'full' %}">Full Page</a></p>
+  <p><a href="{% url 'watershed' %}">Map division Page</a></p>
+
+  <a href="http://127.0.0.1:8000/gpsdatas/">GPS Data(/gpsdatas)</a>
+
+</body>

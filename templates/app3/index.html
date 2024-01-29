@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <title>This is the title of the webpage!</title>
+  </head>
+  <body>
+    <p><a href="{% url 'experiment' %}">Experiment Page</a></p>
+    <p><a href="{% url 'full' %}">Full Page</a></p>
+    <p><a href="{% url 'watershed' %}">Map division Page</a></p>
+
+    <a href="http://127.0.0.1:8000/gpsdatas/">GPS Data(/gpsdatas)</a>
+    <p>
+      This is an example paragraph. Anything in the <strong>body</strong> tag will appear on the page, just like this <strong>p</strong> tag and its contents.
+    </p>
+
+    <p>{{message}}</p>
+
+    <ul>
+    {% for image in message %}
+        <li>ID: "{{image.id}}", ("{{image.longitude}}","{{image.latitude}}"), Name: "{{image.name}}", Description: "{{image.description}}", URL: "{{image.photo.url}}" <br> <img src="{{image.photo.url}}" alt="test" height="200" width="200"></li>
+    {% endfor %}
+    </ul>
+      <script>
+        //<img src="{{ foo.image.url }}"><br>
+
+      </script>
+  </body>
+</html>

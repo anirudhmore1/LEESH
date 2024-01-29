@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<input type="file" id="file-input" />
+<h3>Contents of the file:</h3>
+<pre id="file-content"></pre>
+
+<button onclick="myStopFunction()">Stop</button>
+<p id="daytime"></p>
+
+<script>
+  var gpstimerid;
+  function readSingleFile(e) {
+    var file = e.target.files[0];
+    if (!file) {
+      return;
+    }
+    gpstimerid=setInterval(myTimer, 1000);
+    function myTimer(e){
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var contents = e.target.result;
+        displayContents(contents);
+      };
+      reader.readAsText(file);
+
+      var d = new Date();
+      var t = d.toLocaleTimeString();
+      document.getElementById("daytime").innerHTML = t;
+
+    }
+  }
+
+  function displayContents(contents) {
+    var element = document.getElementById('file-content');
+    element.textContent = contents;
+  }
+
+  function myStopFunction(){
+    clearInterval(gpstimerid);
+  }
+  document.getElementById('file-input').addEventListener('change', readSingleFile, false);
+
+
+
+</script>
+
+</body>
+</html>

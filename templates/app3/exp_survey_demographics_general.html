@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title>Demographic Questionnaire</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+        h1 {text-align: center;}
+        .input-group{
+           width: 100%;
+            text-align:center;
+        }
+        div {
+            line-height:  2;
+            margin-top: 5px;
+        }
+        .input-group-addon{
+            text-align: right;            
+            display:inline-block;
+            float:none;
+            margin-right:10px;
+        }
+        .form-control {
+            display:inline-block;
+            float:none;
+            
+        }
+    </style>
+  </head>
+
+<body>
+    <div class="container">
+        <div class="text-center">
+            <h1>Demographic Questionnaire</h1>        
+        </div>
+      <div>
+        <form action="action" method="post" id="quiz">
+          {% csrf_token %}
+            <div class="input-group">
+                <label for="age" class="col-md-4 input-group-addon my-auto">Age: </label>
+                <select id="age" name="age">
+                    <option value="1">12~17</option>
+                    <option value="2" selected>18~24</option>
+                    <option value="3">25~34</option>
+                    <option value="4">35~44</option>
+                    <option value="5">45~54</option>
+                    <option value="6">55~64</option>
+                    <option value="7">65 years or older</option>
+                    <option value="8">Prefer not to answer</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+            <label for="gender" class="col-md-4 input-group-addon my-auto">Gender:</label>
+                <select id="gender" name="gender">
+                    <option value="1">Male</option>
+                    <option value="2">Female</option>
+                    <option value="3">Prefer not to answer</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="education" class="col-md-4 input-group-addon my-auto">Highest level of education (including current):</label>
+                <select id="education" name="education">
+                    <option value="1">High school</option>
+                    <option value="2">Associate Undergraduate</option>
+                    <option value="3">Graduate (Master’s)</option>
+                    <option value="4">Doctorate (Ph.D.)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="sart" class="col-md-4 input-group-addon my-auto">Search and Rescue Training:</label>
+                <select id="sart" name="sart">
+                    <option value="1">Management</option>
+                    <option value="2">Tracker</option>
+                    <option value="3">Team Leader</option>
+                    <option value="4">Searcher</option>
+                    <option value="5" selected>Student</option>
+                    <option value="6">Not applicable</option>
+                </select>
+            </div>
+            
+            <div id="sarprof" hidden>
+                <div>
+                    <label for="q1" class="col-md-4 input-group-addon">Have you worked on any Search and Rescue operations in the past year? </label>
+                    <select id="q1" name="q1">
+                        <option value="1">Yes</option>
+                        <option value="2">No</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="q2">If yes, approximately how many?</label>
+                    <input type="text" id="q2" name="q2"/>
+                </div>
+
+                <div>
+                    <label for="q3">How many Search and Rescue operations have you participated in total?</label>
+                    <input type="text" id="q3" name="q3"/>
+                </div>
+
+                <div>
+                    <label for="q4">If you have one, briefly describe your typical roll on a Search and Rescue Operation? </label>
+                    <br>
+                    <textarea rows="4" cols="100" placeholder="Ex: tracker, K9 tracker, management, searcher, runner, etc" id="q4" name="q4"></textarea>
+                </div>
+
+                <div>
+                    <label for="q5">Do you have any medical certifications?</label>
+                    <br>
+                    <textarea rows="4" cols="100" placeholder="First Aid, Wilderness First Responder, EMT, etc." id="q5" name="q5"></textarea>
+                </div>
+
+                <div>
+                    <label for="q6">Have you acted as management on any Search and Rescue operations? </label>
+                    <select id="q6" name="q6">
+                        <option value="1">Yes</option>
+                        <option value="2">No</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="q7">How many years of your employment/volunteering or education is associated with Search and Rescue?</label>
+                    <input type="text" id="q7" name="q7"/>
+                </div>
+
+                <div>
+                    <label for="q8">Have you used any Search and Rescue software?</label>
+                    <select id="q8" name="q8">
+                        <option value="1">Yes</option>
+                        <option value="2">No</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="q9">If so, please list the software you have used.</label>
+                    <br>
+                    <textarea rows="1" cols="100" id="q9" name="q9"></textarea>
+                </div>
+
+                <div>
+                    <label for="q10">If you answered ‘Yes’ to the previous question, please briefly describe your experience:</label>
+                    <br>
+                    <textarea rows="4" cols="100" id="q10" name="q10"></textarea>
+                </div>
+            </div>
+            
+            <div hidden>
+                <input type="text" id="participantid" name="participantid" value={{participantid}} readonly/>
+                <label for="fname">Index:</label>
+                <input type="text" value={{participantindex}} name="participantindex" readonly/>
+            </div>
+                        
+          <div class="text-center">
+              <input type="submit" value="Next step: Training" id="nextstep" onclick="dismissAddAnotherPopup(this)" class="col-md-4"/>            
+          </div>
+        
+            
+            
+        </form>
+
+          
+      </div>
+
+    </div>
+    <script>
+      function handleClick(cb){
+        bt = document.getElementById("agree");
+        if(cb.checked){
+          bt.disabled=false;
+            cb.value="Ture";
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+            cb.value="False";
+        }
+
+      }
+      function dismissAddAnotherPopup(win) {
+       window.close();
+      }
+
+      function myFunction(){
+        //document.getElementById("participantid").value = Date.now().toString();
+      }
+    </script>
+  </body>
+</html>

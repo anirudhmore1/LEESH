@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title> Data</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    <script>
+                // function to calculate the result of the survey
+          function tabulateAnswers() {
+            window.location = "{% url 'qndata' %}";
+          }
+          function expdata() {
+            window.location = "{% url 'expdata' %}";
+          }
+          function ptdata() {
+            window.location = "{% url 'ptdata' %}";
+          }
+          $(function(){
+             $('.click-to-show').click(function(e) {
+                 $.ajax({
+                     type: "POST",
+                     url: "{% url 'viewqndata' %}",
+                     data: {
+                         'ajax_data' : $(e.target).attr("data-desc"),
+                         'csrfmiddlewaretoken' :'{{ csrf_token }}'
+                     },
+                     success: function ajaxSuccess(data, textStatus, jqXHR) {
+                         $(e.target).parent().html(data);
+                     },
+                     dataType: 'html'
+                 });
+
+             });
+
+             $('.expview').click(function(e) {
+                 $.ajax({
+                     type: "POST",
+                     url: "{% url 'viewexpdata' %}",
+                     data: {
+                         'ajax_data' : $(e.target).attr("data-desc"),
+                         'csrfmiddlewaretoken' :'{{ csrf_token }}'
+                     },
+                     success: function ajaxSuccess(data, textStatus, jqXHR) {
+                         $(e.target).parent().html(data);
+                     },
+                     dataType: 'html'
+                 });
+
+             });
+
+             $('.ptview').click(function(e) {
+                 $.ajax({
+                     type: "POST",
+                     url: "{% url 'viewptdata' %}",
+                     data: {
+                         'ajax_data' : $(e.target).attr("data-desc"),
+                         'csrfmiddlewaretoken' :'{{ csrf_token }}'
+                     },
+                     success: function ajaxSuccess(data, textStatus, jqXHR) {
+                         $(e.target).parent().html(data);
+                     },
+                     dataType: 'html'
+                 });
+
+             });
+          });
+
+    </script>
+  </head>
+  <body>
+    <div>
+      <div style="overflow-x:auto;">
+        <table class="table">
+            <tr>
+              {% for item in columname %}
+              <th>{{ item }},</th>
+              {% endfor %}
+            </tr>
+            {% for qitem in query_results %}
+            <tr>
+              {% for key,value in qitem.items %}
+                <td>{{ value }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+        <td>
+          <div class="form-group">
+            <a class="click-to-show" href="#" data-desc="{{ i.description }}">Questionnaire Data</a>
+            <input type="button" onclick="tabulateAnswers()" value="download"></button>
+
+            <a class="expview" href="#" data-desc="{{ i.description }}">Experiment Data</a>
+            <input type="button" onclick="expdata()" value="download"></button>
+
+            <a class="ptview" href="#" data-desc="{{ i.description }}">Participant Data</a>
+            <input type="button" onclick="ptdata()" value="download"></button>
+
+          </div>
+        </td>
+      </div>
+
+
+    </div>
+  </body>
+</html>

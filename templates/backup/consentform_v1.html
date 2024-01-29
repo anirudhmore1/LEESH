@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+  <head>
+    <title> ConsentForm</title>
+    <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html">
+    <style>
+      body {
+            text-align: center;
+        }
+      .button{
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+      }
+      .consent{
+        float:center;
+        display: inline-block;
+        width="500px";
+        vertical-align: middle;
+      }
+      input[type="checkbox"] {
+          width:2em;
+          height:2em;
+          margin-top: 25%;
+          vertical-align: middle;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <div id="wrapper" class="page-header mb-3">
+      <h1>Please take this questionnaire for the previous assignment task.</h1>
+
+      <embed src="{% static 'files/consentform.pdf' %}" width="100%" height="800px">
+
+
+      <div class="consent" >
+
+        <div style="float: left;">
+          <input type="checkbox" id="mycheck" value="no" onclick="handleClick(this)">
+        </div>
+
+        <div style="float: right; width: 130px;">
+          <form action="{% url 'experiment' %}">
+            <label for="fname">Please enter your name:</label><br>
+            <input type="text" id="participantname" name="participantname">
+            <input type="submit" value="I Agree" class="button" id="agree" disabled />
+          </form>
+        </div>
+      </div>
+
+    </div>
+    <script>
+      function handleClick(cb){
+        bt = document.getElementById("agree");
+        if(cb.checked){
+          bt.disabled=false;
+          //document.getElementById("myBtn").disabled = true;
+        }
+        else{
+          bt.disabled=true;
+        }
+
+      }
+      /*
+      document.getElementById("mycheck").onclick=function() {
+
+        if(document.getElementById("mycheck").checked){
+          document.getElementById("agree").enable=true;
+        }
+        else{
+          document.getElementById("agree").enable=false;
+        }
+      }*/
+      function dismissAddAnotherPopup(win) {
+          win.close();
+          top.window.close();
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,4337 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>SAR MAPPING DEMO</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.12/esri/themes/light/main.css"/>
+  <script src="https://js.arcgis.com/4.22/"></script>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@8.3.1/dist/css/shepherd.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/shepherd.js@8.3.1/dist/js/shepherd.min.js"></script>
+
+  <script src="{% static 'js/d3.v4.min.js' %}"></script>
+  <script src="{% static 'js/d3-polygon-clip.js' %}"></script>
+  <script src="{% static 'js/jquery-1.12.4.js' %}"></script>
+  <script src="{% static 'js/jquery.csv.js' %}"></script>
+  <script src="{% static 'js/sarfunctions.js' %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static 'css/taskgeneration.css' %}"/>
+  <link rel="stylesheet" type="text/css" href="{% static 'css/taskgeneration3D_exp.css' %}"/>
+  <script type="text/javascript" src="{% static 'data/scenario_3d.js' %}"></script>
+  <script type="text/javascript" src="{% static 'esritoken.js' %}"></script>
+
+  <script>
+
+//https://developers.arcgis.com/javascript/latest/sample-code/sketch-geometries/index.html
+//https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=sketch-update-validation
+    require([
+      "esri/Graphic",
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/layers/GraphicsLayer",
+      "esri/geometry/Polygon",
+      "esri/geometry/geometryEngine",
+      "esri/widgets/Expand",
+      "esri/layers/TileLayer",
+      "esri/widgets/BasemapToggle",
+      "esri/widgets/CoordinateConversion",//,      "esri/widgets/Sketch"
+      "esri/widgets/DistanceMeasurement2D",
+      "esri/widgets/AreaMeasurement2D",
+      "esri/geometry/Extent",
+      "esri/geometry/Point",
+      "esri/layers/OpenStreetMapLayer",
+      "esri/widgets/Track",
+      "esri/widgets/Search",
+      "esri/geometry/Multipoint",
+      "esri/layers/ElevationLayer",
+      "esri/geometry/Polyline",
+      "esri/geometry/Circle",
+      "esri/layers/GeoJSONLayer",
+      "esri/core/promiseUtils",
+      "esri/views/SceneView",
+      "esri/symbols/LineSymbol3DLayer",
+      "esri/symbols/LineSymbol3D",
+      "esri/config",
+      "esri/geometry/SpatialReference",
+      "esri/geometry/projection",
+      "esri/layers/WMSLayer"
+    ], function(
+      Graphic, Map, MapView, FeatureLayer,
+      GraphicsLayer, Polygon, geometryEngine, Expand, TileLayer,BasemapToggle,
+      CoordinateConversion,
+      DistanceMeasurement2D,AreaMeasurement2D,Extent,Point,
+      OpenStreetMapLayer,Track,Search,Multipoint,
+      ElevationLayer,Polyline,Circle,GeoJSONLayer,promiseUtils,
+      SceneView,LineSymbol3DLayer,LineSymbol3D,esriConfig,
+      SpatialReference,projection,
+      WMSLayer
+    ) {
+      // http://127.0.0.1:8000/experiment/task3D/1669404456167/0/
+      esriConfig.apiKey = esritoken.esritoken;
+
+      // experiment setup
+      var m_expsetupobj=g_experiment;
+      var m_exp_participantindex={{participantindex|safe}};
+      m_exp_participantindex=Math.floor(m_exp_participantindex%(m_expsetupobj.participantsetup.length));
+      var m_exp_participantid={{participantid|safe}};
+      //console.log(m_exp_participantid);
+
+      //testing      -----------------
+      //m_exp_participantindex=0;
+      //m_exp_participantid=0;
+      //testing ends -----------------
+
+      var m_exp_variables=m_expsetupobj.variables;
+
+      // update every task--------start-------
+      var m_exp_order=0;//for every block
+      var m_exp_taskIndex=m_expsetupobj.participantsetup[m_exp_participantindex].taskorder[m_exp_order];
+      //console.log("m_exp_taskIndex",m_exp_taskIndex);
+      var m_exp_taskSetup=m_expsetupobj.experimentsetup[m_exp_taskIndex];
+      //console.log("m_exp_taskSetup",m_exp_taskSetup);
+      var m_exp_lostpersontype=m_expsetupobj.lostpersontype[m_exp_taskSetup.lpt];
+      var m_exp_visualization=m_expsetupobj.visualizationtype[m_exp_taskSetup.vt];//0 ring, 1 weighted map, 2 heat map.
+      var m_adaptiveMode=false;
+      if(m_exp_visualization.index==3){
+        m_adaptiveMode=true;
+        //console.log("m_adaptiveMode=true");
+      }
+      var m_exp_location_3D=m_expsetupobj.location_3D[m_exp_taskSetup.loc];
+      var m_exp_discription=m_expsetupobj.scenariodiscription[m_exp_taskSetup.loc];
+
+      var m_scoresheet={
+        "score0":[[500]],
+        "score1":[[-10,-20,-30]],// m_currentHeight:0:high,1:mid,2:low
+    		"score2":[[0,-5,-10,-15,-40]],
+    		"score3":[[50,-20,-50],[-50,20,-50],[50,20,200],[50,20,200]],
+    		"score4":[[-100]],
+        "score5":[[-100]]// miss the potential target
+      }
+
+      var m_colored3D=false;
+
+      var m_UAVRouteHML=[];
+      var m_UAVRouteHML_color=[];
+      var m_UAVRouteHML_color_w=[];
+      var m_selectedgraphicrect2D=null;//updated every click
+      var m_color_storage=[];
+      var m_currentHeight=0;//0,1,2:h,m,l // for path planning
+      var m_heightHistory=[];
+
+      var m_passPath=[];//points
+      var m_step=0;
+      var m_clueOnVertical3D=[];//clue at different height
+      var m_clueOnVertical3DOffset=0;// index m_clueOnVertical3D, from high to low:0,1,2,3// for uav inspection
+      var m_DroneUpdate3D=true;
+      var m_searchFinish=false;
+      var m_unfoundClues=[];
+      var m_currentClue;//=[0,0,0,0];//
+      var m_slice_tag=true;
+      var m_trialindex=0;
+      var allpolygons=[];
+      var allpolygons_text=[];
+      var m_area_extent;
+      var arr_featureset=[];
+      var m_lpdata_con=[];
+      let contourring_arr=[];
+      var m_mapextent=[];
+      var m_maptype=m_exp_visualization.index; //0:basic, 1: weighted, 2: heatmap
+      var m_logObj={
+        "icname":"default",
+        "fullExtent":[],
+        "graphicExtent":[],
+        "vpolygons":[],
+        "voronoiColorArr":[],
+        "UAVRouteHML":[],
+        "UAVRouteHML_color":[],
+        "UAVRouteHML_color_weighted":[],
+        "basicCircle":[],
+        "graphicSpatialReference":[],
+        "colorStorage":[]
+      };
+      var m_loggingForExp=true;
+      var m_loadFromFile=null;
+      var m_recommendedmaptype=0; //0:basic, 1: weighted, 2: heatmap
+      var m_trustHistory=[];
+      var m_recommendedHeight=0; //
+
+      // ---------ends--------
+
+      var m_expResults={"BPJudge":[]};
+      var m_segmentRingColor={'H':[0, 156, 156],'M':[156, 156, 0],'L':[255, 156, 0],'B':[255, 255, 0]};
+      var m_height_3D=[100,200,300];
+      let view, view3D, newDevelopmentGraphic;
+      var eacharea=500000;//500000//240000;//60 acer;
+
+      let timerid3d;
+      let validSymbol;
+      let m_colormap=0;//0: rainbow, 1: yellow-red, 2: blue-red
+      let t_rgb=[];
+      let epsg4326_voronoiarr=[];
+
+      let m_experimentlog={
+        "logtype":"task",
+        "m_exp_variables":m_exp_variables,
+        "m_exp_location":m_exp_location_3D.name,
+        "m_exp_visualization":m_exp_visualization,
+        "participantindex":m_exp_participantindex,
+        "participantid":m_exp_participantid,
+        "experimentindex":m_exp_taskIndex,
+        "taskstatus":"start",
+        "taskstart":Date.now(),
+        "taskend":0,
+        "duration":0,
+        "totalrounds":0,
+        "m_trialindex":m_trialindex,
+        "visualization":m_exp_visualization,
+        "m_adaptiveMode":m_adaptiveMode,
+        "m_heightHistory":[]
+      };
+
+      var m_exp_e={
+        "logtype":"action",
+        "participantid":m_exp_participantid,
+        "participantindex":m_exp_participantindex,
+        "experimentindex":m_exp_taskIndex,
+        "m_trialindex":m_trialindex,
+        "tasklocation":m_exp_location_3D.name,
+        "id":"id"
+      };
+      var m_exp_confirm={
+        "logtype":"confirm",
+        "participantid":m_exp_participantid,
+        "participantindex":m_exp_participantindex,
+        "experimentindex":m_exp_taskIndex,
+        "tasklocation":m_exp_location_3D.name,
+        "m_trialindex":m_trialindex,
+        "trust":0,
+        "truth":"object",
+        "detectedObjectUser":0,
+        "searchResults":"object"
+      };
+      var m_exp_score={
+        "logtype":"score",
+      	"participantid":m_exp_participantid,
+      	"participantindex":m_exp_participantindex,
+        "experimentindex":m_exp_taskIndex,
+      	"tasklocation":m_exp_location_3D.name,
+      	"m_trialindex":m_trialindex,
+      	"scoreChange":0,
+      	"scorePre":0,
+      	"scorePost":0,
+        "scoreindex":0,
+    		"t_index":0,
+    		"sub_index":0,
+    		"sub_sub_indix":0
+      };
+      var m_exp_clue={
+        "logtype":"clue",
+        "participantid":m_exp_participantid,
+        "participantindex":m_exp_participantindex,
+        "experimentindex":m_exp_taskIndex,
+        "tasklocation":m_exp_location_3D.name,
+        "m_trialindex":m_trialindex,
+        "clue_index":0,
+        "clueinfo":"",
+        "height":0,
+        "visualization":0
+      };
+
+      var m_exp_measure_score=0;
+      UpdateScore("score0",0,0);
+      const graphicInitLayer= new GraphicsLayer();
+      const graphicsLayer = new GraphicsLayer({
+        opacity:0.6//0.6
+      });
+
+      const visualization_Contourmap_Layer = new GraphicsLayer({
+        opacity:0.8
+      });
+
+      const visualization_Segmentheat_Layer = new GraphicsLayer({
+        opacity:0.5
+      });
+
+      const temperalgraphicLayer = new GraphicsLayer();
+      const graphicLayer_hit_2D = new GraphicsLayer();
+
+      // reference: https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2016_REL#description
+      // NLCD: https://www.mrlc.gov/data-services-page
+
+      // https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2019_Land_Cover_L48/ows?SERVICE=WMS
+      // url: "https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2019_Land_Cover_L48/wms",
+      //url: "https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2019_Land_Cover_L48/ows?SERVICE=WMS",
+
+      const landcoverlayer = new WMSLayer({
+          url: "https://www.mrlc.gov/geoserver/mrlc_display/ows",
+          sublayers: [
+            {
+              name: "NLCD_2019_Land_Cover_L48"
+            }
+          ],
+          opacity:0.3
+      });
+
+      const map = new Map({
+        basemap: "topo-vector",//"hybrid",//"satellite",
+        //ground: "world-elevation",
+        layers: [
+          landcoverlayer,
+          visualization_Contourmap_Layer,//
+          visualization_Segmentheat_Layer,
+          graphicsLayer,//
+          graphicInitLayer,//
+          temperalgraphicLayer,// temperal layer include target
+          graphicLayer_hit_2D
+        ]
+      });
+      // UAV path
+      const graphicsLayer3D = new GraphicsLayer({
+        // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+        elevationInfo: {
+          mode: "relative-to-ground",
+          offset: 10
+        }
+      });
+
+      const graphicInitLayer3D = new GraphicsLayer({
+        // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+        elevationInfo: {
+          mode: "on-the-ground",
+          offset: 10
+        }
+      });
+
+      const graphicsLayer3D_UAVPath = new GraphicsLayer({
+        // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+        elevationInfo: {
+          mode: "relative-to-ground",
+          offset: 10
+        }
+      });
+
+      const graphicsLayer3D_UAVPath_color = new GraphicsLayer({
+        // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+        elevationInfo: {
+          mode: "relative-to-ground",
+          offset: 10
+        }
+      });
+
+      // hiking example : https://developers.arcgis.com/javascript/latest/sample-code/sandbox/?sample=visualization-line-patterns
+      // segmented cells
+      const gridsLayer3D = new GraphicsLayer({
+        // elevation information: https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-GraphicsLayer.html#elevationInfo
+        elevationInfo: {
+          mode: "on-the-ground"
+        }
+      });
+
+      // UAV 3D icon
+      const graphicsLayer3D_point = new GraphicsLayer({
+        elevationInfo: {
+          mode: "relative-to-ground",
+          offset: 10
+        }
+      });
+
+      // selected cell
+      const graphicLayer_hit_3D = new GraphicsLayer({
+        elevationInfo: {
+          mode: "on-the-ground",
+          offset: 20
+        }
+      });
+
+      //
+      const graphicLayer_weighted_3D = new GraphicsLayer({
+        opacity:0.5,
+        elevationInfo: {
+          mode: "on-the-ground",
+          offset: 15
+        }
+      });
+
+      // contour map
+      const graphicLayer_contour_3D = new GraphicsLayer({
+        opacity:0.5,
+        elevationInfo: {
+          mode: "on-the-ground",
+          offset: 15
+        }
+      });
+      const graphicLayer_clue_3D = new GraphicsLayer({
+        elevationInfo: {
+          mode: "relative-to-ground",
+          offset: 10
+        }
+      });
+
+      const graphicLayer_heightline_3D = new GraphicsLayer({
+        elevationInfo: {
+          mode: "relative-to-ground",
+          offset: 10
+        }
+      });
+      // creates new view and map, adds featurelayers and graphicslayer to the view
+
+      // This function is called when a user clicks on the view.
+      function setUpGraphicClickHandler() {
+        view.on("click", function(event) {
+          view.hitTest(event).then(function(response) {
+            let results = response.results;
+            results.forEach(function(result) {
+              if(result.graphic!=null){
+                if(result.graphic.attributes!=null){
+                  $("#cellname").val("S"+result.graphic.attributes.cellindex);
+
+                  if(result.graphic!= null){
+                    m_selectedgraphicrect2D=result.graphic;
+                    //console.log(m_selectedgraphicrect2D);
+                    DrawCell2D(result.graphic);
+                    DrawCell3D(result.graphic);
+                  }
+                }
+
+              }
+            });
+          });
+        });
+
+      }
+      setUpView();
+      setupView3D();
+      setUpGraphicClickHandler();
+
+      view.when(function() {
+        m_area_extent=view.extent;
+        LoadLPMData();
+        UpdateSetup_HTML();
+        //console.log("view.when");
+        document.getElementById("ScenarioDescriptionDiv").style.display=="initial";
+      });
+
+      function addVoronoi(){
+        let textend;
+        let wholearea;
+        let jsonextent=view.extent.toJSON();
+        textent=Extent.fromJSON(jsonextent);
+        let ori_xmin=textent.xmin;
+        let ori_wid=textent.width*0.01;
+        textent=textent.expand(0.8);
+        let centerpoint = textent.center.clone();
+        centerpoint.x= textent.center.x;//+(textent.xmin-ori_xmin-ori_wid);
+        textent=textent.centerAt(centerpoint);
+        wholearea=geometryEngine.planarArea(Polygon.fromExtent(textent));
+
+        let npoints=2*Math.round(wholearea/eacharea+0.5);      //wholearea=wholetask.area;//metric   240  : acre  60
+        let lbx=textent.xmin,
+            lby=textent.ymin,
+            rtx=textent.xmax,
+            rty=textent.ymax;
+            gwidth=textent.width;
+            gheight=textent.height;
+
+        let sites = d3.range(npoints)//15
+                   .map(function(d) { return [Math.random() * gwidth+lbx, Math.random() * gheight+lby]; });
+        m_mapextent=textent;
+        sites = GetSites(npoints,textent);
+        let voronoi = d3.voronoi().extent([[lbx,lby], [rtx,rty]]);
+        let diagram = voronoi(sites),
+            links = diagram.links(),
+            vpolygons = diagram.polygons();
+
+        ClearAllGraphicLayers();
+        addGraphics(vpolygons);
+        addGraphics3D(vpolygons);
+
+        //log
+        if(m_loggingForExp){
+          m_logObj.icname=m_exp_location_3D.name;
+          m_logObj.fullExtent=jsonextent;
+          m_logObj.graphicExtent=textent;
+          m_logObj.vpolygons=vpolygons;
+        }
+      }
+
+      function getVoronoiFromPolygon(){
+        const point = {
+          type: "point", // autocasts as new Point()
+          x: -111.79716975853728,
+          y: 34.824204890183125,
+          z: 1200
+        };
+        const markerSymbol = {
+          type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+          color: [226, 119, 40],
+          outline: {
+            // autocasts as new SimpleLineSymbol()
+            color: [255, 255, 255],
+            width: 2
+          }
+        };
+        let validSymbol = createSymbol([212,221,222, 1], "solid", 2, [255,255, 255]);//task generation
+        const fillSymbol = {
+                  type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                  color: [227, 139, 79, 0.8],
+                  outline: {
+                    // autocasts as new SimpleLineSymbol()
+                    color: [255, 255, 255],
+                    width: 2
+                  }
+                };
+        let outSpatialReference = new SpatialReference({
+              wkid: 4326
+        });
+        projection.load().then(function() {
+
+          let geometry_2D=new Graphic({
+            geometry:{
+                 type:"polygon",
+                 rings:m_selectedgraphicrect2D.geometry.rings,
+                 spatialReference:view.spatialReference
+             },
+             attributes:m_selectedgraphicrect2D.attributes
+          });
+          geometry_2D.geometry = projection.project(geometry_2D.geometry, outSpatialReference);
+          let rings_2D=geometry_2D.geometry.rings[0];
+
+          let lbx=geometry_2D.geometry.extent.xmin,
+              lby=geometry_2D.geometry.extent.ymin,
+              rtx=geometry_2D.geometry.extent.xmax,
+              rty=geometry_2D.geometry.extent.ymax;
+              gwidth=geometry_2D.geometry.extent.width;
+              gheight=geometry_2D.geometry.extent.height;
+          let pCenter=geometry_2D.geometry.extent.center;
+
+          const GRIDSIZE = 5;
+          const JITTER = 0.5;
+          let points = [];
+          for (let x = 0; x <= GRIDSIZE; x++) {
+              for (let y = 0; y <= GRIDSIZE; y++) {
+                let tx=x + JITTER * (Math.random() - Math.random());
+                let ty=y + JITTER * (Math.random() - Math.random());
+                points.push([gwidth*tx/GRIDSIZE+lbx,gheight*ty/GRIDSIZE+lby]);
+              }
+          }
+
+          let sites = [[pCenter.x+0.25*gwidth,pCenter.y+0.25*gheight],
+          [pCenter.x+0.25*gwidth,pCenter.y-0.25*gheight],
+          [pCenter.x-0.25*gwidth,pCenter.y+0.25*gheight],
+          [pCenter.x-0.25*gwidth,pCenter.y-0.25*gheight]];
+
+          sites=points;
+
+
+          for(let i=0;i<rings_2D.length-1;i++){
+            sites.push(rings_2D[i]);
+          }
+
+          let voronoi = d3.voronoi().extent([[lbx,lby], [rtx,rty]]);
+          let diagram = voronoi(sites),
+              links = diagram.links(),
+              vpolygons = diagram.polygons();
+
+          //console.log(vpolygons);
+          let tarr_poly=[];
+
+          for(let j=0;j<vpolygons.length;j++){
+            let vtriangles=vpolygons[j];
+            let tpoly=[];
+            for (let i=vtriangles.length-1;i>=0;i--){
+              tpoly.push([vtriangles[i][0],vtriangles[i][1],500]);
+            }
+            tpoly.push([vtriangles[vtriangles.length-1][0],vtriangles[vtriangles.length-1][1],500]);
+            const polygon = {
+              type: "polygon", // autocasts as new Polygon()
+              rings: tpoly
+            };
+
+            let newDevelopmentGraphic = new Graphic({
+              geometry: polygon,
+              symbol: fillSymbol
+            });
+            tarr_poly.push(newDevelopmentGraphic);
+
+          }
+          //console.log(tarr_poly);
+          graphicLayer_clue_3D.addMany(tarr_poly);
+
+          //addGraphics(vpolygons);
+          //addGraphics3D(vpolygons);
+          //console.log(vpolygons);
+          });
+
+      }
+
+      function ClipPolygongsByPoints(vpolygons,points){
+        let cpy=[];
+        for(let i=0;i<vpolygons.length;i++){
+          let temp=d3.polygonClip(vpolygons[i],polygonClone(points.reverse()));
+          if(temp.length>0){ cpy.push(temp); }
+        }
+        return cpy;
+      }
+      function GetSites(n,t_extent){
+        let res_points=[];
+        //center point [0,0]
+        //first round radius:1, second:2,third:3
+        let t_incrementalradius=1;//default is 1, for 3D 0.5
+        let t_radius=1;
+        let t_firstround=3;//3
+
+        //second round
+        let res_count=0;
+        let t_wholearea=0;
+        let t_cellarea=t_radius*t_radius/t_firstround;
+
+        while(n>res_count){
+          let t_roundarea=t_radius*t_radius-t_wholearea;
+          let t_celldegree=t_cellarea/t_roundarea;
+          let t_totaldegree=0;
+          while(t_totaldegree<=0.99){
+            res_points.push([(t_radius-0.5)*Math.sin(2*Math.PI*t_totaldegree),(t_radius-0.5)*Math.cos(2*Math.PI*t_totaldegree)]);
+            t_totaldegree=t_totaldegree+t_celldegree;
+            res_count=res_count+1;
+          }
+          t_wholearea=t_radius*t_radius;
+          t_radius=t_radius+t_incrementalradius;
+        }
+
+        //standrized from 1:1 into width and height ratio
+        t_radius=t_radius-t_incrementalradius;
+        let t_wscale=t_extent.width/(2*t_radius);
+        let t_hscale=t_extent.height/(2*t_radius);
+
+        for(let i=0;i<res_count;i++){
+          res_points[i][0]=res_points[i][0]*t_wscale+t_extent.center.x;
+          res_points[i][1]=res_points[i][1]*t_hscale+t_extent.center.y;
+        }
+        return res_points;
+      }
+
+      function SaveExperimentdatatoDB(tobj={}){
+        //console.log(tobj);
+          tobj["ts"]=Date.now();
+          let URL = "{% url 'updateexperimentdata3D' %}";
+          let data = {
+                 csrfmiddlewaretoken: '{{ csrf_token }}',
+                 'resarr': JSON.stringify(tobj)
+                };
+          $.post(URL, data, function(response){
+           let res=JSON.parse(response);
+             if(res.flag == 'success'){
+               //console.log(res);
+              }
+             else{ alert(response); }
+          });
+      }
+
+      function SaveExperimentdatatoDBDataStorage(tobj={}){
+        //console.log(tobj);
+          tobj["ts"]=Date.now();
+          let URL = "{% url 'SaveExperimentdatatoDBDataStorage' %}";
+          let data = {
+                 csrfmiddlewaretoken: '{{ csrf_token }}',
+                 'resarr': JSON.stringify(tobj),
+                 'participantIndex':m_exp_participantindex,
+                 'taskIndex':m_exp_taskIndex,
+                };
+          $.post(URL, data, function(response){
+           let res=JSON.parse(response);
+             if(res.flag == 'success'){
+               //console.log(res);
+              }
+             else{ alert(response); }
+          });
+      }
+
+      function addGraphics(vtriangles) {
+        let text_symbol = {
+          type: "text",  // autocasts as new TextSymbol()
+          color: "white",
+          haloColor: "black",
+          haloSize: "1px",
+          text: "You are here",
+          xoffset: 3,
+          yoffset: 3,
+          font: {  // autocast as new Font()
+            size: 12,
+            family: "Josefin Slab",
+            weight: "bold"
+          }
+        };
+        for (let i=0;i<vtriangles.length;i++){
+          vtriangles[i].push(vtriangles[i][0]);
+          let polygon = createGeometry(vtriangles[i]);
+          let newDevelopmentGraphic = new Graphic({
+            geometry: polygon,
+            symbol: validSymbol,
+            attributes: {
+              newDevelopment: "new store",
+              cellindex:(i+1).toString(),
+              polygonindex:i.toString()
+            }
+          });
+          text_symbol.text="S"+(i+1).toString();
+          let t_point=new Graphic ({
+            geometry:newDevelopmentGraphic.geometry.centroid,
+            symbol:text_symbol
+          });
+          allpolygons.push(newDevelopmentGraphic);
+          //console.log("addGraphics");
+          allpolygons_text.push(t_point);
+        }
+
+        graphicsLayer.addMany(allpolygons);
+        graphicsLayer.addMany(allpolygons_text);
+
+      }
+      function DrawCell2D(graphic_in){
+        graphicLayer_hit_2D.removeAll();
+        const fillSymbol = {
+          type: "simple-fill", // autocasts as new SimpleFillSymbol()
+          color: [0, 96, 255, 0.6],
+          outline: {
+            color: [255, 255, 255],
+            width: 1
+          }
+        };
+        const polygon = createGeometry(graphic_in.geometry.rings);
+        let newDevelopmentGraphic = new Graphic({
+          geometry: polygon,
+          symbol: fillSymbol
+        });
+        graphicLayer_hit_2D.add(newDevelopmentGraphic);
+      }
+
+      function addGraphics3D(vtriangles) {
+        let polygon3D=[];
+        for (let i=0;i<vtriangles.length;i++){
+          vtriangles[i].push(vtriangles[i][0]);
+          let polygon = createGeometry(vtriangles[i]);
+          let newDevelopmentGraphic = new Graphic({
+            geometry: polygon,
+            symbol: validSymbol,
+            attributes: {
+              newDevelopment: "3D",
+              cellindex:(i+1).toString(),
+              polygonindex:i.toString()
+            }
+          });
+          polygon3D.push(newDevelopmentGraphic);
+        }
+        //console.log(polygon3D);
+        gridsLayer3D.addMany(polygon3D);
+      }
+
+      function DrawCell3D(graphic_in){
+        graphicLayer_hit_3D.removeAll();
+        const fillSymbol = {
+          type: "simple-fill", // autocasts as new SimpleFillSymbol()
+          color: [204, 232, 205, 0.4],
+          outline: {
+            color: [153, 209, 255],
+            width: 3
+          }
+        };
+        const polygon = createGeometry(graphic_in.geometry.rings);
+        let newDevelopmentGraphic = new Graphic({
+          geometry: polygon,
+          symbol: fillSymbol
+        });
+        graphicLayer_hit_3D.add(newDevelopmentGraphic);
+        //console.log(graphicLayer_hit_3D);
+      }
+
+
+      function createGeometry(vertices) {
+        return new Polygon({
+          rings: vertices,
+          //spatialReference: {wkid: 102100 }
+          spatialReference: view.spatialReference
+        });
+      }
+
+      function createSymbol(color, style, width, outlineColor) {
+        return {
+          type: "simple-fill",
+          style: style,
+          color: color,
+          outline: {
+            color: outlineColor,
+            width: width
+          }
+        }
+      }
+      // Create new view, map and layers... set up the view
+      function setupView3D(){
+        const map3D = new Map({
+          basemap: "arcgis-imagery",//"topo-vector","arcgis-topographic",
+          ground: "world-elevation"
+        });
+        view3D = new SceneView({
+          container: "viewDiv3D",
+          map: map3D,
+          camera: {
+            position: {
+              x: m_exp_location_3D.center[0]+m_exp_location_3D.camera_x_offset,
+              y: m_exp_location_3D.center[1]+m_exp_location_3D.camera_y_offset,
+              z: 2665 // meters, 1250
+            },
+            tilt: 53,//74.3,
+            heading: 78,//322,
+            fov:55
+          },
+        });
+
+        map3D.add(graphicLayer_contour_3D);
+        map3D.add(graphicsLayer3D);
+        map3D.add(graphicInitLayer3D);
+        map3D.add(graphicLayer_weighted_3D);
+
+        map3D.add(gridsLayer3D);
+        map3D.add(graphicsLayer3D_point);
+        map3D.add(graphicLayer_hit_3D);
+        map3D.add(graphicLayer_clue_3D);
+        map3D.add(graphicLayer_heightline_3D);
+        map3D.add(graphicsLayer3D_UAVPath);
+        map3D.add(graphicsLayer3D_UAVPath_color);
+
+        /*
+        const editArea = document.getElementById("editArea");
+        const editExpand = new Expand({
+            expandIconClass: "esri-icon-edit",
+            expandTooltip: "Expand Edit",
+            expanded: true,
+            view: view3D,
+            content: editArea,
+            autoCollapse:true
+        });
+        view3D.ui.add(editExpand, "top-right");
+        */
+        let ccWidget = new CoordinateConversion({
+          view: view3D
+        });
+        view3D.ui.add(ccWidget, "bottom-right");
+
+        //view3D.ui.add("map2Dvs3D", "top-left");
+
+        //view3D.ui.add("mapterrainvsheatmap", "top-left");
+
+        //view3D.ui.add("showtarget", "top-left");
+        view3D.ui.add("s_recenter", "top-left");
+
+
+      }
+      function setUpView() {
+        view = new MapView({
+          container: "viewDiv2D",
+          map: map,
+          zoom: m_exp_variables.zoomlevel,
+          center: m_exp_location_3D.center
+        });
+
+        let toggle = new BasemapToggle({
+          // 2 - Set properties
+          view: view, // view that provides access to the map's 'topo' basemap
+          nextBasemap: "hybrid" // allows for toggling to the 'hybrid' basemap,topo-vector
+        });
+        // Add widget to the top right corner of the view
+        view.ui.add(toggle, "bottom-left");
+        //add track widget
+        let trackWidget = new Track({
+          view: view
+        });
+        view.ui.add(trackWidget, "top-left");
+        // Adds the search widget below other elements in
+        // the top left corner of the view
+        let searchWidget = new Search({
+          view: view
+        });
+        view.ui.add(searchWidget, {
+          position: "bottom-right",
+          index: 5
+        });
+
+        validSymbol = createSymbol([212,221,222, 0.2], "solid", 2, [255,255, 255]);//task generation
+
+        document.getElementById("btic").value=m_exp_location_3D.name;
+      }
+
+      function TaskGenerateArea_2D_3D(){
+        graphicsLayer.removeAll();
+        view.graphics.removeAll();
+        epsg4326_voronoiarr=[];
+        allpolygons=[];
+        allpolygons_text=[];
+        addVoronoi();
+      };
+
+      function TaskGenerateArea_2D_3D_Fromload(){
+        graphicsLayer.removeAll();
+        view.graphics.removeAll();
+        epsg4326_voronoiarr=[];
+        allpolygons=[];
+        allpolygons_text=[];
+        addGraphics(m_loadFromFile.vpolygons);
+        addGraphics3D(m_loadFromFile.vpolygons);
+      };
+
+      function onGraphicUpdate(event){
+        return;
+      }
+
+
+      //tpoly is an array[[,],[,]]
+      function GetPolygonPoints(x,y,tpoly){
+        //break the ring
+        let maxdistanceerror = 0.0001;
+        let t_array=[];
+        let i=0;
+        let pointofline=0;//0: not on line, 1: vertices, 2: center, 3: on the line
+        for(i=0;i<tpoly.length-1;i++){
+          if((Math.abs(tpoly[i][0]-x)< maxdistanceerror) && (Math.abs(tpoly[i][1]-y)< maxdistanceerror )){
+            pointofline=1;
+            break;
+          }
+        }
+        if( pointofline===1 ){
+          //console.log("points as vertices");
+          //poins as vertices of the line
+          t_array=t_array.concat(tpoly.slice(i+1,tpoly.length-1),tpoly.slice(0,i));
+          //console.log(t_array);
+          return t_array;
+        }
+
+        for(i=0;i<tpoly.length-1;i++){
+          if( ( Math.abs(0.5*( tpoly[i][0]+tpoly[i+1][0] )-x )< maxdistanceerror)
+                && ( Math.abs(0.5*( tpoly[i][1]+tpoly[i+1][1] )-y) < maxdistanceerror) ){
+                    pointofline=2;
+                    break;
+          }
+        }
+        if (pointofline===2){
+
+          //have problem need debug
+          t_array=t_array.concat(tpoly.slice(i+1,tpoly.length-1),tpoly.slice(0,i+1));
+        }
+        else{
+          //poins on the line
+          //add more pass
+
+          t_array=null;
+        }
+        return t_array;
+      }
+
+      //update new polygon
+      function GeneratePolygonBasedonPoints(x,y,array_points){
+        let tmppolysets=[];
+
+        if(array_points.length==0){
+          return tmppolysets;
+        }
+        for(let i=0;i<array_points.length;i++){
+          entry=array_points[i];
+
+          let vertices=[];
+          vertices=vertices.concat([[x,y]],entry,[[x,y]]);
+          //console.log(vertices);
+          //console.log("-------------");
+          let polygon = createGeometry(vertices);
+          newDevelopmentGraphic = new Graphic({
+            geometry: polygon,
+            symbol: validSymbol,
+            attributes: {
+              newDevelopment: "new store"
+            }
+          });
+          tmppolysets.push(newDevelopmentGraphic);
+        }
+
+        return tmppolysets;
+      }
+
+      function PointsMerge(points_array,maxd){
+        //ring with no points repeated
+
+        resarray=[];
+        while(points_array.length>0){
+          entry=points_array.pop();
+          //console.log(entry);
+          //console.log("point merge");
+          let i=0;
+          for(i = 0;i<points_array.length;i++){
+            if(Math.abs(points_array[i][0]-entry[0]< maxd) && Math.abs(points_array[i][1]-entry[1])< maxd ){
+              break;
+            }
+          }
+          if(i<points_array.length){
+            continue;
+          }
+          else{
+            resarray.push(entry);
+          }
+        }
+        return resarray;
+      }
+//-----------------------------------------------------
+
+       function ClearAllGraphicLayers(){
+         graphicsLayer.removeAll();
+         view.graphics.removeAll();
+         graphicInitLayer.removeAll();
+         visualization_Contourmap_Layer.removeAll();
+         temperalgraphicLayer.removeAll();
+         visualization_Segmentheat_Layer.removeAll();
+         graphicLayer_hit_2D.removeAll();
+
+         gridsLayer3D.removeAll();
+         graphicsLayer3D.removeAll();
+         graphicInitLayer3D.removeAll();
+         graphicLayer_contour_3D.removeAll();
+         graphicLayer_weighted_3D.removeAll();
+         graphicsLayer3D_point.removeAll();
+         graphicLayer_hit_3D.removeAll();
+         graphicLayer_clue_3D.removeAll();
+         graphicLayer_heightline_3D.removeAll();
+         graphicsLayer3D_UAVPath.removeAll();
+         graphicsLayer3D_UAVPath_color.removeAll();
+
+       }
+
+       function ClearAllMapLayers(){
+         graphicInitLayer.removeAll();
+         visualization_Contourmap_Layer.removeAll();
+         visualization_Segmentheat_Layer.removeAll();
+
+         graphicInitLayer3D.removeAll();
+         graphicLayer_contour_3D.removeAll();
+         graphicLayer_weighted_3D.removeAll();
+       }
+
+       function PolyArrayToJson(polyarray)
+       {
+         if(polyarray.length<1){
+           return "";
+         }
+         res_json={};
+         for (let i=0;i<polyarray.length;i++){
+           res_json[i]=polyarray[i];
+         }
+         return JSON.stringify(res_json);
+       }
+
+         // Loading contour map
+         function LoadLPFromCSV_con(t_url,t_arr_count,t_hour=0){
+           let t_data;
+            $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+                 t_data = $.csv.toArrays(response).map(function(item){
+                   return item.map(Number);
+                 });
+                 m_lpdata_con.push({'hour':t_hour,'data':t_data});
+                 ExtractRingFromData();
+              }
+            });
+            return true;
+         }
+
+         // this function has delay
+         function getClueImageByPhotoid(photoid){
+           let URL = "{% url 'getcluemedia' %}";
+           let data = {
+                   csrfmiddlewaretoken: '{{ csrf_token }}',
+                   'photoid': photoid.toString()
+                  };
+           $.post(URL, data, function(response){
+             let res=JSON.parse(response);
+               if(res.flag == 'success'){
+                 //console.log(res);
+                }
+               else{ alert(response); }
+           });
+         }
+         function DrawToTemperalGraphicLayer(obj,type){
+           temperalgraphicLayer.removeAll();
+           // ajax load image from database aka ClueMedia
+
+           // lost person target position
+           if(type==="point"){
+             // draw obj to temperalgraphicLayer
+             let in_point=new Point({
+                     latitude:obj[1],//lat,
+                     longitude:obj[0],//long,
+                     spatialReference:view.spatialReference
+                   });
+             let t_graphic1=  new Graphic({
+               geometry: in_point,
+               symbol:  {
+                    type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                    style:"circle",
+                    color: [getRandomInt(255), getRandomInt(255), getRandomInt(255)],//[t_mag, 0,0],
+                    size:20
+                  },
+                attributes:{
+                  Name:"Target",
+                  Hour:0,
+                  Rank:1
+                }
+             });
+             temperalgraphicLayer.add(t_graphic1);
+
+             for (let i=0;i<m_exp_location_3D.clue.length;i++){
+               let in_point=new Point({
+                 longitude:m_exp_location_3D.clue[i].location[0],
+                 latitude:m_exp_location_3D.clue[i].location[1],
+                 spatialReference:view.spatialReference
+               });
+               let t_graphic =  new Graphic({
+                 geometry: in_point,
+                 symbol:  {
+                   type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+                   url: "{% static 'img/clue2.png' %}",//user.png
+                   width: "32px",
+                   height: "32px"
+                    },
+                  attributes:{
+                    Name:"Clue",
+                    Hour:0,
+                    Rank:1
+                  },
+                  popupTemplate:{
+                      title: "Clue_"+m_exp_location_3D.clue[i].photoid+", ("+ in_point.longitude +","+in_point.latitude+")",
+                      content:[{
+                        type: "media",
+                        mediaInfos: [{
+                          title: m_exp_location_3D.clue[i].info,
+                          type: "image",
+                          caption: m_exp_location_3D.clue[i].info,
+                          value: {
+                            sourceURL: m_exp_location_3D.clue[i].sourceURL[m_currentHeight]
+                          }
+                        }]
+                      }
+                    ]
+                  }
+               });
+               temperalgraphicLayer.add(t_graphic);
+             }
+           }
+
+           temperalgraphicLayer.visible=true;
+         }
+
+         function ExtractRingFromData(){
+           contourring_arr=[];
+           if(m_lpdata_con == null){
+             return;
+           }
+
+           let t_data_con;
+           let t_hour=0;
+           let arr_heatpoints=m_lpdata_con[0]['data'];
+
+           let i=0;
+
+           m_colormap=0;
+           //loop to find rings
+           let t_rings=[];//
+           let all_paths=[];
+           let t_startprobability=arr_heatpoints[0][0];
+
+           let col3 = arr_heatpoints.map(function(value,index) { return value[0]; });
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_range=t_max-t_min;
+
+           let t_mag=(t_startprobability-t_min)/t_range;
+
+           let t_distance=0.0001;//define as a circle
+           let t_len=0;
+           m_colormap=0;
+           arr_heatpoints.map(function(item){
+             t_len=t_rings.length-1;
+             if(item[0]==t_startprobability){
+               if(t_len>3){
+                 if(t_distance<((item[1]-t_rings[t_len][0])*(item[1]-t_rings[t_len][0])+ (item[2]-t_rings[t_len][1])*(item[2]-t_rings[t_len][1]))){
+                   t_rings.push(t_rings[0]);
+                   contourring_arr.push(t_rings);
+                   t_rings=[];
+                 }
+               }
+             }
+             else{
+               t_rings.push(t_rings[0]);
+               contourring_arr.push(t_rings);
+               t_rings=[];
+               t_startprobability=item[0];
+               t_mag=(t_startprobability-t_min)/t_range;
+             }
+             t_rings.push(item.slice(1));
+           });
+           if(t_rings.length>0){
+             t_rings.push(t_rings[0]);
+             contourring_arr.push(t_rings);
+             t_rings=[];
+           }
+         }
+         function AddLPDataToSegmentheatlayer_Fromload(){
+
+             //console.log(t_obj);
+             let colorarr=m_loadFromFile.voronoiColorArr;
+
+             let weighted_arr=[];
+             let weighted_arr3D=[];
+             for(let j=0;j<allpolygons.length;j++){
+               let polygonGraphic = new Graphic({
+                 geometry: allpolygons[j].geometry,
+                 symbol: {
+                         type: "simple-fill",
+                         color: [0, 0, 255,2*colorarr[j]/150],//[0, 0, colorarr[j]*0.5+125,colorarr[j]/255],
+                         outline: {
+                           style:"none"
+                         }
+                       }
+
+                  });
+                 weighted_arr.push(polygonGraphic);//t_graphic
+                 weighted_arr3D.push(polygonGraphic.clone());
+
+             }
+             visualization_Segmentheat_Layer.removeAll();
+             visualization_Segmentheat_Layer.addMany(weighted_arr);
+
+             graphicLayer_weighted_3D.removeAll();
+             graphicLayer_weighted_3D.addMany(weighted_arr3D);
+         }
+
+         function AddLPDataToSegmentheatlayer(){
+           let voronoiarr=[];
+           let markspatialreference="epsg3857";
+           if(epsg4326_voronoiarr.length>1){
+             markspatialreference="epsg4326";
+             voronoiarr=epsg4326_voronoiarr;
+           }
+           else{
+             markspatialreference="epsg3857";
+             for(i=0;i<allpolygons.length;i++){
+               voronoiarr.push(allpolygons[i].geometry.rings[0]);
+             }
+           }
+
+           let URL = "{% url 'getsegmentVal' %}";
+           let data = {
+             csrfmiddlewaretoken: '{{ csrf_token }}',
+             'contourarr': JSON.stringify(contourring_arr),
+             'voronoiarr': JSON.stringify(voronoiarr),
+             'spatialReference': markspatialreference
+           };
+           $.post(URL, data, function(response){
+             t_obj=JSON.parse(response);
+             if(t_obj.flag == 'success'){
+               //console.log(t_obj);
+               let colorarr=t_obj.segmentval;
+               let updatevoronoiarr=t_obj.updatevoronoi;
+               if (updatevoronoiarr.length>0){
+                 epsg4326_voronoiarr=updatevoronoiarr;
+               }
+
+               let weighted_arr=[];
+               let weighted_arr3D=[];
+               for(let j=0;j<allpolygons.length;j++){
+                 let polygonGraphic = new Graphic({
+                   geometry: allpolygons[j].geometry,
+                   symbol: {
+                           type: "simple-fill",
+                           color: [0, 0, 255,2*colorarr[j]/150],//[0, 0, colorarr[j]*0.5+125,colorarr[j]/255],
+                           outline: {
+                             style:"none"
+                           }
+                         }
+
+                    });
+                 weighted_arr.push(polygonGraphic);//t_graphic
+                 weighted_arr3D.push(polygonGraphic.clone());
+
+                 if(m_loggingForExp){
+                   m_logObj.voronoiColorArr=colorarr;
+                 }
+               }
+               visualization_Segmentheat_Layer.removeAll();
+               visualization_Segmentheat_Layer.addMany(weighted_arr);
+
+               graphicLayer_weighted_3D.removeAll();
+               graphicLayer_weighted_3D.addMany(weighted_arr3D);
+              }
+             else{ alert(response); }
+           });
+
+
+         }
+
+         function DisplayRingMap(){
+           graphicInitLayer.removeAll();
+           let t_feature=[];
+
+           let t_center=new Point({
+             longitude:m_exp_location_3D.center[0],
+             latitude:m_exp_location_3D.center[1],
+             spatialReference:view.spatialReference
+           });
+
+           let t_graphic =  new Graphic({
+             geometry: t_center,
+             symbol:  {
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"triangle",
+                  color: [255,0,0],//[t_mag, 0,0],
+                  size:10
+                },
+              attributes:{
+                Name:"Last known position",
+                LostHour:2,
+                Type:"hiker"
+              },
+              popupTemplate:{
+                  title: "{Name}",
+                  content: [
+                    {
+                      type: "fields",
+                      fieldInfos: [{fieldName: "Name"},{fieldName: "LostHour"},{fieldName: "Type"}]
+                    }
+                  ]
+              }
+           });
+           t_feature.push(t_graphic);
+
+            //draw 25%,50%,75% ring
+           let rings_arr=m_exp_lostpersontype.ring;
+           let persontype="hiker";
+           let ringsname_arr=["25% ring","50% ring","75% ring","95% ring"];
+           for(let i=0;i<4;i++){
+             let t_circle=new Circle({
+               center:t_center,
+               radius:rings_arr[i]
+             });
+             t_graphic =  new Graphic({
+               geometry: t_circle,//view.extent.center,
+               symbol:  {
+                    type: "simple-fill", // autocasts as new SimpleMarkerSymbol()
+                    style:"none",
+                    outline:{
+                      color:[255,i*50,0,0.6-0.4*i/4],
+                      width:2
+                    }
+                  },
+                attributes:{
+                  Name:ringsname_arr[i],
+                  LostHour:2,
+                  Type:"hiker"
+                }
+             });
+
+             t_feature.push(t_graphic);
+            }
+
+           graphicInitLayer.addMany(t_feature);
+
+         }
+
+         function DisplayRingMap3D(){
+           graphicInitLayer3D.removeAll();
+           let t_feature=[];
+
+           let t_center=new Point({
+             longitude:m_exp_location_3D.center[0],
+             latitude:m_exp_location_3D.center[1],
+             spatialReference:view.spatialReference
+           });
+
+           let t_graphic =  new Graphic({
+             geometry: t_center,
+             symbol:  {
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"triangle",
+                  color: [255,0,0],//[t_mag, 0,0],
+                  size:10
+                },
+              attributes:{
+                Name:"Last known position",
+                LostHour:2,
+                Type:"hiker"
+              },
+              popupTemplate:{
+                  title: "{Name}",
+                  content: [
+                    {
+                      type: "fields",
+                      fieldInfos: [{fieldName: "Name"},{fieldName: "LostHour"},{fieldName: "Type"}]
+                    }
+                  ]
+              }
+           });
+           t_feature.push(t_graphic);
+
+            //draw 25%,50%,75% ring
+           let rings_arr=m_exp_lostpersontype.ring;
+           let persontype="hiker";
+           let ringsname_arr=["25% ring","50% ring","75% ring","95% ring"];
+           for(let i=0;i<4;i++){
+             let t_circle=new Circle({
+               center:t_center,
+               radius:rings_arr[i]
+             });
+             t_graphic =  new Graphic({
+               geometry: t_circle,//view.extent.center,
+               symbol:  {
+                    type: "simple-fill", // autocasts as new SimpleMarkerSymbol()
+                    style:"none",
+                    outline:{
+                      color:[255,i*50,0,0.6-0.4*i/4],
+                      width:2
+                    }
+                  },
+                attributes:{
+                  Name:ringsname_arr[i],
+                  LostHour:2,
+                  Type:"hiker"
+                }
+             });
+
+             t_feature.push(t_graphic);
+            }
+
+           graphicInitLayer3D.addMany(t_feature);
+
+         }
+
+         function DrawClue3D(currentClueIndex,center,clueHeight,clueColor,size=20){
+           let clueinfo=m_exp_location_3D.clue[currentClueIndex[0]];
+           //console.log(currentClueIndex,clueinfo);
+           //add 3D point on path
+           const symbol = {
+            type: "point-3d",  // autocasts as new PointSymbol3D()
+            symbolLayers: [{
+              type: "object",  // autocasts as new ObjectSymbol3DLayer()
+              width: size,  // diameter of the object from east to west in meters
+              height: size,  // height of the object in meters
+              depth: size,  // diameter of the object from north to south in meters
+              resource: { primitive: "sphere" },
+              material: { color: clueColor }
+            }]
+          };
+          let t_graphic3D =  new Graphic({
+             geometry: {
+               type: "point", // autocasts as new Point()
+               x: center[0],
+               y: center[1],
+               z: center[2]
+             },
+             symbol:symbol,
+             popupTemplate:{
+                title: clueinfo.info,
+                content:[{
+                  type: "media",
+                  mediaInfos: [{
+                    title: "Drone2",
+                    type: "image",
+                    caption: "Optical camera top view, location:("+ center[0] +","+center[1]+","+center[2]+")",
+                    value: {sourceURL: clueinfo.sourceURL[clueHeight]}
+                  }]
+                }]
+              }
+           });
+           graphicLayer_clue_3D.add(t_graphic3D);
+           document.getElementById("testImg").src=clueinfo.sourceURL[clueHeight];
+         }
+
+         function DrawCurrentClueOnPath(currentClueIndex){
+           let point2D=m_exp_location_3D.clue[currentClueIndex[0]];
+           //console.log(point2D.sourceURL);
+           let tindex=currentClueIndex[m_currentHeight+1];
+           let point3D=m_UAVRouteHML[m_currentHeight][tindex];
+           //clue on the ground
+           //graphicLayer_clue_3D.removeAll();
+           let in_point=new Point({
+             longitude:point2D.location[0],
+             latitude:point2D.location[1]
+           });
+           let t_graphic2D=  new Graphic({
+             geometry: in_point,
+             symbol:  {
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"circle",
+                  color: [255,255,0],//[t_mag, 0,0],
+                  size:10
+                },
+              attributes:{
+                Name:point2D.info,
+                Hour:0,
+                Rank:1
+              },
+              popupTemplate:{
+                 title: point2D.info,
+                 content:[{
+                   type: "media",
+                   mediaInfos: [{
+                     title: "Drone2",
+                     type: "image",
+                     caption: "Optical camera top view, location:("+ in_point.latitude +","+in_point.longitude+")",
+                     value: {sourceURL: point2D.sourceURL[m_currentHeight]}
+                   }]
+                 }]
+               }
+           });
+           graphicLayer_clue_3D.add(t_graphic2D);
+
+           let t_copy_graphic2D=t_graphic2D.clone();
+           temperalgraphicLayer.add(t_copy_graphic2D);// this may block the  clue on the 3D map
+           document.getElementById("testImg").src=point2D.sourceURL[m_currentHeight];
+
+           //add 3D point on path
+           const symbol = {
+            type: "point-3d",  // autocasts as new PointSymbol3D()
+            symbolLayers: [{
+              type: "object",  // autocasts as new ObjectSymbol3DLayer()
+              width: 20,  // diameter of the object from east to west in meters
+              height: 20,  // height of the object in meters
+              depth: 20,  // diameter of the object from north to south in meters
+              resource: { primitive: "sphere" },
+              material: { color: [255, 255, 0] }
+            }]
+          };
+          let t_graphic3D =  new Graphic({
+             geometry: {
+               type: "point", // autocasts as new Point()
+               x: point3D[0],
+               y: point3D[1],
+               z: point3D[2]
+             },
+             symbol:symbol,
+             popupTemplate:{
+                title: point2D.info,
+                content:[{
+                  type: "media",
+                  mediaInfos: [{
+                    title: "Drone2",
+                    type: "image",
+                    caption: "Optical camera top view, location:("+ in_point.latitude +","+in_point.longitude+")",
+                    value: {sourceURL: point2D.sourceURL[m_currentHeight]}
+                  }]
+                }]
+              }
+           });
+           graphicLayer_clue_3D.add(t_graphic3D);
+
+           //draw a vertical line
+           const polyline = {
+             type: "polyline",
+             paths: [point3D,[point3D[0],point3D[1],-100]]
+           };
+
+           const roundTubeSymbol = {
+             type: "line-3d",
+             symbolLayers: [{
+               type: "path",
+               profile: "circle",
+               material: {
+                 color: [156, 156, 156]// [255, 156, 0]
+               },
+               width: 5, // the width in m
+               height: 5 // the height in m
+             }]
+           };
+
+           const polylineGraphic = new Graphic({
+             geometry: polyline,
+             symbol: roundTubeSymbol
+           });
+           graphicLayer_heightline_3D.removeAll();
+           graphicLayer_heightline_3D.add(polylineGraphic);
+
+           let tcolor=Object.values(m_segmentRingColor);
+           //console.log('tcolor',tcolor);
+           let baselineheight=20;
+           let unitHeight=(point3D[2]-baselineheight)/(3-m_currentHeight);
+           let k=1;
+           m_clueOnVertical3D=[point3D];
+           for(let i=m_currentHeight+1;i<4;i++){
+             //console.log('i',i,'k',k);
+             //console.log('baselineheight+point3D[2]-unitHeight*k',point3D[2]-unitHeight*k);
+             DrawRect([point3D[0],point3D[1],point3D[2]-unitHeight*k],tcolor[i],size=20);
+             m_clueOnVertical3D.push([point3D[0],point3D[1],point3D[2]-unitHeight*k]);//H,M,L,B
+             k=k+1;
+           }
+
+           graphicLayer_clue_3D.visible=true;
+           graphicLayer_heightline_3D.visible=true;
+         }
+
+         function DrawRect(center,rectcolor,size=20){
+           const symbol = {
+            type: "point-3d",  // autocasts as new PointSymbol3D()
+            symbolLayers: [{
+              type: "object",  // autocasts as new ObjectSymbol3DLayer()
+              width: size,  // diameter of the object from east to west in meters
+              height: 2,  // height of the object in meters
+              depth: size,  // diameter of the object from north to south in meters
+              resource: { primitive: "diamond" },
+              material: { color: rectcolor }
+            }]
+          };
+          let t_graphic3D =  new Graphic({
+             geometry: {
+               type: "point", // autocasts as new Point()
+               x: center[0],
+               y: center[1],
+               z: center[2]
+             },
+             symbol:symbol
+           });
+           graphicLayer_heightline_3D.add(t_graphic3D);
+         }
+
+         function GetCluePointsOnPath(){
+           //high
+           let tarrH=[];
+           for(let i=0; i<m_exp_location_3D.clue.length; ++i){
+             let minLen=Math.pow(m_exp_location_3D.clue[i].location[0]-m_UAVRouteHML[0][0][0],2)+Math.pow(m_exp_location_3D.clue[i].location[1]-m_UAVRouteHML[0][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[0].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[i].location[0]-m_UAVRouteHML[0][k][0],2)+Math.pow(m_exp_location_3D.clue[i].location[1]-m_UAVRouteHML[0][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_exp_location_3D.clue[i].H3D=m_UAVRouteHML[0][minj];
+             m_exp_location_3D.clue[i].H3D_index=minj;
+             tarrH.push([i,minj]);
+           }
+           //mid
+           let tarrM=[];
+           for(let i=0; i<m_exp_location_3D.clue.length; ++i){
+             let minLen=Math.pow(m_exp_location_3D.clue[i].location[0]-m_UAVRouteHML[1][0][0],2)+Math.pow(m_exp_location_3D.clue[i].location[1]-m_UAVRouteHML[1][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[1].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[i].location[0]-m_UAVRouteHML[1][k][0],2)+Math.pow(m_exp_location_3D.clue[i].location[1]-m_UAVRouteHML[1][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_exp_location_3D.clue[i].M3D=m_UAVRouteHML[1][minj];
+             m_exp_location_3D.clue[i].M3D_index=minj;
+             tarrM.push([i,minj]);
+           }
+           //low
+           let tarrL=[];
+           for(let i=0; i<m_exp_location_3D.clue.length; ++i){
+             let minLen=Math.pow(m_exp_location_3D.clue[i].location[0]-m_UAVRouteHML[2][0][0],2)+Math.pow(m_exp_location_3D.clue[i].location[1]-m_UAVRouteHML[2][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[2].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[i].location[0]-m_UAVRouteHML[2][k][0],2)+Math.pow(m_exp_location_3D.clue[i].location[1]-m_UAVRouteHML[2][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_exp_location_3D.clue[i].L3D=m_UAVRouteHML[2][minj];
+             m_exp_location_3D.clue[i].L3D_index=minj;
+             tarrL.push([i,minj]);
+           }
+           m_unfoundClues=[];
+
+           for(let i=0; i<m_exp_location_3D.clue.length; ++i){
+             m_exp_location_3D.clue[i].HIndex=tarrH[i][1];
+             m_exp_location_3D.clue[i].MIndex=tarrM[i][1];
+             m_exp_location_3D.clue[i].LIndex=tarrL[i][1];
+             m_unfoundClues.push([i,tarrH[i][1],tarrM[i][1],tarrL[i][1]]);
+           }
+           m_unfoundClues = m_unfoundClues.slice().sort(function(a,b){return b[m_currentHeight+1]-a[m_currentHeight+1]});
+           console.log(m_unfoundClues);
+         }
+         function GetCluePointsOnPath3D(){
+
+           //high
+           let tarrH=[];
+           for(let i=0; i<m_unfoundClues.length; ++i){
+             let tindex=m_unfoundClues[i][0];
+             let minLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[0][0][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[0][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[0].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[0][k][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[0][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_unfoundClues[i][1]=minj;
+             //tarrH.push([tindex,minj]);
+           }
+           //mid
+           for(let i=0; i<m_unfoundClues.length; ++i){
+             let tindex=m_unfoundClues[i][0];
+             let minLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[1][0][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[1][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[1].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[1][k][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[1][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_unfoundClues[i][2]=minj;
+           }
+           //low
+           for(let i=0; i<m_unfoundClues.length; ++i){
+             let tindex=m_unfoundClues[i][0];
+             let minLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[2][0][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[2][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[2].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[2][k][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[2][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_unfoundClues[i][3]=minj;
+           }
+           m_unfoundClues = m_unfoundClues.slice().sort(function(a,b){return b[m_currentHeight+1]-a[m_currentHeight+1]});
+         }
+
+         function UpdateCluePointsOnPath(){
+           let tarrL=[];
+           for(let i=0; i<m_unfoundClues.length; ++i){
+             let tindex=m_unfoundClues[i][0];
+             let minLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[m_currentHeight+1][0][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[m_currentHeight+1][0][1],2);
+             let minj=0;
+             for(let k=0;k<m_UAVRouteHML[m_currentHeight+1].length;k++){
+               let tLen=Math.pow(m_exp_location_3D.clue[tindex].location[0]-m_UAVRouteHML[m_currentHeight+1][k][0],2)+Math.pow(m_exp_location_3D.clue[tindex].location[1]-m_UAVRouteHML[m_currentHeight+1][k][1],2);
+               if(tLen<minLen){
+                 minLen=tLen;
+                 minj=k;
+               }
+             }
+             m_unfoundClues[i][m_currentHeight+1]=minj;
+           }
+           m_unfoundClues = m_unfoundClues.slice().sort(function(a,b){return b[m_currentHeight+1]-a[m_currentHeight+1]});
+         }
+
+         function CutPassedPath(height,center){
+           // detect the nearest point on path
+           //m_UAVRouteHML[height];
+           let minLen=Math.pow(center[0]-m_UAVRouteHML[height][0][0],2)+Math.pow(center[1]-m_UAVRouteHML[height][0][1],2);
+           let minj=0;
+           //console.log(m_UAVRouteHML);
+           for(let k=0;k<m_UAVRouteHML[height].length;k++){
+             let tLen=Math.pow(center[0]-m_UAVRouteHML[height][k][0],2)+Math.pow(center[1]-m_UAVRouteHML[height][k][1],2);
+             if(tLen<minLen){
+               minLen=tLen;
+               minj=k;
+             }
+           }
+           m_UAVRouteHML[height] = m_UAVRouteHML[height].slice(minj+1);
+           m_UAVRouteHML_color[height] = m_UAVRouteHML_color[height].slice(minj+1);
+           m_UAVRouteHML_color_w[height] = m_UAVRouteHML_color_w[height].slice(minj+1);
+         }
+
+         function GetPathFromCell3D(extentObj,urlObj,maptype=0){
+           // get water layer
+           // get terrain layer
+
+           let voronoiarr=[];
+           let markspatialreference="epsg3857";
+           if(epsg4326_voronoiarr.length>1){
+             markspatialreference="epsg4326";
+             voronoiarr=epsg4326_voronoiarr;
+           }
+           else{
+             markspatialreference="epsg3857";
+             for(i=0;i<allpolygons.length;i++){
+               voronoiarr.push(allpolygons[i].geometry.rings[0]);
+             }
+           }
+
+           let t_index=parseInt(extentObj.attributes.polygonindex);
+           let indexarr=[0];
+
+           let extentarr=[];
+           extentarr.push(extentObj.geometry.rings[0]);
+
+           let URL = "{% url 'getPathFromArea' %}";
+           //console.log("urlObj",urlObj);
+           resolution=0.0005;
+           baseline=-100;
+           let startpt = [];//request.POST.get('startpt')
+           let direction = [];//request.POST.get('direction')
+           //#maptype 0:basic, 1: weighted, 2: heatmap
+           let data = {
+                   csrfmiddlewaretoken: '{{ csrf_token }}',
+                   'contourarr': JSON.stringify(contourring_arr),
+                   'extentarr':JSON.stringify(extentarr),
+                   'voronoiarr': JSON.stringify(voronoiarr),
+                   'terrainobj':JSON.stringify(urlObj),
+                   'indexarr': JSON.stringify(indexarr),
+                   'resolution': JSON.stringify(resolution),
+                   'baseline':JSON.stringify(baseline),
+                   'startpt':JSON.stringify(startpt),
+                   'direction':JSON.stringify(direction),
+                   'maptype':maptype.toString(),
+                   'spatialReference': markspatialreference
+                  };
+           $.post(URL, data, function(response){
+             let res=JSON.parse(response);
+               if(res.flag == 'success'){
+                 //m_UAVRouteHML=[res.path3DH[indexarr[0]],res.path3DM[indexarr[0]],res.path3DL[indexarr[0]]];
+                 m_UAVRouteHML=[res.path3DH,res.path3DM,res.path3DL];
+                 m_UAVRouteHML_color=[res.coloH,res.coloM,res.coloL];
+                 if(maptype==1){
+                   m_UAVRouteHML_color_w=[res.coloH,res.coloM,res.coloL];
+                 }
+
+                 //SetupClueLocation(m_UAVRouteHML[2]);
+                 m_passPath=[];
+                 m_searchFinish=false;
+                 GetCluePointsOnPath();
+                 graphicsLayer3D_UAVPath.removeAll();
+                 DrawPath(m_UAVRouteHML[0],[0, 156, 255],extentObj.geometry.spatialReference);
+                 //console.log("data ready for path");
+
+                 if(m_loggingForExp){
+                   m_logObj.UAVRouteHML=m_UAVRouteHML;
+                   m_logObj.UAVRouteHML_color=m_UAVRouteHML_color;
+                   if(maptype==1){
+                     m_logObj.UAVRouteHML_color_weighted=m_UAVRouteHML_color_w;
+                   }
+                   m_logObj.graphicSpatialReference=extentObj.geometry.spatialReference;
+                 }
+
+                }
+               else{ alert(response); }
+           });
+           return "GetPathFromCell3D";
+         }
+
+         function DrawPath(path3D,color3D,spatialReference3D,size=3){
+           const polyline = {
+             type: "polyline",
+             paths: path3D
+           };
+
+           const roundTubeSymbol = {
+             type: "line-3d",
+             symbolLayers: [{
+               type: "path",
+               profile: "circle",
+               material: {
+                 color: color3D
+               },
+               width: size, // the width in m
+               height: size // the height in m
+             }]
+           };
+
+           const polylineGraphic = new Graphic({
+             geometry: polyline,
+             symbol: roundTubeSymbol,
+             spatialReference: spatialReference3D
+           });
+
+           graphicsLayer3D_UAVPath.add(polylineGraphic);
+         }
+
+         function DrawPath_ColorArr(path3D,color3D,size=3,colorModel=0){
+           //graphicsLayer3D_UAVPath.removeAll();
+
+           let t_featuresarr=[];
+           m_colored3D=true;
+           let roundTubeSymbol = {
+             type: "line-3d",
+             symbolLayers: [{
+               type: "path",
+               profile: "circle",
+               material: {
+                 color: [0,0,0]
+               },
+               width: size, // the width in m
+               height: size // the height in m
+             }]
+           };
+           // seperate color into categories
+           let t_arrLine3D=[];
+           let tarr=[path3D[0]];
+           let t_color=color3D[0][0];
+
+           let arr_color=[];
+           for(let i=0;i<color3D.length-1;i++){
+             tarr.push(path3D[i+1]);
+             if(color3D[i][colorModel]!=color3D[i+1][colorModel]){
+               t_arrLine3D.push(tarr);
+               arr_color.push(color3D[i][colorModel]);
+               tarr=[path3D[i+1]];
+             }
+           }
+           t_arrLine3D.push(tarr);
+           arr_color.push(color3D[color3D.length-1][colorModel]);
+
+           let t_polyarr=[];
+           let t_colorindex=0;
+           //console.log(colorModel,m_color_storage.length,arr_color);
+           for(let i=0;i<t_arrLine3D.length;i++){
+             let symbolcolor;
+             if(colorModel==0){
+               let t_col=arr_color[i];
+               if(t_col>=m_color_storage.length){
+                 t_col=m_color_storage.length-1;
+               }
+               else if(t_col<0){
+                 t_col=12;
+               }
+               symbolcolor=m_color_storage[t_col][1];
+               //console.log(m_color_storage.length,arr_color[i],t_col);
+             }
+             else{
+               symbolcolor=[arr_color[i][2],arr_color[i][1],arr_color[i][0]];
+             }
+
+             let roundTubeSymbol = {
+               type: "line-3d",
+               symbolLayers: [{
+                 type: "path",
+                 profile: "circle",
+                 material: {
+                   color: symbolcolor
+                 },
+                 width: size, // the width in m
+                 height: size // the height in m
+               }]
+             };
+             let polylineGraphic = new Graphic({
+               geometry: {
+                 type: "polyline",
+                 paths: t_arrLine3D[i]
+               },
+               symbol: roundTubeSymbol
+             });
+             t_featuresarr.push(polylineGraphic)
+             //graphicsLayer3D_UAVPath_color.add(polylineGraphic);
+           }
+           graphicsLayer3D_UAVPath_color.removeAll();
+           graphicsLayer3D_UAVPath_color.addMany(t_featuresarr);
+
+         }
+
+         function DrawPath_ColorArr_Weighted(path3D,color3D,size=3,colorModel=0){
+           let t_featuresarr=[];
+           m_colored3D=true;
+           let t_arrLine3D=[];
+           let tarr=[path3D[0]];
+           let t_color=color3D[0][0];
+
+           let arr_color=[];
+           for(let i=0;i<color3D.length-1;i++){
+             tarr.push(path3D[i+1]);
+             if(color3D[i][colorModel]!=color3D[i+1][colorModel]){
+               t_arrLine3D.push(tarr);
+               arr_color.push(color3D[i][colorModel]);
+               tarr=[path3D[i+1]];
+             }
+           }
+           t_arrLine3D.push(tarr);
+           arr_color.push(color3D[color3D.length-1][colorModel]);
+
+           let color_unit=2;
+           let color_min=0;
+           if(colorModel==0){
+             let color_max=Math.max(...arr_color);
+             let color_min=Math.min(...arr_color);
+             color_unit=200/(color_max-color_min);
+             //console.log(color_max,color_min,color_unit);
+           }
+
+           let t_polyarr=[];
+           for(let i=0;i<t_arrLine3D.length;i++){
+             let symbolcolor;
+             if(colorModel==0){
+               //symbolcolor=[0,0,255-2*arr_color[i],2*arr_color[i]/150];
+               //symbolcolor=[0,0,255-(arr_color[i]-color_min)*color_unit,2*arr_color[i]/150];
+               t_colorscale=(arr_color[i]-color_min)*color_unit;
+               symbolcolor=[0,0,255-t_colorscale,0.2+t_colorscale/200];
+             }
+             else{
+               symbolcolor=[arr_color[i][2],arr_color[i][1],arr_color[i][0]];
+             }
+             let roundTubeSymbol = {
+               type: "line-3d",
+               symbolLayers: [{
+                 type: "path",
+                 profile: "circle",
+                 material: {
+                   color: symbolcolor
+                 },
+                 width: size, // the width in m
+                 height: size // the height in m
+               }]
+             };
+             let polylineGraphic = new Graphic({
+               geometry: {
+                 type: "polyline",
+                 paths: t_arrLine3D[i]
+               },
+               symbol: roundTubeSymbol
+             });
+             //graphicsLayer3D_UAVPath_color.add(polylineGraphic);
+             t_featuresarr.push(polylineGraphic);
+           }
+           graphicsLayer3D_UAVPath_color.removeAll();
+           graphicsLayer3D_UAVPath_color.addMany(t_featuresarr);
+
+         }
+
+         function DrawPath_ColorArr_Cone(path3D,color3D,size=3,colorModel=0){
+           //graphicsLayer3D_UAVPath.removeAll();
+           //graphicsLayer3D_UAVPath_color.removeAll();
+           let t_featuresarr=[];
+           m_colored3D=true;
+           let t_arrLine3D=[];
+           let tarr=[path3D[0]];
+           let t_color=color3D[0][0];
+
+           let arr_color=[];
+           let t_heightarr=[];
+           for(let i=0;i<color3D.length-1;i++){
+             tarr.push(path3D[i+1]);
+             if(color3D[i][colorModel]!=color3D[i+1][colorModel]){
+               t_arrLine3D.push(tarr);
+               arr_color.push(color3D[i][colorModel]);
+               t_heightarr.push(color3D[i][2]);
+               tarr=[path3D[i+1]];
+             }
+           }
+           t_arrLine3D.push(tarr);
+           arr_color.push(color3D[color3D.length-1][colorModel]);
+
+           let t_polyarr=[];
+           let t_colorindex=0;
+
+           for(let i=0;i<t_arrLine3D.length-1;i++){
+             let symbolcolor;
+             let symbolheight;
+             if(colorModel==0){
+               let t_col=arr_color[i];
+               if(t_col>=m_color_storage.length){
+                 t_col=m_color_storage.length-1;
+               }
+               else if(t_col<0){
+                 t_col=12;
+               }
+               symbolcolor=m_color_storage[t_col][1];
+               symbolheight=10*t_col;
+             }
+             else{
+               symbolcolor=[arr_color[i][2],arr_color[i][1],arr_color[i][0]];
+               symbolheight=20*t_heightarr[i];
+             }
+             if(symbolheight>0){
+               const conesymbol = {
+                 type: "point-3d",  // autocasts as new PointSymbol3D()
+                 symbolLayers: [{
+                   type: "object",  // autocasts as new ObjectSymbol3DLayer()
+                   width: 15,  // diameter of the object from east to west in meters
+                   height: symbolheight,  // height of the object in meters
+                   depth: 15,  // diameter of the object from north to south in meters
+                   resource: { primitive: "cone" },
+                   material: { color: symbolcolor }
+                 }]
+               };
+               //console.log(t_arrLine3D.length,i+1);
+               let t_graphic =  new Graphic({
+                 geometry: {
+                   type: "point", // autocasts as new Point()
+                   x: (t_arrLine3D[i][0][0]+t_arrLine3D[i+1][0][0])*0.5,
+                   y: (t_arrLine3D[i][0][1]+t_arrLine3D[i+1][0][1])*0.5,
+                   z: 5//t_arrLine3D[i][0][2]
+                 },
+                 symbol:conesymbol
+               });
+               t_featuresarr.push(t_graphic);
+             }
+
+             //graphicsLayer3D_UAVPath_color.add(t_graphic);
+           }
+           graphicsLayer3D_UAVPath_color.addMany(t_featuresarr);
+
+         }
+         function DrawPath_ColorArr_Weighted_Cone(path3D,color3D,size=3,colorModel=0){
+           let t_featuresarr=[];
+           m_colored3D=true;
+           let t_arrLine3D=[];
+           let tarr=[path3D[0]];
+           let t_color=color3D[0][0];
+
+           let arr_color=[];
+           let t_heightarr=[];
+           for(let i=0;i<color3D.length-1;i++){
+             tarr.push(path3D[i+1]);
+             if(color3D[i][colorModel]!=color3D[i+1][colorModel]){
+               t_arrLine3D.push(tarr);
+               arr_color.push(color3D[i][colorModel]);
+               t_heightarr.push(color3D[i][2]);
+               tarr=[path3D[i+1]];
+             }
+           }
+           t_arrLine3D.push(tarr);
+           arr_color.push(color3D[color3D.length-1][colorModel]);
+
+           let color_unit=2;
+           let color_min=0;
+           if(colorModel==0){
+             let color_max=Math.max(...arr_color);
+             let color_min=Math.min(...arr_color);
+             color_unit=200/(color_max-color_min);
+             //console.log(color_max,color_min,color_unit);
+           }
+
+           let t_polyarr=[];
+           let t_colorindex=0;
+           let t_colorscale=0;
+           for(let i=0;i<t_arrLine3D.length-1;i++){
+
+             let symbolcolor;
+             let symbolheight;
+             if(colorModel==0){
+               //symbolcolor=[0,0,255-2*arr_color[i],2*arr_color[i]/150];
+               t_colorscale=(arr_color[i]-color_min)*color_unit;
+               symbolcolor=[0,0,255-t_colorscale,0.2+t_colorscale/200];
+               symbolheight=arr_color[i];
+
+               //console.log(symbolcolor,arr_color[i],color_min,color_unit,colorModel);
+             }
+             else{
+               symbolcolor=[arr_color[i][2],arr_color[i][1],arr_color[i][0]];
+               symbolheight=20*t_heightarr[i];
+             }
+             if(symbolheight>0){
+               const conesymbol = {
+                 type: "point-3d",  // autocasts as new PointSymbol3D()
+                 symbolLayers: [{
+                   type: "object",  // autocasts as new ObjectSymbol3DLayer()
+                   width: 15,  // diameter of the object from east to west in meters
+                   height: symbolheight,  // height of the object in meters
+                   depth: 15,  // diameter of the object from north to south in meters
+                   resource: { primitive: "cone" },
+                   material: { color:symbolcolor }
+                 }]
+               };
+               //console.log(t_arrLine3D.length,i+1);
+               let t_graphic =  new Graphic({
+                 geometry: {
+                   type: "point", // autocasts as new Point()
+                   x: (t_arrLine3D[i][0][0]+t_arrLine3D[i+1][0][0])*0.5,
+                   y: (t_arrLine3D[i][0][1]+t_arrLine3D[i+1][0][1])*0.5,
+                   z: 5//t_arrLine3D[i][0][2]
+                 },
+                 symbol:conesymbol
+               });
+               //graphicsLayer3D_UAVPath_color.add(t_graphic);
+               t_featuresarr.push(t_graphic);
+             }
+
+           }
+           graphicsLayer3D_UAVPath_color.addMany(t_featuresarr);
+
+         }
+
+         // update path when lower or higher the path
+         function shuffleArray(array) {
+              for (let i = array.length - 1; i > 0; i--) {
+                  let j = Math.floor(Math.random() * (i + 1));
+                  let temp = array[i];
+                  array[i] = array[j];
+                  array[j] = temp;
+              }
+              return array;
+          }
+         function SetupClueLocation(path){
+           //console.log(path);
+           // randomize the clue location based on the generated path, which is at high location.
+           let tlen=path.length;
+           let tset=[];
+           let unitlen=Math.floor(tlen/(m_exp_location_3D.clue.length+1));
+
+           // divide the path into number of clues , then ranomize each clue in each range
+           for(let i=0;i<m_exp_location_3D.clue.length;i++){
+             let tindex=Math.floor((i+0.5+Math.random())*unitlen);
+             if(tindex>tlen-1){
+               tindex=tlen-1;
+             }
+             tset.push(tindex);
+             //console.log(i,tindex);
+           }
+           //console.log(tset);
+
+           let targetindex=tset.length -1- Math.floor(Math.random() * 3);
+           //console.log(targetindex);
+           let tlast=tset[tset.length -1];
+           tset[tset.length -1]=tset[targetindex];
+           tset[targetindex]=tlast;
+           //console.log(tset);
+           //let res_arr=shuffleArray(tset.slice(0,tset.length-1));
+           //console.log(res_arr);
+           //res_arr.push(tlast);
+           //console.log(res_arr);
+           let res_arr=tset;
+           //for(let i=0;i<m_exp_location_3D.clue.length;i++){
+             //m_exp_location_3D.clue[i].location=path[res_arr[i]];
+             //console.log(res_arr[i]);
+           //}
+           let t_log=[];
+           for(let i=0;i<m_exp_location_3D.clue.length;i++){
+             t_log.push(path[res_arr[i]]);
+           }
+           console.table(t_log);
+         }
+
+         function GetPathFromCell3D_BasicCircle(geometry_2D){
+           graphicsLayer3D.removeAll();
+           let rings_2D=geometry_2D.geometry.rings[0];
+           let center_2D=geometry_2D.geometry.extent.center;//center.x
+           let rings_3D=[];
+           //let height_3D=100; // UAV height default
+           let decentralize=0.7;
+
+           let rings_3DM=[];
+           let rings_3DH=[];
+
+           for(let i=0;i<rings_2D.length;++i){
+             rings_3D.push([rings_2D[i][0]*0.9+center_2D.x*0.1,rings_2D[i][1]*0.9+center_2D.y*0.1,m_height_3D[0]]);
+           }
+
+           for(let i=0;i<rings_2D.length;++i){
+             rings_3DM.push([rings_2D[i][0]*0.9+center_2D.x*0.1,rings_2D[i][1]*0.9+center_2D.y*0.1,m_height_3D[1]]);
+           }
+
+           for(let i=0;i<rings_2D.length;++i){
+             rings_3DH.push([rings_2D[i][0]*0.9+center_2D.x*0.1,rings_2D[i][1]*0.9+center_2D.y*0.1,m_height_3D[2]]);
+           }
+
+           if(m_loggingForExp){
+             m_logObj.basicCircle=[rings_3D,rings_3DM,rings_3DH];
+           }
+
+           const polyline = {
+             type: "polyline",
+             paths: rings_3D
+           };
+
+           const roundTubeSymbol = {
+             type: "line-3d",
+             symbolLayers: [{
+               type: "path",
+               profile: "circle",
+               material: {
+                 color: m_segmentRingColor.L// [255, 156, 0]
+               },
+               width: 5, // the width in m
+               height: 5 // the height in m
+             }]
+           };
+
+           const polylineGraphic = new Graphic({
+             geometry: polyline,
+             symbol: roundTubeSymbol,
+             spatialReference: geometry_2D.geometry.spatialReference
+           });
+
+           graphicsLayer3D.add(polylineGraphic);
+
+           const polylineM = {
+             type: "polyline",
+             paths: rings_3DM
+           };
+
+           const roundTubeSymbolM = {
+             type: "line-3d",
+             symbolLayers: [{
+               type: "path",
+               profile: "circle",
+               material: {
+                 color: m_segmentRingColor.M// [255, 156, 0]
+               },
+               width: 5, // the width in m
+               height: 5 // the height in m
+             }]
+           };
+
+           const polylineGraphicM = new Graphic({
+             geometry: polylineM,
+             symbol: roundTubeSymbolM,
+             spatialReference: geometry_2D.geometry.spatialReference
+           });
+
+           graphicsLayer3D.add(polylineGraphicM);
+
+           const polylineH = {
+             type: "polyline",
+             paths: rings_3DH
+           };
+
+           const roundTubeSymbolH = {
+             type: "line-3d",
+             symbolLayers: [{
+               type: "path",
+               profile: "circle",
+               material: {
+                 color: m_segmentRingColor.H// [255, 156, 0]
+               },
+               width: 5, // the width in m
+               height: 5 // the height in m
+             }]
+           };
+
+           const polylineGraphicH = new Graphic({
+             geometry: polylineH,
+             symbol: roundTubeSymbolH,
+             spatialReference: geometry_2D.geometry.spatialReference
+           });
+
+           graphicsLayer3D.add(polylineGraphicH);
+
+           return "GetPathFromCell3D_BasicCircle";
+         }
+
+         function DisplayUAVPath_3D_Fromload(maptype=0){
+           const polylineGraphic = new Graphic({
+             geometry: {
+               type: "polyline",
+               paths: m_loadFromFile.basicCircle[2]
+             },
+             symbol: {
+               type: "line-3d",
+               symbolLayers: [{
+                 type: "path",
+                 profile: "circle",
+                 material: {
+                   color: m_segmentRingColor.L// [255, 156, 0]
+                 },
+                 width: 5, // the width in m
+                 height: 5 // the height in m
+               }]
+             },
+             spatialReference: m_loadFromFile.graphicSpatialReference
+           });
+
+           const polylineGraphicM = new Graphic({
+             geometry: {
+               type: "polyline",
+               paths: m_loadFromFile.basicCircle[1]
+             },
+             symbol: {
+               type: "line-3d",
+               symbolLayers: [{
+                 type: "path",
+                 profile: "circle",
+                 material: {
+                   color: m_segmentRingColor.M// [255, 156, 0]
+                 },
+                 width: 5, // the width in m
+                 height: 5 // the height in m
+               }]
+             },
+             spatialReference: m_loadFromFile.graphicSpatialReference
+           });
+
+           const polylineGraphicH = new Graphic({
+             geometry: {
+               type: "polyline",
+               paths: m_loadFromFile.basicCircle[0]
+             },
+             symbol: {
+               type: "line-3d",
+               symbolLayers: [{
+                 type: "path",
+                 profile: "circle",
+                 material: {
+                   color: m_segmentRingColor.H// [255, 156, 0]
+                 },
+                 width: 5, // the width in m
+                 height: 5 // the height in m
+               }]
+             },
+             spatialReference: m_loadFromFile.graphicSpatialReference
+           });
+           graphicsLayer3D.addMany([polylineGraphic,polylineGraphicM,polylineGraphicH]);
+           //SetupClueLocation(m_UAVRouteHML[2]);
+           m_passPath=[];
+           m_searchFinish=false;
+           GetCluePointsOnPath();
+           graphicsLayer3D_UAVPath.removeAll();
+           DrawPath(m_UAVRouteHML[0],[0, 156, 255],m_loadFromFile.graphicSpatialReference);
+         }
+
+
+         //0:basic map, 1: weighted map, 2: heat map
+         function DisplayUAVPath_3D(maptype=0){
+           //console.log(view);
+            let outSpatialReference = new SpatialReference({
+                  wkid: 4326
+            });
+            //get extent
+            let fullExtent=m_mapextent.clone();
+            //fullExtent=fullExtent.expand(0.8);
+            let pixW=parseInt(fullExtent.width);
+            let pixH=parseInt(fullExtent.height);
+            let ring2D=[
+              [fullExtent.xmin,fullExtent.ymin],
+              [fullExtent.xmax,fullExtent.ymin],
+              [fullExtent.xmax,fullExtent.ymax],
+              [fullExtent.xmin,fullExtent.ymax],
+              [fullExtent.xmin,fullExtent.ymin]];
+
+            let extent_2D=new Graphic({
+              geometry:{
+                   type:"polygon",
+                   rings:ring2D,
+                   spatialReference:view.spatialReference
+               },
+               attributes:{
+                 polygonindex:0
+               }
+            });
+
+            projection.load().then(function() {
+              extent_2D.geometry = projection.project(extent_2D.geometry, outSpatialReference);
+
+              GetPathFromCell3D_BasicCircle(extent_2D);
+
+              //console.log(geometry_2D);
+              landcoverlayer.fetchImage(fullExtent,pixW,pixH).then(function(tres){
+                let urlObj={
+                  xmin:fullExtent.xmin,
+                  xmax:fullExtent.xmax,
+                  ymin:fullExtent.ymin,
+                  ymax:fullExtent.ymax,
+                  width:fullExtent.width,
+                  height:fullExtent.height,
+                  pixW:pixW,
+                  pixH:pixH,
+                  urlImage:tres.src
+                }
+                let tpath=GetPathFromCell3D(extent_2D,urlObj,maptype);
+
+              });
+
+
+            });
+         }
+
+         function LoadLPMData(){
+           m_lpdata_con=[];
+           ClearAllGraphicLayers();
+
+           // spatial experiment, the heat map is not changing based on hours.
+           // set hour=11
+           let spatial_timeslot=m_exp_variables.hour;
+
+           // number of clue files
+           let count_clues=4;
+           let count_trajectory=count_clues+1;
+
+           //folder of files, SAR EXPERIMENT SPATIAL
+           let lpmfolder="/static/data/LPMEXPS2/"+m_exp_location_3D.name;
+
+           // clue1:t1, clue2:t2, clue12:t3, final: t4, final is the overall
+           let cluenames=['final','clue1','clue2','clue12'];
+           let csvfilename=lpmfolder;
+
+           // contour map at time 11
+           csvfilename=lpmfolder+"/con_t"+spatial_timeslot.toString()+".csv";
+           LoadLPFromCSV_con(csvfilename,count_clues+1,spatial_timeslot);
+
+        }
+         function DisplayHeatmap(){
+           m_color_storage=[];
+           visualization_Contourmap_Layer.removeAll();
+           // lost person model
+           arr_featureset=[];
+           if(m_lpdata_con == null){
+             return;
+           }
+
+           let t_data_con,t_hour;
+           t_hour=11;
+
+           arr_heatpoints=m_lpdata_con[0]['data'];
+
+           let t_rings=[];//
+           let all_paths=[];
+           let t_startprobability=arr_heatpoints[0][0];
+
+           let col3 = arr_heatpoints.map(function(value,index) { return value[0]; });
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_range=t_max-t_min;
+
+           let t_mag=(t_startprobability-t_min)/t_range;
+
+           let markerSymbol = {
+             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+             color: [226, 119, 40],
+             outline: {
+               style:"none"
+             }
+           };
+
+          let fillSymbol= {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: [226, 119, 40],
+            outline: { // autocasts as SimpleLineSymbol
+              style:"none"
+            }
+          };
+          let t_distance=0.0001;//define as a circle
+          let t_len=0;
+          let t_index=0;
+          let t_oppacity=3;//0.8
+
+           arr_heatpoints.map(function(item){
+             t_len=t_rings.length-1;
+             if(item[0]==t_startprobability){
+               if(t_len>3){
+                 if(t_distance<((item[1]-t_rings[t_len][0])*(item[1]-t_rings[t_len][0])+ (item[2]-t_rings[t_len][1])*(item[2]-t_rings[t_len][1]))){
+                   t_rings.push(t_rings[0]);
+                   let tmulpt=new Polygon({
+                      rings: t_rings.reverse(),
+                      spatialReference: { wkid: 4326 }
+                    });
+                    t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);
+                    t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+                    fillSymbol.color=t_rgb;
+                    m_color_storage.push([t_index,t_rgb]);
+                    let polylineGraphic = new Graphic({
+                      geometry: tmulpt,
+                      symbol: fillSymbol
+                    });
+                     arr_featureset.push(polylineGraphic);
+                     t_index=t_index+1;
+
+                   t_rings=[];
+                 }
+               }
+             }
+             else{
+               t_rings.push(t_rings[0]);
+               let tmulpt=new Polygon({
+                  rings: t_rings.reverse(),
+                  spatialReference: { wkid: 4326 }
+                });
+                t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);
+                t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+                fillSymbol.color=t_rgb;
+                m_color_storage.push([t_index,t_rgb]);
+                let polylineGraphic = new Graphic({
+                  geometry: tmulpt, // Add the geometry created in step 4
+                  symbol: fillSymbol
+                });
+                 arr_featureset.push(polylineGraphic);//t_graphic
+
+                 t_index=t_index+1;
+
+                 t_rings=[];
+                 t_startprobability=item[0];
+                 t_mag=(t_startprobability-t_min)/t_range;
+             }
+             t_rings.push(item.slice(1));
+           });
+           if(t_rings.length>0){
+             t_rings.push(t_rings[0]);
+            let tmulpt=new Polygon({
+              rings: t_rings.reverse(),
+              spatialReference: { wkid: 4326 }
+            });
+            t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+            t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+            fillSymbol.color=t_rgb;
+            m_color_storage.push([t_index,t_rgb]);
+            let polylineGraphic = new Graphic({
+              geometry: tmulpt,
+              symbol: fillSymbol
+            });
+             arr_featureset.push(polylineGraphic);
+             t_index=t_index+1;
+             t_rings=[];
+           }
+           //console.log(arr_featureset);
+           for(let i=0;i<10;i++){
+             m_color_storage.push([t_index+i,[100,100,100]]);
+           }
+
+           visualization_Contourmap_Layer.addMany(arr_featureset);
+           visualization_Contourmap_Layer.visible=true;
+           if(m_loggingForExp){
+             m_logObj.colorStorage=m_color_storage;
+           }
+         }
+         function DisplayHeatmap_3D(){
+           //console.log(m_lpdata_con);
+           graphicLayer_contour_3D.removeAll();
+           let arr_featureset_3D=[];
+           if(m_lpdata_con == null){
+             //console.log(m_lpdata_con);
+             return;
+           }
+
+           let t_data_con;
+           let t_hour=11;
+
+           let arr_heatpoints_3D=m_lpdata_con[0]['data'];
+
+           //console.log(arr_heatpoints_3D);
+           //loop to find rings
+           let t_rings=[];//
+           let all_paths=[];
+           let t_startprobability=arr_heatpoints_3D[0][0];
+
+           let col3 = arr_heatpoints_3D.map(function(value,index) { return value[0]; });
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_range=t_max-t_min;
+
+           let t_mag=(t_startprobability-t_min)/t_range;
+
+           let markerSymbol = {
+             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+             color: [226, 119, 40],
+             outline: {
+               style:"none"
+             }
+           };
+          let fillSymbol= {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: [226, 119, 40],
+            outline: { // autocasts as SimpleLineSymbol
+
+              style:"none"
+            }
+          };
+          let t_distance=0.0001;//define as a circle
+          let t_len=0;
+          let t_index=0;
+          let t_oppacity=3;//0.8
+
+           arr_heatpoints_3D.map(function(item){
+             t_len=t_rings.length-1;
+             if(item[0]==t_startprobability){
+               if(t_len>3){
+                 if(t_distance<((item[1]-t_rings[t_len][0])*(item[1]-t_rings[t_len][0])+ (item[2]-t_rings[t_len][1])*(item[2]-t_rings[t_len][1]))){
+                   //console.log((item[1]-t_rings[0][0])*(item[1]-t_rings[0][0])+ (item[2]-t_rings[0][1])*(item[2]-t_rings[0][1]));
+                   // if two points are two far away, define them as different circles
+                   t_rings.push(t_rings[0]);
+                   let tmulpt=new Polygon({
+                      rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                      spatialReference: { wkid: 4326 }
+                    });
+                    if (m_colormap==0){
+                      t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+                    }
+                    else if (m_colormap==1){
+                      t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+                    }
+                    else{
+                      t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+                    }
+                    t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+                    fillSymbol.color=t_rgb;
+                    let polylineGraphic = new Graphic({
+                      geometry: tmulpt, // Add the geometry created in step 4
+                      symbol: fillSymbol
+                    });
+                     arr_featureset_3D.push(polylineGraphic);//t_graphic
+                     t_index=t_index+1;
+
+                   t_rings=[];
+                 }
+               }
+             }
+             else{
+               //ori:t_rings.push(t_rings[t_rings.length-1]);
+               t_rings.push(t_rings[0]);
+               //console.log(t_rings);
+
+               let tmulpt=new Polygon({
+                  rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                  spatialReference: { wkid: 4326 }
+                });
+                if (m_colormap==0){
+                  t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+                }
+                else if (m_colormap==1){
+                  t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+                }
+                else{
+                  t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+                }
+                t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+                fillSymbol.color=t_rgb;
+                let polylineGraphic = new Graphic({
+                  geometry: tmulpt, // Add the geometry created in step 4
+                  symbol: fillSymbol
+                });
+                 arr_featureset_3D.push(polylineGraphic);//t_graphic
+                 t_index=t_index+1;
+
+                 t_rings=[];
+                 t_startprobability=item[0];
+                 t_mag=(t_startprobability-t_min)/t_range;
+             }
+             t_rings.push(item.slice(1));
+           });
+           if(t_rings.length>0){
+
+             //ori:t_rings.push(t_rings[t_rings.length-1]);
+             t_rings.push(t_rings[0]);
+             //console.log(t_rings);
+
+             let tmulpt=new Polygon({
+                rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                spatialReference: { wkid: 4326 }
+              });
+              if (m_colormap==0){
+                t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+              }
+              else if (m_colormap==1){
+                t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+              }
+              else{
+                t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+              }
+              t_rgb.push(t_oppacity*t_mag+0.3);//oppacity
+
+              fillSymbol.color=t_rgb;
+              let polylineGraphic = new Graphic({
+                geometry: tmulpt, // Add the geometry created in step 4
+                symbol: fillSymbol
+              });
+               arr_featureset_3D.push(polylineGraphic);//t_graphic
+               t_index=t_index+1;
+
+               t_rings=[];
+           }
+           //console.log(arr_featureset_3D);
+           graphicLayer_contour_3D.addMany(arr_featureset_3D);
+           graphicLayer_contour_3D.visible=true;
+
+         }
+
+         function DisplayClue3D(center3D,rectcolor){
+           const symbol = {
+            type: "point-3d",  // autocasts as new PointSymbol3D()
+            symbolLayers: [{
+              type: "object",  // autocasts as new ObjectSymbol3DLayer()
+              width: 10,  // diameter of the object from east to west in meters
+              height: 20,  // height of the object in meters
+              depth: 10,  // diameter of the object from north to south in meters
+              resource: { primitive: "sphere" },
+              material: { color: rectcolor }
+            }]
+          };
+          let t_graphic =  new Graphic({
+            geometry: {
+              type: "point", // autocasts as new Point()
+              x: center3D[0],
+              y: center3D[1],
+              z: center3D[2]
+            },
+            symbol:symbol
+          });
+          graphicLayer_clue_3D.add(t_graphic);
+         }
+
+         function DisplayAllClue_3D(obj){
+           //console.log("obj",obj);
+           //console.log("obj_clue",obj_clue);
+           // 1 target, 3 clues, 3 distractor
+           graphicLayer_clue_3D.removeAll();
+           //target
+           let in_point=new Point({
+                   longitude:obj.clue[0].location[0],
+                   latitude:obj.clue[0].location[1]
+                 });
+
+           let t_graphic1=  new Graphic({
+             geometry: in_point,
+             symbol:  {
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"circle",
+                  color: [getRandomInt(255), getRandomInt(255), getRandomInt(255)],//[t_mag, 0,0],
+                  size:20
+                },
+              attributes:{
+                Name:"Target",
+                Hour:0,
+                Rank:1
+              },
+              popupTemplate:{
+                 title: obj.clue[0].info,
+                 content:[{
+                   type: "media",
+                   mediaInfos: [{
+                     title: "Drone2",
+                     type: "image",
+                     caption: "Optical camera top view, location:("+ in_point.latitude +","+in_point.longitude+")",
+                     value: {sourceURL: obj.clue[0].sourceURL[m_currentHeight]}
+                   }]
+                 }]
+               }
+           });
+           graphicLayer_clue_3D.add(t_graphic1);
+
+           let t_clueobj3={
+              cluephotoid: "4",
+              detail: "Camera top view",
+              flag: "success",
+              name: "Drone1",
+              url: "/media/uploads/clue.png",
+           };
+
+           // 3 clues 1-4
+           for (let i=1;i<5;i++){
+             let in_point=new Point({
+               longitude:obj.clue[i].location[0],
+               latitude:obj.clue[i].location[1]
+             });
+
+            let t_graphic =  new Graphic({
+               geometry: in_point,
+               symbol:  {
+                 type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+                 url: "{% static 'img/clue2.png' %}",//user.png
+                 width: "32px",
+                 height: "32px"
+               },
+               popupTemplate:{
+                  title: "Clue",
+                  content:[{
+                    type: "media",
+                    mediaInfos: [{
+                      title: obj.clue[i].info,
+                      type: "image",
+                      caption: "location: ("+ in_point.longitude +","+in_point.latitude+")",
+                      value: {sourceURL: obj.clue[i].sourceURL[m_currentHeight]}
+                    }]
+                  }]
+                }
+             });
+             graphicLayer_clue_3D.add(t_graphic);
+           }
+
+           // 3 clues 1-4
+           for (let i=5;i<9;i++){
+             let in_point=new Point({
+               longitude:obj.clue[i].location[0],
+               latitude:obj.clue[i].location[1]
+             });
+
+            let t_graphic =  new Graphic({
+               geometry: in_point,
+               symbol:  {
+                 type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+                 url: "{% static 'img/pass.png' %}",//user.png
+                 width: "32px",
+                 height: "32px"
+               },
+               popupTemplate:{
+                  title: "To be identified",
+                  content:[{
+                    type: "media",
+                    mediaInfos: [{
+                      title: obj.clue[i].info,
+                      type: "image",
+                      caption: "location: ("+ in_point.longitude +","+in_point.latitude+")",
+                      value: {sourceURL: obj.clue[i].sourceURL[m_currentHeight]}
+                    }]
+                  }]
+                }
+             });
+             graphicLayer_clue_3D.add(t_graphic);
+           }
+
+           for(let i=0;i<m_exp_location_3D.clue.length;++i){
+             DisplayClue3D(m_exp_location_3D.clue[i].H3D,m_segmentRingColor.H);
+             DisplayClue3D(m_exp_location_3D.clue[i].M3D,m_segmentRingColor.M);
+             DisplayClue3D(m_exp_location_3D.clue[i].L3D,m_segmentRingColor.L);
+           }
+           graphicLayer_clue_3D.visible=true;
+         }
+
+         function DisplayUAVPosition_3D(cetner){
+           const point = {
+             type: "point", // autocasts as new Point()
+             x: cetner[0],
+             y: cetner[1],
+             z: cetner[2]
+           };
+
+           const markerSymbol = {
+             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+             color: [226, 119, 40],
+             outline: {
+               // autocasts as new SimpleLineSymbol()
+               color: [255, 255, 255],
+               width: 2
+             }
+           };
+
+           const dronesymbol = {
+             type: "point-3d",
+             symbolLayers: [
+               {
+                 type: "object",
+                 height: 7,
+                 resource: {
+                   href: "{% static 'img/Dronedraft.gltf' %}"//"./tent.glb"
+                 }
+               }
+             ]
+           };
+
+           const pointGraphic = new Graphic({
+             geometry: point,
+             symbol: dronesymbol//markerSymbol
+           });
+           graphicsLayer3D_point.removeAll();
+           graphicsLayer3D_point.add(pointGraphic);
+         }
+
+         function UpdateDroneLocationTimer3D(e){
+           //m_currentHeight=0;//0,1,2
+           let nmax=m_UAVRouteHML[m_currentHeight].length-1;
+           //console.log(m_step,nmax);
+           if(m_step>=nmax || m_searchFinish){
+             DisplayUAVPosition_3D(m_UAVRouteHML[m_currentHeight][m_UAVRouteHML[m_currentHeight].length-1]);
+             clearInterval(timerid3d);
+             m_DroneUpdate3D=true;
+             m_searchFinish=true;
+             document.getElementById("bt_updateuavpostion").innerHTML='Search';
+             document.getElementById("clueConfirm").disabled = false;
+             return;
+           }
+           //console.log(currentIndex);
+           let currentIndex=m_step%nmax;
+           let center=m_UAVRouteHML[m_currentHeight][currentIndex];
+
+           m_step=m_step+1;
+           if(currentIndex%5==0){
+             DisplayUAVPosition_3D(center);
+           }
+           m_passPath.push(center);
+
+           // if the clue is on the path, then pop the clue
+           //m_unfoundClues;//[[i,H,M,L],[i,H,M,L],[i,H,M,L],[i,H,M,L]]
+           if(m_unfoundClues.length>0){
+             let tindex=m_unfoundClues[m_unfoundClues.length-1][m_currentHeight+1];
+
+             if(currentIndex>=tindex){
+               DisplayUAVPosition_3D(center);
+               clearInterval(timerid3d);
+               m_DroneUpdate3D=true;
+               DrawCurrentClueOnPath(m_unfoundClues[m_unfoundClues.length-1]);//m_unfoundClues[i][0] is the clue_index
+               //console.log(m_clueOnVertical3D);
+               document.getElementById("bt_updateuavpostion").innerHTML='Search';
+               //m_UAVRouteHML[m_currentHeight]=m_UAVRouteHML[m_currentHeight].slice(currentIndex);
+               //m_step=0;
+               m_currentClue=m_unfoundClues.pop();
+
+               let clueinfo=m_exp_location_3D.clue[m_currentClue[0]];
+               document.getElementById("searchResults").innerHTML="UAV: The object is a "+clueinfo.info+".";
+               m_clueOnVertical3DOffset=0;
+
+               // one clue is found
+               document.getElementById("bt_lowerUAVPath").disabled = false;
+               document.getElementById("bt_raiseUAVPath").disabled = false;
+               document.getElementById("bt_sendHumanSearchTeam").disabled = false;
+               document.getElementById("clueConfirm").disabled = false;
+
+               m_exp_clue.clue_index=m_currentClue[0];
+               m_exp_clue.clueinfo=clueinfo.truth;
+               console.log(m_exp_clue);
+               SaveExperimentdatatoDB(m_exp_clue);
+             }
+           }
+
+         }
+         function raiseUAVPath_3D(){
+           /*
+           draw a line on the 3D map
+           boundary of height: current height [h,m,l]~0
+           option of height change:
+           */
+           if(m_clueOnVertical3DOffset>0){
+             m_clueOnVertical3DOffset=m_clueOnVertical3DOffset-1;
+             DisplayUAVPosition_3D(m_clueOnVertical3D[m_clueOnVertical3DOffset]);
+
+             document.getElementById("testImg").src=m_exp_location_3D.clue[m_currentClue[0]].sourceURL[m_currentHeight+m_clueOnVertical3DOffset];
+
+             let clueinfo=m_exp_location_3D.clue[m_currentClue[0]];
+             document.getElementById("searchResults").innerHTML="UAV: The object is a "+clueinfo.info+".";
+           }
+           //console.log(m_clueOnVertical3DOffset);
+         }
+         function lowerUAVPath3D(){
+           if(m_clueOnVertical3DOffset<m_clueOnVertical3D.length-1){
+             m_clueOnVertical3DOffset=m_clueOnVertical3DOffset+1;
+             DisplayUAVPosition_3D(m_clueOnVertical3D[m_clueOnVertical3DOffset]);
+             DrawClue3D(m_currentClue,m_clueOnVertical3D[m_clueOnVertical3DOffset],m_currentHeight+m_clueOnVertical3DOffset,[255,255,0],25);
+
+             let clueinfo=m_exp_location_3D.clue[m_currentClue[0]];
+             document.getElementById("searchResults").innerHTML="UAV: The object is a "+clueinfo.info+".";
+           }
+         }
+         function DetectTurningPoint(previousheight){
+           let res_turnnpt=0;
+           if(m_passPath.length<2){
+             return res_turnnpt;
+           }
+           let direction=[0,0];
+           direction[0]=m_passPath[m_passPath.length-2][0]-m_passPath[m_passPath.length-1][0];
+           direction[1]=m_passPath[m_passPath.length-2][1]-m_passPath[m_passPath.length-1][1];
+
+           let t_direction=[0,0];
+           let t_route=m_UAVRouteHML[previousheight];
+           t_direction[0]=m_passPath[m_passPath.length-1][0]-t_route[0][0];
+           t_direction[1]=m_passPath[m_passPath.length-1][1]-t_route[0][1];
+
+           //console.log(m_passPath[m_passPath.length-1],t_route[0],direction,t_direction);
+
+           let slop;
+           if(Math.abs(direction[0])>0.00000000001){//direction[0]!=0 //
+             slop=direction[1]/direction[0];
+             //console.log('slop',slop,direction);
+             for(let i=1;i<t_route.length;i++){
+               res_turnnpt=i;
+               if(Math.abs(t_direction[0])<0.00000000001){//t_direction[0]==0
+                 //console.log('t_direction',t_direction);
+                 break;
+               }
+               else{
+                 let t_slop=t_direction[1]/t_direction[0];
+                 //console.log(slop,t_slop,(t_slop-slop)*(t_slop-slop),"square(t_slop-slop)");
+                 if((t_slop-slop)*(t_slop-slop)>0.001){
+                   //console.log(t_slop,"square(t_slop-slop)");
+                   break;
+                 }
+               }
+
+               t_direction[0]=t_route[i][0]-t_route[i-1][0];
+               t_direction[1]=t_route[i][1]-t_route[i-1][1];
+               //res_turnnpt=i;
+             }
+           }
+           else{
+             for(let i=1;i<t_route.length;i++){
+               if(Math.abs(t_direction[0])>0.00000000001){//t_direction[0]!=0
+                 //console.log('slop',slop,direction);
+                 res_turnnpt=i;
+                 break;
+               }
+               t_direction[0]=t_route[i][0]-t_route[i-1][0];
+               t_direction[1]=t_route[i][1]-t_route[i-1][1];
+             }
+           }
+           //console.log("res_turnnpt",res_turnnpt);
+           return res_turnnpt;
+         }
+         function setHeight(height=0){
+           let outSpatialReference = new SpatialReference({
+             wkid: 4326
+           });
+           let t_previousHeight=m_currentHeight;
+           m_currentHeight=height;
+           //console.log(m_currentClue);
+           if(m_currentClue === undefined){
+             graphicsLayer3D_UAVPath.removeAll();
+             let tcolor=Object.values(m_segmentRingColor);
+             DrawPath(m_UAVRouteHML[m_currentHeight],tcolor[m_currentHeight],outSpatialReference);
+             return;
+           }
+           if(m_slice_tag){
+             if(height==t_previousHeight){
+               //this is the most robustic
+               m_UAVRouteHML[m_currentHeight] = m_UAVRouteHML[m_currentHeight].slice(m_currentClue[m_currentHeight+1]+1);
+               m_UAVRouteHML_color[m_currentHeight] = m_UAVRouteHML_color[m_currentHeight].slice(m_currentClue[m_currentHeight+1]+1);
+               m_UAVRouteHML_color_w[m_currentHeight] = m_UAVRouteHML_color_w[m_currentHeight].slice(m_currentClue[m_currentHeight+1]+1);
+             }
+             else{
+               m_UAVRouteHML[t_previousHeight] = m_UAVRouteHML[t_previousHeight].slice(m_currentClue[t_previousHeight+1]+1);
+               m_UAVRouteHML_color[t_previousHeight] = m_UAVRouteHML_color[t_previousHeight].slice(m_currentClue[t_previousHeight+1]+1);
+               m_UAVRouteHML_color_w[t_previousHeight] = m_UAVRouteHML_color_w[t_previousHeight].slice(m_currentClue[t_previousHeight+1]+1);
+
+               let res_turnnpt=DetectTurningPoint(t_previousHeight);
+               let t_route=m_UAVRouteHML[t_previousHeight].slice(0,res_turnnpt);// in the middle between t_route and m_UAVRouteHML
+               m_UAVRouteHML[t_previousHeight]=m_UAVRouteHML[t_previousHeight].slice(res_turnnpt+1);
+
+               let t_color=m_UAVRouteHML_color[t_previousHeight].slice(0,res_turnnpt);// in the middle between t_route and m_UAVRouteHML
+               m_UAVRouteHML_color[t_previousHeight]=m_UAVRouteHML_color[t_previousHeight].slice(res_turnnpt+1);
+
+               let t_color_w=m_UAVRouteHML_color_w[t_previousHeight].slice(0,res_turnnpt);// in the middle between t_route and m_UAVRouteHML
+               m_UAVRouteHML_color_w[t_previousHeight]=m_UAVRouteHML_color_w[t_previousHeight].slice(res_turnnpt+1);
+
+               for(let i=0;i<3;++i){
+                 if(i==t_previousHeight){
+                 }
+                 else{
+                   CutPassedPath(i,t_route[t_route.length-1]);
+                   //console.log(t_route,m_UAVRouteHML[i]);
+
+                   let heightchange=t_route[t_route.length-1][2]-m_UAVRouteHML[i][0][2];
+                   //console.log(heightchange,t_route[t_route.length-1][2],m_UAVRouteHML[i][0][2]);
+
+                   let i_route=[];
+                   let i_color=[];
+                   let i_color_w=[];
+                   for(let j=0;j<t_route.length;j++){
+                     i_route.push([t_route[j][0],t_route[j][1],t_route[j][2]-heightchange]);
+                     i_color.push(t_color[j]);
+                     i_color_w.push(t_color_w[j]);
+                   }
+                   m_UAVRouteHML[i]=i_route.concat(m_UAVRouteHML[i]);
+                   m_UAVRouteHML_color[i]=i_color.concat(m_UAVRouteHML_color[i]);
+                   m_UAVRouteHML_color_w[i]=i_color_w.concat(m_UAVRouteHML_color_w[i]);
+                 }
+               }
+             }
+             GetCluePointsOnPath3D();
+             m_slice_tag=false;
+           }
+           graphicsLayer3D_UAVPath.removeAll();
+           DrawPath(m_passPath,[80,80,80],outSpatialReference,4);
+           let tline=[m_passPath[m_passPath.length-1],m_UAVRouteHML[m_currentHeight][0]];
+           DrawPath(tline,[80,80,80],outSpatialReference,4);
+           let tcolor=Object.values(m_segmentRingColor);
+           DrawPath(m_UAVRouteHML[m_currentHeight],tcolor[m_currentHeight],outSpatialReference);
+           //console.log(m_unfoundClues);
+
+           // set height
+           if(m_adaptiveMode){
+             UpdatePathVisualization(m_recommendedmaptype);
+           }
+           else{
+             UpdatePathVisualization(m_maptype);
+           }
+
+         }
+         function AdaptLOD(V,n,CoV,deltaT,stepsize=1,arrSV){
+           if(deltaT==1){
+             stepsize=0;
+           }
+           else if(deltaT==0){
+             stepsize=0;
+             if(n>arrSV[V]){
+               n=1;
+               arrSV[V]+=1;
+               if (V>=3){
+                 CoV=-1;
+               }
+               V=V+CoV;
+             }
+             else{
+               n=n+1;
+             }
+           }
+           else{
+             CoV=(-1)*CoV;
+             V=V+CoV*(stepsize%3+1);
+             stepsize=stepsize+1;
+           }
+           if(V<1){
+             V=1;
+           }
+           if(V>3){
+             V=3;
+           }
+           return V,n,CoV,deltaT,stepsize,arrSV
+         }
+
+         function UpdateScore(t_index=0,sub_index=0,sub_sub_indix=0){
+           m_exp_score.scorePre=m_exp_measure_score;
+           m_exp_score.t_index=t_index;
+           m_exp_score.sub_index=sub_index;
+           m_exp_score.sub_sub_indix=sub_sub_indix;
+           m_exp_score.scoreindex=m_exp_score.scoreindex+1;
+           m_exp_score.scoreChange=m_scoresheet[t_index][sub_index][sub_sub_indix];
+           // every trial will have a score of height
+           m_exp_measure_score=m_exp_measure_score+m_scoresheet[t_index][sub_index][sub_sub_indix];
+
+           console.log(m_exp_score);
+           document.getElementById("lb_score").innerHTML="Score:"+m_exp_measure_score.toString();
+           m_exp_score.scorePost=m_exp_measure_score;
+           SaveExperimentdatatoDB(m_exp_score);
+           return m_exp_measure_score;
+         }
+
+         //m_recommendedmaptype  0:basic, 1: weighted, 2: heatmap
+         function UpdateTrustRecommendation(trustIn){
+           // rangeTrust: within this range, trust considered to be at the similar level.
+           let rangeTrust=5;
+
+           // stepTrust: how many number of trust measures are averaged
+           let stepTrust=3;
+
+           let t_recommendmax=2;
+           let t_lentrust=m_trustHistory.length;
+           m_trustHistory.push(trustIn);
+           if(t_lentrust<=stepTrust){
+             // nothing changed if not enough number of trust measures;
+             return;
+           }
+
+           // count the average
+           let addup_trust=0;
+           // 10, 9, 6
+           for(let i=t_lentrust-1;i>t_lentrust-1-stepTrust;i--){
+             addup_trust+=m_trustHistory[i];
+           }
+           let averageTrust=addup_trust/stepTrust;
+
+           if(trustIn-averageTrust>rangeTrust){
+             // if the average of previous three trust is lower than the current trust, it means that trust is increased, then keep the same visualization
+             //do nothing
+           }
+           else if(averageTrust-trustIn>rangeTrust){
+             // if the average of previous three trust is higher than the current trust, it means that trust is decreased, then show more information
+             m_recommendedmaptype=m_recommendedmaptype+1;
+             if(m_recommendedmaptype>t_recommendmax){
+               m_recommendedmaptype=t_recommendmax;
+             }
+           }
+           else{
+             // if the average of the previous three trust is at the similar level, it means trust plateau, then show less information
+             m_recommendedmaptype=m_recommendedmaptype-1;
+             if(m_recommendedmaptype<0){
+               m_recommendedmaptype=0;
+             }
+           }
+
+           /*
+           if(trustIn<30){
+             m_recommendedmaptype=2;
+           }
+           else if(trustIn<60){
+             m_recommendedmaptype=1;
+           }
+           else{
+             m_recommendedmaptype=0;
+           }
+           m_trustHistory.push(trustIn);
+           */
+         }
+
+         function UpdateSetup_Variables(in_exp_order=0){
+           m_exp_order=in_exp_order;
+
+           m_exp_taskIndex=m_expsetupobj.participantsetup[m_exp_participantindex].taskorder[m_exp_order];
+           m_exp_taskSetup=m_expsetupobj.experimentsetup[m_exp_taskIndex];
+           m_exp_lostpersontype=m_expsetupobj.lostpersontype[m_exp_taskSetup.lpt];
+           m_exp_visualization=m_expsetupobj.visualizationtype[m_exp_taskSetup.vt];//0:ringmap, 1:weightedmap, 2:heatmap, 3:adaptive
+           if(m_exp_visualization.index==3){
+             m_adaptiveMode=true;
+           }
+           else{
+             m_adaptiveMode=false;
+           }
+           m_exp_location_3D=m_expsetupobj.location_3D[m_exp_taskSetup.loc];
+           m_exp_discription=m_expsetupobj.scenariodiscription[m_exp_taskSetup.loc];
+
+           m_UAVRouteHML=[];
+           m_UAVRouteHML_color=[];
+           m_UAVRouteHML_color_w=[];
+           m_selectedgraphicrect2D=null;//updated every click
+           m_color_storage=[];
+           m_currentHeight=0;//0,1,2:h,m,l // for path planning
+           m_passPath=[];//points
+           m_step=0;
+           m_clueOnVertical3D=[];//clue at different height
+           m_clueOnVertical3DOffset=0;// index m_clueOnVertical3D, from high to low:0,1,2,3// for uav inspection
+           m_DroneUpdate3D=true;
+           m_searchFinish=false;
+           m_unfoundClues=[];
+           m_currentClue=undefined;
+           m_slice_tag=true;
+           m_trialindex=0;
+           allpolygons=[];
+           allpolygons_text=[];
+           arr_featureset=[];
+           m_lpdata_con=[];
+           m_colored3D=false;
+           m_heightHistory=[];
+
+           m_maptype=m_exp_visualization.index;
+           m_logObj={
+              "icname":"default",
+              "fullExtent":[],
+              "graphicExtent":[],
+              "vpolygons":[],
+              "voronoiColorArr":[],
+              "UAVRouteHML":[],
+              "UAVRouteHML_color":[],
+              "UAVRouteHML_color_weighted":[],
+              "basicCircle":[],
+              "graphicSpatialReference":[],
+              "colorStorage":[]
+            };
+            //console.log("m_logObj is cleaned");
+            m_loadFromFile=null;
+            m_recommendedmaptype=0; //0:basic, 1: weighted, 2: heatmap
+            m_trustHistory=[];
+            m_recommendedHeight=0;
+            m_loggingForExp=true;
+
+            m_exp_score={
+              "logtype":"score",
+            	"participantid":m_exp_participantid,
+            	"participantindex":m_exp_participantindex,
+              "experimentindex":m_exp_taskIndex,
+            	"tasklocation":m_exp_location_3D.name,
+            	"trialIndex":m_trialindex,
+            	"scoreChange":0,
+            	"scorePre":0,
+            	"scorePost":0,
+              "scoreindex":0,
+          		"t_index":0,
+          		"sub_index":0,
+          		"sub_sub_indix":0
+            };
+
+            m_exp_measure_score=0;
+            UpdateScore("score0",0,0);
+
+            m_exp_confirm={
+              "logtype":"confirm",
+              "participantid":m_exp_participantid,
+              "participantindex":m_exp_participantindex,
+              "experimentindex":m_exp_taskIndex,
+              "m_trialindex":m_trialindex,
+              "tasklocation":m_exp_location_3D.name,
+              "trust":0,
+              "truth":"object",
+              "detectedObjectUser":0,
+              "searchResults":"object"
+            };
+
+            m_exp_e={
+              "logtype":"action",
+              "participantid":m_exp_participantid,
+              "participantindex":m_exp_participantindex,
+              "experimentindex":m_exp_taskIndex,
+              "m_trialindex":m_trialindex,
+              "tasklocation":m_exp_location_3D.name,
+              "id":"id"
+            };
+
+            m_experimentlog={
+              "logtype":"task",
+              "m_exp_variables":m_exp_variables,
+              "m_exp_location":m_exp_location_3D.name,
+              "m_exp_visualization":m_exp_visualization,
+              "participantindex":m_exp_participantindex,
+              "participantid":m_exp_participantid,
+              "experimentindex":m_exp_taskIndex,
+              "m_trialindex":m_trialindex,
+              "taskstatus":"start",
+              "taskstart":Date.now(),
+              "taskend":0,
+              "duration":0,
+              "totalrounds":0,
+              "visualization":m_exp_visualization,
+              "m_adaptiveMode":m_adaptiveMode,
+              "m_heightHistory":[]
+            };
+
+            m_exp_clue={
+              "logtype":"clue",
+              "participantid":m_exp_participantid,
+              "participantindex":m_exp_participantindex,
+              "experimentindex":m_exp_taskIndex,
+              "tasklocation":m_exp_location_3D.name,
+              "m_trialindex":m_trialindex,
+              "clue_index":0,
+              "clueinfo":"",
+              "height":0,
+              "visualization":0
+            };
+
+            console.log("m_exp_taskSetup",m_exp_taskSetup);
+         }
+
+         function UpdateSetup_HTML(){
+           //document.getElementById("infocontent").value = "LPM Data";
+           document.getElementById("searchResults").innerHTML="Search results: NA";
+           document.getElementById("bt_updateuavpostion").innerHTML="Search";
+           document.getElementById("myRangeTrust").value=50;
+           document.getElementById("myRangeTrustAmount").innerHTML=50;
+
+           document.getElementById("p_discription").innerHTML=m_exp_discription.discription;
+           document.getElementById("btic").value=m_exp_location_3D.name;
+
+           document.getElementById("bt_loadLPMData").disabled = false;
+           document.getElementById("bt_getLPM").disabled = false;
+
+           document.getElementById("bt_startMission").disabled = false;
+           document.getElementById("ScenarioDescriptionDiv").style.display="initial";
+
+           document.getElementById("bt_updateuavpostion").disabled = true;
+           document.getElementById("bt_lowerUAVPath").disabled = true;
+           document.getElementById("bt_raiseUAVPath").disabled = true;
+           document.getElementById("bt_sendHumanSearchTeam").disabled = true;
+
+           document.getElementById("bt_UAVH").disabled = true;
+           document.getElementById("bt_UAVM").disabled = true;
+           document.getElementById("bt_UAVL").disabled = true;
+           document.getElementById("bt_UAVRecommend").disabled = true;
+
+           document.getElementById("Results").style.display="none";
+           document.getElementById("lb_score").innerHTML="Score:"+m_exp_measure_score.toString();
+
+         }
+
+         function DisableBT(itemid="q_scene"){
+             document.getElementById(itemid).disabled=true;
+             document.getElementById(itemid).style.color="gray";
+         }
+         function EnableBT(itemid="q_scene"){
+             document.getElementById(itemid).disabled=false;
+             document.getElementById(itemid).style.color="#0079c1";
+         }
+
+         function UpdatePathVisualization(maptypeIn=0){
+           m_exp_clue.visualization=maptypeIn;
+           m_exp_clue.height=m_currentHeight;
+           if(maptypeIn==0){
+
+           }
+           else if(maptypeIn==1){
+             DrawPath_ColorArr_Weighted(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color_w[m_currentHeight],6,0);
+             DrawPath_ColorArr_Weighted_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color_w[m_currentHeight],6,0);
+           }
+           else{
+             DrawPath_ColorArr(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color[m_currentHeight],6,0);
+             DrawPath_ColorArr_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color[m_currentHeight],6,0);
+           }
+         }
+         function UpdateMapVisualization(){
+           ClearAllMapLayers();
+           if(m_recommendedmaptype==2){
+             DisplayHeatmap();
+             DisplayHeatmap_3D();
+           }
+           else if(m_recommendedmaptype==1){
+             AddLPDataToSegmentheatlayer();
+           }
+           else{
+             DisplayRingMap();
+             DisplayRingMap3D();
+           }
+         }
+
+         function download(filename, text) {
+           var element = document.createElement('a');
+           element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+           element.setAttribute('download', filename);
+           element.style.display = 'none';
+           document.body.appendChild(element);
+           element.click();
+           document.body.removeChild(element);
+         }
+
+         //--------------------------------------------------
+
+         document.getElementById("bt_generatetask").onclick=function() {
+           if(m_loadFromFile==null){
+             TaskGenerateArea_2D_3D();
+           }
+           else{
+             //console.log("TaskGenerateArea_2D_3D_Fromload");
+             TaskGenerateArea_2D_3D_Fromload();
+           }
+
+         }
+
+         document.getElementById("bt_getcameraposition").addEventListener("click",function(){
+            //console.log(view3D.camera);
+
+            let x=view3D.camera.position.longitude-m_exp_location_3D.center[0];
+            let y=view3D.camera.position.latitude-m_exp_location_3D.center[1];
+            console.log(
+              "camera_x_offset:",x.toString(), " , y_offset:", y.toString(),", z:",view3D.camera.position.z,
+              ", tilt:",view3D.camera.tilt,", heading:",view3D.camera.heading,", fov:",view3D.camera.fov,"camera:",view3D.camera);
+         });
+
+         document.getElementById("bt_loadLPMData").addEventListener("click",function(){
+           UpdateSetup_Variables(m_exp_order);
+           ClearAllGraphicLayers();
+           UpdateSetup_HTML();
+           m_area_extent=view.extent;
+
+           LoadLPMData();
+         });
+         document.getElementById("bt_getpath").addEventListener("click",function(){
+           m_step=0;
+           m_exp_visualization.index=m_maptype;
+           if(m_loadFromFile==null){
+             //console.log("DisplayUAVPath_3D",m_exp_visualization.index);
+             DisplayUAVPath_3D(m_exp_visualization.index);
+           }
+           else{
+             //console.log("DisplayUAVPath_3D_Fromload");
+             DisplayUAVPath_3D_Fromload(m_exp_visualization.index);
+           }
+         });
+
+         $('#myRangeTrust').on('change', function() {
+              document.getElementById("myRangeTrustAmount").innerHTML =  document.getElementById("myRangeTrust").value;
+          });
+
+          // search start
+         document.getElementById("bt_updateuavpostion").addEventListener("click",function(){
+           m_exp_e.id="bt_updateuavpostion";
+           SaveExperimentdatatoDB(m_exp_e);
+
+           m_heightHistory.push(m_currentHeight);
+           document.getElementById("bt_lowerUAVPath").disabled = true;
+           document.getElementById("bt_raiseUAVPath").disabled = true;
+           document.getElementById("bt_sendHumanSearchTeam").disabled = true;
+           document.getElementById("bt_updateuavpostion").disabled = true;
+           document.getElementById("clueConfirm").disabled = true;
+           document.getElementById("bt_UAVH").disabled = true;
+           document.getElementById("bt_UAVM").disabled = true;
+           document.getElementById("bt_UAVL").disabled = true;
+           document.getElementById("bt_UAVRecommend").disabled = true;
+           UpdateScore("score1",0,m_currentHeight);
+
+           if(m_DroneUpdate3D && !m_searchFinish){
+             document.getElementById("bt_updateuavpostion").innerHTML='Searching...';
+             timerid3d=setInterval(UpdateDroneLocationTimer3D,50);///300
+             m_DroneUpdate3D=false;
+             m_slice_tag=true;
+             m_trialindex=m_trialindex+1;
+           }
+           else{
+             clearInterval(timerid3d);
+             //document.getElementById("bt_updateuavpostion").value='Search';
+             document.getElementById("bt_updateuavpostion").innerHTML='Search';
+             m_DroneUpdate3D=true;
+             // enable the buttons
+             document.getElementById("bt_lowerUAVPath").disabled = false;
+             document.getElementById("bt_raiseUAVPath").disabled = false;
+             document.getElementById("bt_sendHumanSearchTeam").disabled = false;
+           }
+
+            m_exp_e.m_trialindex=m_trialindex;
+            m_exp_confirm.m_trialindex=m_trialindex;
+            m_exp_score.m_trialindex=m_trialindex;
+            m_exp_clue.m_trialindex=m_trialindex;
+            m_experimentlog.m_trialindex=m_trialindex;
+         });
+         document.getElementById("bt_raiseUAVPath").addEventListener("click",function(){
+           raiseUAVPath_3D();
+           m_exp_e.id="bt_raiseUAVPath";
+           SaveExperimentdatatoDB(m_exp_e);
+         });
+         document.getElementById("bt_lowerUAVPath").addEventListener("click",function(){
+           lowerUAVPath3D();
+           UpdateScore("score2",0,0);
+
+           m_exp_e.id="bt_lowerUAVPath";
+           SaveExperimentdatatoDB(m_exp_e);
+         });
+         document.getElementById("bt_sendHumanSearchTeam").addEventListener("click",function(){
+           let clueinfo=m_exp_location_3D.clue[m_currentClue[0]];
+           document.getElementById("searchResults").innerHTML="Human search team: The object is a "+clueinfo.truth+".";
+           UpdateScore("score2",0,3);
+
+           document.getElementById("bt_raiseUAVPath").disabled=true;
+           document.getElementById("bt_lowerUAVPath").disabled=true;
+           document.getElementById("bt_sendHumanSearchTeam").disabled=true;
+
+           m_exp_e.id="bt_sendHumanSearchTeam";
+           SaveExperimentdatatoDB(m_exp_e);
+         });
+         document.getElementById("bt_UAVH").addEventListener("click",function(){
+           if(m_currentHeight!=0){
+             m_step=0;// to new step from m_UAVRouteHML[L,M,H]
+             setHeight(0);
+           }
+
+           document.getElementById("bt_UAVH").innerHTML="&#8657; High (current)";
+           document.getElementById("bt_UAVM").innerHTML="&#8660; Medium";
+           document.getElementById("bt_UAVL").innerHTML="&#8659; Low";
+
+           document.getElementById("bt_UAVH").disabled=true;
+           document.getElementById("bt_UAVM").disabled=true;
+           document.getElementById("bt_UAVL").disabled=true;
+
+           m_exp_e.id="bt_UAVH";
+           SaveExperimentdatatoDB(m_exp_e);
+         });
+
+         document.getElementById("bt_UAVRecommend").addEventListener("click",function(){
+           if(m_currentHeight!=0){
+             m_step=0;// to new step from m_UAVRouteHML[L,M,H]
+             setHeight(0);
+           }
+         });
+
+         document.getElementById("bt_UAVM").addEventListener("click",function(){
+           if(m_currentHeight!=1){
+             m_step=0;// to new step from m_UAVRouteHML[L,M,H]
+             setHeight(1);
+           }
+           document.getElementById("bt_UAVH").innerHTML="&#8657; High (recommend)";
+           document.getElementById("bt_UAVM").innerHTML="&#8660; Medium (current)";
+           document.getElementById("bt_UAVL").innerHTML="&#8659; Low";
+
+           document.getElementById("bt_UAVH").disabled=true;
+           document.getElementById("bt_UAVM").disabled=true;
+           document.getElementById("bt_UAVL").disabled=true;
+
+           m_exp_e.id="bt_UAVM";
+           SaveExperimentdatatoDB(m_exp_e);
+         });
+         document.getElementById("bt_UAVL").addEventListener("click",function(){
+           if(m_currentHeight!=2){
+             m_step=0;// to new step from m_UAVRouteHML[L,M,H]
+             setHeight(2);
+           }
+           document.getElementById("bt_UAVH").innerHTML="&#8657; High (recommend)";
+           document.getElementById("bt_UAVM").innerHTML="&#8660; Medium";
+           document.getElementById("bt_UAVL").innerHTML="&#8659; Low (current)";
+
+           document.getElementById("bt_UAVH").disabled=true;
+           document.getElementById("bt_UAVM").disabled=true;
+           document.getElementById("bt_UAVL").disabled=true;
+
+           m_exp_e.id="bt_UAVL";
+           SaveExperimentdatatoDB(m_exp_e);
+         });
+         document.getElementById("bt_showCone3D").addEventListener("click",function(){
+           if(m_maptype==0){
+
+           }
+           else if(m_maptype==1){
+             DrawPath_ColorArr_Weighted_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color_w[m_currentHeight],6,0);
+           }
+           else{
+             DrawPath_ColorArr_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color[m_currentHeight],6,0);
+           }
+         });
+         document.getElementById("bt_showCone3D_T").addEventListener("click",function(){
+           if(m_maptype==0){
+
+           }
+           else if(m_maptype==1){
+             DrawPath_ColorArr_Weighted_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color_w[m_currentHeight],6,1);
+           }
+           else{
+             DrawPath_ColorArr_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color[m_currentHeight],6,1);
+           }
+         });
+
+
+
+         document.getElementById("bt_showColoredPathByLPM").addEventListener("click",function(){
+           //console.log(m_colored3D,m_maptype);
+           if(!m_colored3D){
+             UpdatePathVisualization(m_maptype);
+           }
+           else{
+             graphicsLayer3D_UAVPath_color.removeAll();
+           }
+           m_colored3D=!m_colored3D;
+
+         });
+
+         document.getElementById("bt_showColoredPathByTerrain").addEventListener("click",function(){
+
+           if(!m_colored3D){
+             if(m_maptype==0){
+
+             }
+             else if(m_maptype==1){
+               DrawPath_ColorArr_Weighted(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color_w[m_currentHeight],6,1);
+               DrawPath_ColorArr_Weighted_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color_w[m_currentHeight],6,1);
+             }
+             else{
+               DrawPath_ColorArr(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color[m_currentHeight],6,1);
+               DrawPath_ColorArr_Cone(m_UAVRouteHML[m_currentHeight],m_UAVRouteHML_color[m_currentHeight],6,1);
+             }
+
+           }
+           else{
+             graphicsLayer3D_UAVPath_color.removeAll();
+             m_colored3D=false;
+           }
+
+         });
+
+
+         document.getElementById("bt_getLPM").addEventListener("click",function(){
+           ClearAllMapLayers();
+           m_exp_visualization.index=m_maptype;
+           if(m_exp_visualization.index==2){
+             DisplayHeatmap();
+             DisplayHeatmap_3D();
+           }
+           else if(m_exp_visualization.index==1){
+             // weighted map color on path
+             AddLPDataToSegmentheatlayer();
+
+           }
+           else{
+
+             DisplayRingMap();
+             DisplayRingMap3D();
+           }
+
+         });
+         document.getElementById("clueConfirm").onclick=function() {
+           m_exp_e.id="clueConfirm";
+           SaveExperimentdatatoDB(m_exp_e);
+
+           document.getElementById("testImg").src="{% static 'img/UAVClueDemo.png' %}";
+           let ele = document.getElementsByName('detectedClue');
+           let res_trust=document.getElementById("myRangeTrust").value;
+           let eleIndex=-1;
+           let t_clueinfo=m_exp_location_3D.clue[m_currentClue[0]];
+
+           for(let i = 0; i < ele.length; i++) {
+               if(ele[i].checked){
+                 if(m_currentClue.length>0){
+
+                   m_exp_confirm.truth=t_clueinfo.truth;
+                   m_exp_confirm.searchResults=t_clueinfo.info;
+                }
+                 else{
+                   m_exp_confirm.truth="object";
+                   m_exp_confirm.searchResults="object";
+                 }
+                 m_exp_confirm.detectedObjectUser=ele[i].value;
+                 eleIndex=i;
+
+                 if(i===2 && t_clueinfo.truthIndex===2){
+                   m_searchFinish=true;
+                   consoe.log("m_searchFinish",m_searchFinish);
+                 }
+               }
+           }
+
+           // if target is selected, then a human team needs to be sent immediately to confirm and rescue.
+           let clueinfo=m_exp_location_3D.clue[m_currentClue[0]];
+           if(ele[2].checked){
+             document.getElementById("searchResults").innerHTML="Human rescue team: The object is a "+clueinfo.truth+".";
+             UpdateScore("score4",0,0);
+           }
+           else if(-1==eleIndex){
+             UpdateScore("score5",0,0);
+           }
+           else{
+             //UpdateScore("score3",index of current human judge,index of truth);
+             UpdateScore("score3",eleIndex,clueinfo.truthIndex);
+           }
+
+           for(i = 0; i < ele.length; i++) {
+             ele[i].checked=false;
+           }
+           UpdateTrustRecommendation(res_trust);
+           //console.log("m_adaptiveMode",m_adaptiveMode);
+           if(m_adaptiveMode){
+             UpdateMapVisualization();
+             UpdatePathVisualization(m_recommendedmaptype);
+           }
+
+           document.getElementById("bt_updateuavpostion").disabled = false;
+           document.getElementById("bt_lowerUAVPath").disabled = true;
+           document.getElementById("bt_raiseUAVPath").disabled = true;
+           document.getElementById("bt_sendHumanSearchTeam").disabled = true;
+           document.getElementById("clueConfirm").disabled = true;
+
+           document.getElementById("bt_UAVH").disabled = false;
+           document.getElementById("bt_UAVM").disabled = false;
+           document.getElementById("bt_UAVL").disabled = false;
+           document.getElementById("bt_UAVRecommend").disabled = false;
+
+           //log the data to db
+           m_exp_confirm.trust=res_trust;
+           m_exp_confirm.timestamp=Date.now();
+           SaveExperimentdatatoDB(m_exp_confirm);
+
+           //if the target is found, m_searchFinish=true;
+
+           if(m_searchFinish){
+             m_experimentlog.taskstatus="end";
+             m_experimentlog.taskend=Date.now();
+             m_experimentlog.duration=m_experimentlog.taskstart-m_experimentlog.taskend;
+             m_experimentlog.totalrounds=m_trialindex+1;
+             m_experimentlog.m_heightHistory=m_heightHistory;
+             SaveExperimentdatatoDB(m_experimentlog);
+
+             // show the result panel
+             // including score, whether the lost person is found
+             document.getElementById("res_discription").innerHTML="Congratulations, the lost person is found! Your score of ths mission is "+m_exp_measure_score.toString();
+             document.getElementById("Results").style.display="initial";
+           }
+         }
+         document.getElementById("bt_Results").onclick=function(){
+           m_exp_e.id="bt_Results";
+           SaveExperimentdatatoDB(m_exp_e);
+
+            //questionnaire
+            let participantid={{ participantid |safe }};
+            //console.log(m_exp_taskIndex,m_exp_order);
+            let task_url="{% url 'questionnaireform3D' %}"+"/"+participantid+'/'+m_exp_taskIndex.toString()+'/'+m_exp_order.toString()+'/';
+
+            let win = window.open(task_url, '_blank');
+            win.focus();
+
+            //goto next scenario
+            if(m_exp_order<m_exp_variables.totalrounds){
+              UpdateSetup_Variables(m_exp_order+1);
+              ClearAllGraphicLayers();
+              UpdateSetup_HTML();
+              LoadLPMData();
+              view3D.goTo({
+                  center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+              });
+              view.goTo({
+                  center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+              });
+              m_area_extent=view.extent;
+            }
+            document.getElementById("Results").style.display="none";
+         }
+
+         document.getElementById("btnshowhideexptoolpannel").onclick=function() {
+             if(document.getElementById("btnshowhideexptoolpannel").value=='E'){
+                 document.getElementById("toolpannel").style.display="block";
+                 document.getElementById("btnshowhideexptoolpannel").value='H';
+             }
+             else{
+                 document.getElementById("toolpannel").style.display="none";
+                 document.getElementById("btnshowhideexptoolpannel").value='E';
+             }
+         }
+         document.getElementById("btndisplaytarget").onclick=function() {
+           DrawToTemperalGraphicLayer(m_exp_location_3D.target,type="point");
+           DisplayAllClue_3D(m_exp_location_3D);
+         }
+         document.getElementById("btskipback").onclick=function() {
+           if(m_exp_order>=0){
+             UpdateSetup_Variables(m_exp_order-1);
+             LoadLPMData();
+             ClearAllGraphicLayers();
+             UpdateSetup_HTML();
+             view3D.goTo({
+                 center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+             });
+             view.goTo({
+                 center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+             });
+             m_area_extent=view.extent;
+           }
+         }
+
+         document.getElementById("btskip").onclick=function() {
+           //console.log(m_exp_order,m_exp_variables.totalrounds);
+           if(m_exp_order<m_exp_variables.totalrounds){
+             UpdateSetup_Variables(m_exp_order+1);
+             ClearAllGraphicLayers();
+             UpdateSetup_HTML();
+             LoadLPMData();
+             view3D.goTo({
+                 center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+             });
+             view.goTo({
+                 center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+             });
+             m_area_extent=view.extent;
+           }
+         }
+
+         document.getElementById("bt_recenter").onclick=function() {
+           view3D.goTo({
+               center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+           });
+           view.goTo({
+               center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+           });
+         }
+
+         document.getElementById("btskip_").onclick=function() {
+           //console.log(m_exp_order,m_exp_variables.totalrounds);
+           if(m_exp_order<m_exp_variables.totalrounds){
+             UpdateSetup_Variables(m_exp_order+1);
+             ClearAllGraphicLayers();
+             UpdateSetup_HTML();
+             LoadLPMData();
+             view3D.goTo({
+                 center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+             });
+             view.goTo({
+                 center:[m_exp_location_3D.center[0]+m_exp_location_3D.offset[0],m_exp_location_3D.center[1]+m_exp_location_3D.offset[1]]//[m_exp_location_3D.center],
+             });
+             m_area_extent=view.extent;
+           }
+         }
+
+         document.getElementById("q_scene").onclick=function() {
+            let participantid={{ participantid |safe }};
+            //console.log(m_exp_taskIndex,m_exp_order);
+            let task_url="{% url 'questionnaireform3D' %}"+"/"+participantid+'/'+m_exp_taskIndex.toString()+'/'+m_exp_order.toString()+'/';
+
+            let win = window.open(task_url, '_blank');
+            win.focus();
+         }
+         document.getElementById('view_x2d').addEventListener('click',function(){
+           location.href = "/";
+         });
+         document.getElementById('bt_getbasemap').addEventListener('click',function(){
+           ClearAllMapLayers();
+           m_maptype=0;
+           DisplayRingMap();
+           DisplayRingMap3D();
+         });
+         document.getElementById('bt_getweightedmap').addEventListener('click',function(){
+           ClearAllMapLayers();
+           m_maptype=1;
+           if(m_loadFromFile==null){
+             AddLPDataToSegmentheatlayer();
+           }
+           else{
+             AddLPDataToSegmentheatlayer_Fromload();
+           }
+
+         });
+         document.getElementById('bt_getheatmap').addEventListener('click',function(){
+           ClearAllMapLayers();
+           m_maptype=2;
+           DisplayHeatmap();
+           DisplayHeatmap_3D();
+         });
+
+         document.getElementById('bt_LogGraphicData').addEventListener('click',function(){
+           //console.log(m_logObj);
+           download(m_logObj.icname,JSON.stringify(m_logObj));
+         });
+         document.getElementById('bt_LoadGraphicData').addEventListener('click',function(){
+
+           let t_data;
+           let filename=m_exp_location_3D.name+".json";
+           let url="/static/data/map/"+filename;
+           $.ajax({
+             type: "GET",
+             url:url,
+             dataType: "text",
+             success: function(response)
+             {
+               m_loadFromFile=JSON.parse(response);
+               m_color_storage=m_logObj.colorStorage;
+
+               m_UAVRouteHML=m_loadFromFile.UAVRouteHML;
+               m_UAVRouteHML_color=m_loadFromFile.UAVRouteHML_color;
+               m_UAVRouteHML_color_w=m_loadFromFile.UAVRouteHML_color_weighted;
+
+               //console.log(m_loadFromFile);
+             }
+           });
+           LoadLPMData();
+
+           //disable some button
+           document.getElementById("bt_loadLPMData").disabled = true;
+           document.getElementById("bt_getLPM").disabled = true;
+
+         });
+         document.getElementById('bt_briefing').addEventListener('click',function(){
+           //show or hide briefing
+           if(document.getElementById("ScenarioDescriptionDiv").style.display=="none"){
+             document.getElementById("ScenarioDescriptionDiv").style.display="initial";
+           }
+           else{
+             document.getElementById("ScenarioDescriptionDiv").style.display="none";
+           }
+
+         });
+
+         document.getElementById('bt_followRec').addEventListener('click',function(){
+           if(m_adaptiveMode){
+             document.getElementById("bt_followRec").innerHTML="Follow->F";
+           }
+           else{
+             document.getElementById("bt_followRec").innerHTML="Follow->T";
+           }
+           m_adaptiveMode=!m_adaptiveMode;
+         });
+
+         document.getElementById("bt_startMission").addEventListener('click',function(){
+           m_exp_e.id="bt_startMission";
+           SaveExperimentdatatoDB(m_exp_e);
+
+           // Load data from json file, hide briefing, generate task, getdefaultpath
+           let t_data;
+           let filename=m_exp_location_3D.name+".json";
+           let url="/static/data/map/"+filename;
+           $.ajax({
+             type: "GET",
+             url:url,
+             dataType: "text",
+             success: function(response)
+             {
+               m_loadFromFile=JSON.parse(response);
+               m_color_storage=m_logObj.colorStorage;
+
+               m_UAVRouteHML=m_loadFromFile.UAVRouteHML;
+               m_UAVRouteHML_color=m_loadFromFile.UAVRouteHML_color;
+               m_UAVRouteHML_color_w=m_loadFromFile.UAVRouteHML_color_weighted;
+
+               // generate task
+               if(m_loadFromFile==null){
+                 TaskGenerateArea_2D_3D();
+               }
+               else{
+                 TaskGenerateArea_2D_3D_Fromload();
+               }
+
+               // hide briefing
+               document.getElementById("ScenarioDescriptionDiv").style.display="none";
+               m_exp_visualization.index=m_maptype;
+               //console.log(m_exp_visualization.index);
+               //visualize LPM
+               ClearAllMapLayers();
+               if(m_exp_visualization.index==2){
+                DisplayHeatmap();
+                DisplayHeatmap_3D();
+               }
+               else if(m_exp_visualization.index==1){
+                // weighted map color on path
+                AddLPDataToSegmentheatlayer();
+               }
+               else{
+                DisplayRingMap();
+                DisplayRingMap3D();
+               }
+
+               //getdefaultpath
+               m_step=0;
+               if(m_loadFromFile==null){
+                 DisplayUAVPath_3D(m_exp_visualization);
+               }
+               else{
+                 DisplayUAVPath_3D_Fromload(m_exp_visualization);
+               }
+               if(m_adaptiveMode){
+                 UpdatePathVisualization(m_recommendedmaptype);
+               }
+               else{
+                 UpdatePathVisualization(m_maptype);
+               }
+             }
+           });
+           // disable some button
+           document.getElementById("bt_loadLPMData").disabled = true;
+           document.getElementById("bt_getLPM").disabled = true;
+           document.getElementById("bt_startMission").disabled = true;
+           document.getElementById("bt_updateuavpostion").disabled = false;
+
+           SaveExperimentdatatoDB(m_experimentlog);
+         });
+
+      //--------------------------------------------------
+      const tour = new Shepherd.Tour({
+        defaultStepOptions: {
+          cancelIcon: {
+            enabled: true
+          },
+          classes: 'class-1 class-2',
+          scrollTo: { behavior: 'smooth', block: 'center' }
+        }
+      });
+
+      const bt_instruction=[
+        {
+          action() {
+            return this.back();
+          },
+          classes: 'shepherd-button-secondary',
+          text: 'Back'
+        },
+        {
+          action() {
+            return this.next();
+          },
+          text: 'Next'
+        }
+      ];
+
+      tour.addStep({
+        title: 'This is a tour before the formal study.',
+        text: `The information of the mission will be displayed here.`,
+        attachTo: {
+          element: '#ScenarioDescriptionDiv',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: 'Step 1: Start the mission',
+        text: `Please click the button to start the mission.`,
+        attachTo: {
+          element: '#bt_startMission',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: 'Step 2: Task Control',
+        text: `The UAV will start to search after clicking the \`Search\` button, wait for a moment until the UAV finds something.`,
+        attachTo: {
+          element: '#d_taskcontrol',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: 'Step 3: UAV Control',
+        text: `The UAV will stop at a location where you could change the hightt to get more resolution or send human search team for a certain results.`,
+        attachTo: {
+          element: '#d_UAVcontrol',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: '2D map with terrain features',
+        text: `The map shows the terrain features that are considered for the UAV path planning.`,
+        attachTo: {
+          element: '#viewDiv2D',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: 'Step 4: Make decisionss',
+        text: `You will find useful information based on which you need make the judgement of the object and your trust of the system. Then confirm it.`,
+        attachTo: {
+          element: '#questionPerTrial',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: 'Step 5: Swith Path of UAV',
+        text: `You could switch between the following three heights before the next round of search.`,
+        attachTo: {
+          element: '#d_switchpath',
+          on: 'bottom'
+        },
+        buttons: bt_instruction,
+        id: 'creating'
+      });
+
+      tour.addStep({
+        title: 'Instruction completed!',
+        text: `Please start the a mission for practice.`,
+        buttons: [
+          {
+            action() {
+              return this.complete();
+            },
+            classes: 'shepherd-button-secondary',
+            text: 'Done'
+          }
+        ],
+        id: 'creating'
+      });
+
+      //tour.start();
+    });
+
+
+  </script>
+</head>
+
+<body>
+  <div class="viewContainer">
+    <div class="InfoDiv">
+      <div id="viewDiv2D"></div>
+      <div id="questionPerTrial">
+        <img id="testImg" src="{% static 'img/UAVClueDemo.png' %}" alt="test" width="300" height="200">
+        <p id="searchResults">Search results: NA</p>
+        <div>
+          <p>The detected object is:</p>
+          <input type="radio" name="detectedClue" value="Clue">Clue<br>
+          <input type="radio" name="detectedClue" value="Distractor">Distractor<br>
+          <input type="radio" name="detectedClue" value="Target">Target<br>
+        </div>
+
+        <div class="slidecontainer">
+          <p>How much do you trust the path recommendation?</p>
+          <input type="range" min="1" max="100" value="50" id="myRangeTrust">
+          <label id="myRangeTrustAmount">50</label>
+        </div>
+        <button class="bt_screen" id="clueConfirm" disabled>Confirm</button>
+
+      </div>
+    </div>
+    <div class="mapDiv">
+      <div id="viewDiv3D"></div>
+
+      <div id="ScenarioDescriptionDiv" class="esri-widget" data-intro="This is the information collected for the SAR mission.">
+          <h2>Briefing</h2>
+          <p id="p_discription">
+          </p>
+          <button class="bt_screen" id="bt_startMission" data-intro="Click this button to start the mission.">Start the mission</button>
+      </div>
+
+      <div id="Results" class="esri-widget" style="display:none">
+          <h2>Mission complete!</h2>
+          <p id="res_discription">
+            Congratulations, the lost person is found.
+          </p>
+          <button class="bt_screen" id="bt_Results">Questionnaire</button>
+      </div>
+
+
+      <div class="topleft_screen">
+        <label></label>
+        <label id="lb_score"></label>
+      </div>
+
+
+      <div class="bottom_screen">
+        <div class="item2"><label class="lb_screen">Task Control</label></div>
+        <div class="item3"><label class="lb_screen">UAV Control</label></div>
+        <div class="item4"><label class="lb_screen">Set Path Height</label></div>
+
+        <div id="d_taskcontrol">
+        <div>
+        	<button class="bt_screen" id="bt_updateuavpostion">Search</button>
+        </div>
+
+
+        </div>
+        	<div id="d_UAVcontrol">
+            <div>
+            	<button class="bt_screen_b" id="bt_raiseUAVPath">&#8679; Raise UAV</button>
+            </div>
+            <div>
+            	<button class="bt_screen_b" id="bt_lowerUAVPath">&#8681; Lower UAV</button>
+            </div>
+            <div>
+            	<button class="bt_screen_b" id="bt_sendHumanSearchTeam">&#128064; Send Human</button>
+            </div>
+        </div>
+
+        <div id="d_switchpath">
+          <div>
+          	<button class="bt_screen_b" id="bt_UAVH">&#8657; High (current)</button>
+          </div>
+          <div>
+          	<button class="bt_screen_b" id="bt_UAVM">&#8660; Medium</button>
+          </div>
+          <div>
+          	<button class="bt_screen_b" id="bt_UAVL">&#8659; Low</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="s_recenter">
+        <button id="bt_recenter">C</button>
+      <div>
+
+      <div id="map2Dvs3D" style="display:none">
+      	<button id="view_x2d">2D</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editArea" class="editArea-container" style="display:none">
+      <div>
+      <h2 class="list-heading">Instructions</h2>
+      <button class="bt_screen" id="bt_LogGraphicData">Download Data to json file</button>
+      <button class="bt_screen" id="bt_LoadGraphicData">Load Data from json file</button>
+      <button class="bt_screen" id="bt_briefing">Briefing info</button>
+      <button class="bt_screen" id="bt_loadLPMData">Load LPM Data</button>
+      <button class="bt_screen" id="bt_generatetask">Generate Task</button>
+    </div>
+    <br>
+
+    <div>
+      <h2 class="list-heading">Map Control</h2>
+      <button class="bt_screen" id="bt_getbasemap">get Base map</button>
+      <button class="bt_screen" id="bt_getweightedmap">get Weighted map</button>
+      <button class="bt_screen" id="bt_getheatmap">get Heat map</button>
+    </div>
+    <br>
+
+    <div>
+      <h2 class="list-heading">Path Control</h2>
+      <button class="bt_screen" id="bt_getpath">Get Path</button>
+      <button class="bt_screen" id="bt_showCone3D">Influence (H)</button>
+      <button class="bt_screen" id="bt_showCone3D_T">Influence (T)</button>
+      <button class="bt_screen_b" id="bt_showColoredPathByTerrain">Terrain</button>
+      <button class="bt_screen_b" id="bt_showColoredPathByLPM">Model</button>
+      <button class="bt_screen" id="bt_UAVRecommend" disabled>Recommended height: High</button>
+    </div>
+    <br>
+
+    <div>
+      <h2 class="list-heading">Experiment flow setup</h2>
+      <button class="bt_screen" id="bt_getcameraposition">Get Camera</button>
+      <button class="bt_screen" id="bt_followRec">Follow->T</button>
+      <button class="bt_screen" id="bt_getLPM">Update Visualization</button>
+
+      <button class="bt_screen" id="q_scene">Questionnaire</button>
+      <button class="bt_screen" id="btskip">Next Scenario</button>
+    </div>
+
+    <div id="showtarget">
+      <p id="infocontent">Switch scenario</p>
+      <input type="button" id="btnshowhideexptoolpannel" value="E"/>
+      <div id="toolpannel" style="display:none">
+          <input type="button" id="btndisplaytarget" value="T"/>
+          <br>
+          <input type="button" id="btskipback" value="<"/>
+          <br>
+          <input type="button" id="btskip_" value=">"/>
+          <br>
+          <input type="button" id="btic" value="ic"/>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

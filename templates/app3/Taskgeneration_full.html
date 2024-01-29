@@ -1,0 +1,2794 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
+  <title>SAR MAPPING DEMO</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.12/esri/themes/light/main.css"/>
+
+  <script src="{% static 'js/d3.v4.min.js' %}"></script>
+  <script src="{% static 'js/d3-polygon-clip.js' %}"></script>
+
+  <script src="https://js.arcgis.com/4.12/"></script>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="{% static 'js/jquery.csv.js' %}"></script>
+  <script src="{% static 'js/randompolygon.js' %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static "taskgeneration.css" %}"  />
+  <style>
+  html,
+  body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #sidebar {
+        z-index: 99;
+        position: absolute;
+        top: 10%;
+        left: 1%;
+        height: 80%;
+        background: rgba(0, 0, 0, 0.05);
+        width: 80.2%;
+      }
+
+      #text {
+        color: white;
+        padding: 3%;
+      }
+      .slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 25px;
+        background: #d3d3d3;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+      }
+
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+      .bt_save{
+        padding: 8px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+        height: 32px;
+        margin-top: 10px;
+        background-color: transparent;
+        border: 1px solid #0079c1;
+        color: #0079c1;
+        width:30%;
+      }
+      .bt_save_edit{
+        padding: 8px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+        height: 32px;
+        margin-top: 10px;
+        border: 1px solid black;
+        color: black;
+        width:66%;
+      }
+      h3{
+        margin:2px;
+      }
+      .sel_options{
+        margin-top: 6px;
+        margin-bottom: 6px;
+      }
+  </style>
+  <script>
+
+//https://developers.arcgis.com/javascript/latest/sample-code/sketch-geometries/index.html
+//https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=sketch-update-validation
+    require([
+      "esri/widgets/Sketch/SketchViewModel",
+      "esri/Graphic",
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/layers/GraphicsLayer",
+      "esri/geometry/Polygon",
+      "esri/geometry/geometryEngine",
+      "esri/widgets/Expand",
+        "esri/layers/TileLayer",
+        "esri/widgets/BasemapToggle",//-----------------------------
+      "esri/views/2d/draw/Draw",
+      "esri/widgets/CoordinateConversion",//,      "esri/widgets/Sketch"
+      "esri/widgets/DistanceMeasurement2D",
+      "esri/widgets/AreaMeasurement2D",
+      "esri/geometry/Extent",
+      "esri/geometry/Point",
+      "esri/layers/OpenStreetMapLayer",
+      "esri/widgets/Track",
+      "esri/widgets/Search",
+      "esri/layers/GeoJSONLayer",
+      "esri/geometry/Multipoint",
+      "esri/layers/ElevationLayer",
+      "esri/geometry/Polyline",
+      "esri/geometry/Circle",
+      "esri/core/promiseUtils"
+
+    ], function(
+      SketchViewModel, Graphic, Map, MapView, FeatureLayer,
+      GraphicsLayer, Polygon, geometryEngine, Expand, TileLayer,BasemapToggle,
+      Draw,CoordinateConversion,
+      DistanceMeasurement2D,AreaMeasurement2D,Extent,Point,
+      OpenStreetMapLayer,Track,Search,
+      GeoJSONLayer,Multipoint,
+      ElevationLayer,Polyline,Circle,promiseUtils
+    ) {
+      let view, sketchViewModel, draw,
+        newDevelopmentGraphic,taskassignment_sketchViewModel,
+        instructionsExpand,coordinateLayer;
+      let intersects = false,
+        contains = true;
+      let updated_polygonring=[];
+        //let graphicsLayer;
+//Transportation example:
+//https://developers.arcgis.com/javascript/latest/sample-code/sandbox/index.html?sample=intro-layers
+//Transportation service:
+//https://server.arcgisonline.com/arcgis/rest/services/Reference/World_Transportation/MapServer
+
+      var width=1600*1.5;
+      var height=900*1.5;
+      let m_d=new Date();
+      let m_experimentres={
+        "scenario":null,
+        "participantid":null,
+        "participant_index":(m_d.getMonth()+1).toString()+m_d.getDate().toString()+m_d.getHours().toString(),
+        "teamnumber":5,
+        "taskid":m_d.getHours().toString()+m_d.getMinutes().toString()+m_d.getSeconds().toString(),
+        "taskstart":Date.now(),
+        "taskstop":null,
+        "taskduration":100,
+        "targetcellindex":0,
+        "polygonnumbers":0,
+        "visualization_type":"probability",
+        "step_number":5,
+        "step_details":[],//visualresponsetime: time between (the heatmap is loaded) and (active the first team icon)
+        "actions":[],//#id and timestamp, {"id":"btn...","timestamp": Date.now(), "description":"click button generate task"}
+        "allpolygons":null
+      };
+
+      var scale=16;//15
+      //36.8176602,-80.363078
+      //kentlane farm (-80.572567,37.203604)
+      //{" wkid":4326 }: latitude
+      //
+      let m_scenario_index=0;
+      let m_scenarios=[
+        {"scenario_index":0,"scenario_name":"ic1","center":[-80.5460, 37.2041]},
+        {"scenario_index":1,"scenario_name":"ic2","center":[-80.4757, 37.2041]},
+        {"scenario_index":2,"scenario_name":"ic3","center":[-80.5451, 37.1978]}
+      ];
+
+      let m_scenarios_rings={'child10to12':[800,1600,3200,9000],
+      'dementia':[300,800,1900,8300],
+      'hiker':[1100,3100,5800,18300]};
+
+      var gcx=-80.556451;
+      var gcy=37.2;
+
+      var gwidth=10;
+      var gheight=10;
+      var voronoistyle="random";
+      var glvertices;
+      var glverticeslist=[];
+      let maxdistanceerror = 0.0001;
+
+      //acer
+
+      let eacharea=500000;//240000;//60 acer;
+      var activeWidget = null;
+//  wkid: 102100 vs wkid: 4326
+//wkid 102100/pix =1.5 (2444,1366/1600,900)
+//wkid 102100: left-top (-8970062.142, 4467672.843), right-bottom (-8967625.712	4466311.309)
+
+      let allpolygons=[];
+      let allpolygons_text=[];
+      let activepolygonset=[];
+      let activepolygonpoints=[];
+      let move_polygon;
+      let area_extent;
+
+      let gpspatharray={};
+      let all_gpsdata={};
+      var arr_featureset=[];
+
+
+      let validSymbol;// = createSymbol([0, 170, 255, 0.4], "solid", 2, [255,255, 255]);//solid
+
+      var m_lpmodeldata=[];
+      var m_filterprob=0.0000001;
+      var m_lpdata_json={};
+      var m_lpdata=[];
+      var m_lpdata_con=[];
+      let m_colormap=0;//0: rainbow, 1: yellow-red, 2: blue-red
+      let t_rgb=[];
+      let m_editing=false;
+
+      let m_teamiconlocation=null;
+
+      //let m_searchedarea=[];//all polygon marked gray
+      let m_teamassign=[null,null,null,null,null];//
+      let m_targetpolygon;
+      let m_taskstarttime=null;
+
+      /*
+      [
+         {'round':1,
+         'cell'=[{'sname':0,'polygon':rings},{'sname':1,'polygon':rings}...],
+         'teams':[0,0,1,1,2], //'team1':0,'team2':0,'team3':1,'team4':1,'team5':2
+         'responsetime':120,
+         'assigntime':200,
+         'displaytype':'point'},
+         {'round':2,'cell'=[{'sname':5,'polygon':rings},{'sname':6,'polygon':rings}...], 'team1':0,'team2':0,'team3':1,'team4':1,'team5':2, 'responsetime':100,'assigntime':200,'displaytype':'heatmap'},
+
+      ];
+      */
+      let m_taskpolygon={};
+
+      const graphicInitLayer= new GraphicsLayer();
+      const graphicsLayer = new GraphicsLayer({
+        opacity:0.6
+      });
+      const gpsgraphicsLayer = new GraphicsLayer();
+      const graphicPointsLayer = new GraphicsLayer();
+      const graphicTrajectoryLayer= new GraphicsLayer();
+      const graphicHeatmapsLayer = new GraphicsLayer({
+        opacity:0.5
+      });
+      const graphicControlLayer = new GraphicsLayer({
+        opacity:0.8
+      });
+      const graphicContourLayer = new GraphicsLayer({
+        opacity:0.5
+      });
+      const teamgraphicsLayer=new GraphicsLayer({
+        opacity:0.8
+      });
+
+      function hslToRgb(h, s, l) {
+          var r, g, b;
+
+           if (s == 0) {
+               r = g = b = l; // achromatic
+           } else {
+               function hue2rgb(p, q, t) {
+                   if (t < 0) t += 1;
+                   if (t > 1) t -= 1;
+                   if (t < 1 / 6) return p + (q - p) * 6 * t;
+                   if (t < 1 / 2) return q;
+                   if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                   return p;
+               }
+
+               var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+               var p = 2 * l - q;
+               r = hue2rgb(p, q, h + 1 / 3);
+               g = hue2rgb(p, q, h);
+               b = hue2rgb(p, q, h - 1 / 3);
+           }
+           return [r * 255, g * 255, b * 255];
+       }
+
+      const colorStops_2= [
+            { color: "rgba(63, 40, 102, 0)", ratio: 0 },
+            { color: "#472b77", ratio: 0.083 },
+            { color: "#4e2d87", ratio: 0.166 },
+            { color: "#563098", ratio: 0.249 },
+            { color: "#5d32a8", ratio: 0.332 },
+            { color: "#6735be", ratio: 0.415 },
+            { color: "#7139d4", ratio: 0.498 },
+            { color: "#7b3ce9", ratio: 0.581 },
+            { color: "#853fff", ratio: 0.664 },
+            { color: "#a46fbf", ratio: 0.747 },
+            { color: "#c29f80", ratio: 0.83 },
+            { color: "#e0cf40", ratio: 0.913 },
+            { color: "#ffff00", ratio: 1 }
+          ];
+
+      const heatmaprenderer = {
+        type: "heatmap",
+        blurRadius:20,
+        colorStops: colorStops_2,
+        field: "Magnitude"//,
+        //maxPixelIntensity: 100,
+        //minPixelIntensity: 0
+      };
+
+
+      const geojsonLayer = new GeoJSONLayer({
+        url: "{% static 'data/geojsonheatmap.geojson' %}",//"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson",//
+        copyright: "USGS Earthquakes",
+        renderer: heatmaprenderer,
+        opacity: 0.9
+      });
+
+      var elevLyr = new ElevationLayer({
+        // Custom elevation service
+        url: "//elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/"//"https://sampleserver6.arcgisonline.com/arcgis/rest/services/Elevation/MtBaldy_Elevation/ImageServer"
+      });
+
+      const map = new Map({
+        basemap: "hybrid",//"hybrid",//"satellite",
+        //ground: "world-elevation",
+        layers: [  graphicPointsLayer,graphicTrajectoryLayer,graphicHeatmapsLayer,graphicContourLayer,graphicsLayer,gpsgraphicsLayer,graphicControlLayer,graphicInitLayer,teamgraphicsLayer]
+
+      });
+
+
+    //geometry {coordinate}
+    function deletePointsToGeolayer(){
+      //console.log(geojsonLayer);
+      const query = geojsonLayer.createQuery();
+      var editFeature;
+      var t_res=geojsonLayer.queryFeatures(query).then( function(results){
+        editFeature=results.features;
+        //console.log(editFeature);
+        //console.log(editFeature);
+        const promise = geojsonLayer.applyEdits({
+          deleteFeatures: editFeature
+        });
+
+      });
+
+
+    }
+
+    function addPointsToGeolayer(arr_points){
+      arr_featureset=[];
+      var attributes = {};
+
+      //attributes["Magnitude"] = 8;
+      attributes["Report_Date"] = Date.now();
+      //console.log(arr_points);
+      for (var i=0;i<arr_points.length;i++){
+        let in_point=new Point({
+          x:arr_points[i][0],
+          y:arr_points[i][1],
+          spatialReference:view.spatialReference
+        });
+
+        attributes["Magnitude"] = arr_points[i][2];
+        attributes["OBJECTID"] = i;
+
+        var t_graphic =  new Graphic({
+          geometry: in_point,
+          attributes: attributes
+        });
+
+        arr_featureset.push(t_graphic);
+      }
+      //console.log(arr_featureset);
+
+      const deleteFeature = {
+       objectId: [0]
+      };
+
+      const promise = geojsonLayer.applyEdits({
+        addFeatures: arr_featureset//[addFeature]//[arr_featureset[0],arr_featureset[1]]//
+      });
+    }
+
+      setUpView();
+
+      function polygonClone(polygon) {
+        var cloned = [],
+            i,
+            n;
+
+        for (i = 0, n = polygon.length; i < n; i++) {
+          cloned.push([polygon[i][0], polygon[i][1]]);
+        }
+
+        return cloned;
+      }
+
+      function FilterBoundary(x,y,maxx,maxy,minx,miny){
+        if (x>maxx) {
+          x=maxx;
+        }
+        else if (x<minx) {
+          x=minx;
+        }
+        if (y>maxy) {
+          y=maxy;
+        }
+        else if (y<miny) {
+          y=miny;
+        }
+        return [x,y];
+      }
+
+      // creates new view and map, adds featurelayers and graphicslayer to the view
+
+      // This function is called when a user clicks on the view.
+      function setUpGraphicClickHandler() {
+        view.on("click", function(event) {
+          //console.log("click");
+
+          //elevation=============
+          var position = event.mapPoint;
+          var queryBeforeLandslide = elevLyr.queryElevation(
+            position
+          );
+
+          promiseUtils
+            .eachAlways([queryBeforeLandslide])
+            .then(function(results) {
+              $("#elevation").text("Elenvation: "+results[0].value.geometry.z);
+              //console.log(position);
+              //console.log( results[0].value.geometry.z);
+            });
+          //====================
+          //console.log(view.allLayerViews);
+
+          // check if the sketch's state active if it is then that means
+          // the graphic is already being updated, no action required.
+          if (sketchViewModel.state === "active") {
+            //testing forbid mover
+            return;
+          }
+          if (taskassignment_sketchViewModel.state === "active") {
+            //testing forbid mover
+            return;
+          }
+
+          view.hitTest(event).then(function(response) {
+            var results = response.results;
+            // Check if the new development graphic was clicked and pass
+            // the graphic to sketchViewModel.update() with reshape tool.
+            results.forEach(function(result) {
+              //set the assignment: cell to team
+              //result
+              $("#cellname").val("S"+result.graphic.attributes.cellindex);//result.graphic.attributes.cellindex;
+              if(m_editing){
+                if (result.graphic.layer === sketchViewModel.layer) {
+                  sketchViewModel.update([result.graphic], {
+                    tool: "reshape"//"reshape"
+                  });
+                }
+              }
+              if(result.graphic.layer === taskassignment_sketchViewModel.layer){
+                //console.log(taskassignment_sketchViewModel);
+                //console.log("here");
+                taskassignment_sketchViewModel.update([result.graphic],{
+                  tool:"point"//move
+                });
+              }
+            });
+          });
+        });
+
+      }
+      setUpGraphicClickHandler();
+
+      view.when(function() {
+        area_extent=view.extent;
+
+        //drag and drop teams icon for task assignment
+        taskassignment_sketchViewModel = new SketchViewModel({
+          view: view,
+          layer: teamgraphicsLayer,
+          updatePointSymbol:{
+            type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+             url: "{% static 'img/user_glow.png' %}",
+             width: "64px",
+             height: "64px"
+                         /*
+            type: "simple-marker",
+            color: [255, 0, 0, 0.2],
+            outline: {
+             color: [255, 0,0,1],
+              width: 2}
+
+            */
+          },
+          updateOnGraphicClick: false,
+          defaultUpdateOptions: { // set the default options for the update operations
+            toggleToolOnClick: false//false // only reshape operation will be enabled
+          }
+        })
+
+        taskassignment_sketchViewModel.on(["update", "undo", "redo"], onTaskAssignmentGraphicUpdate);
+
+        // Query all buffer features from the school buffers featurelayer
+
+        // Create a new instance of sketchViewModel and set its required properties
+
+        sketchViewModel = new SketchViewModel({
+          view: view,
+          layer: graphicsLayer,
+          updateOnGraphicClick: false,
+          defaultUpdateOptions: { // set the default options for the update operations
+            //tool: "transform",
+            toggleToolOnClick: false//false // only reshape operation will be enabled
+          }
+        })
+
+        activepolygonset=[];
+        // Listen to sketchViewModel's update event to do
+        // graphic reshape or move validation
+        sketchViewModel.on(["update", "undo", "redo"], onGraphicUpdate);
+
+
+
+
+
+
+      });
+
+
+      function addVoronoi(){
+        let textend;
+        let wholearea;
+        if(activeWidget){
+          textent=activeWidget.viewModel.measurement.geometry.extent;
+          wholearea=activeWidget.viewModel.measurement.area;
+        }
+        else{
+          let jsonextent=view.extent.toJSON();
+          textent=Extent.fromJSON(jsonextent);
+          let ori_xmin=textent.xmin;
+          let ori_wid=textent.width*0.01;
+          textent=textent.expand(0.8);
+          let centerpoint = textent.center.clone();
+          centerpoint.x= textent.center.x-(textent.xmin-ori_xmin-ori_wid);
+          textent=textent.centerAt(centerpoint);
+          area_extent=textent;
+          wholearea=geometryEngine.planarArea(Polygon.fromExtent(textent));
+        }
+        let npoints=2*Math.round(wholearea/eacharea+0.5);      //wholearea=wholetask.area;//metric   240  : acre  60
+        let lbx=textent.xmin,
+            lby=textent.ymin,
+            rtx=textent.xmax,
+            rty=textent.ymax;
+            gwidth=textent.width;
+            gheight=textent.height;
+
+        var sites = d3.range(npoints)//15
+                   .map(function(d) { return [Math.random() * gwidth+lbx, Math.random() * gheight+lby]; });
+        let in_point=new Point({
+          x:textent.center.x+ 0.1*(Math.random()-0.5)*textent.width,
+          y:textent.center.y+ 0.1*(Math.random()-0.5)*textent.height,
+          spatialReference:view.spatialReference
+        });
+        //sites = GetSitesFromN(npoints,in_point,textent);
+        sites = GetSites(npoints,textent);
+        var voronoi = d3.voronoi().extent([[lbx,lby], [rtx,rty]]);
+        var diagram = voronoi(sites),
+            links = diagram.links(),
+            vpolygons = diagram.polygons();
+        if(activeWidget){
+          //console.log(activeWidget);
+          vpolygons=ClipPolygongsByPoints(vpolygons,activeWidget.viewModel.measurement.geometry.rings[0].slice(0,activeWidget.viewModel.measurement.geometry.rings[0].length-1));
+        }
+        ClearAll();
+        addGraphics(vpolygons);
+      }
+
+      function ClipPolygongsByPoints(vpolygons,points){
+        let cpy=[];
+        for(var i=0;i<vpolygons.length;i++){
+          var temp=d3.polygonClip(vpolygons[i],polygonClone(points.reverse()));
+          if(temp.length>0){ cpy.push(temp); }
+        }
+        return cpy;
+      }
+      function GetSites(n,t_extent){
+        let res_points=[];
+        //center point [0,0]
+        //first round radius:1, second:2,third:3
+        let t_radius=1;
+        let t_firstround=6;
+
+        //second round
+        let res_count=0;
+        let t_wholearea=0;
+        let t_cellarea=t_radius*t_radius/t_firstround;
+
+        while(n>res_count){
+          let t_roundarea=t_radius*t_radius-t_wholearea;
+          let t_celldegree=t_cellarea/t_roundarea;
+          let t_totaldegree=0;
+          while(t_totaldegree<=0.99){
+            res_points.push([(t_radius-0.5)*Math.sin(2*Math.PI*t_totaldegree),(t_radius-0.5)*Math.cos(2*Math.PI*t_totaldegree)]);
+            t_totaldegree=t_totaldegree+t_celldegree;
+            res_count=res_count+1;
+          }
+          t_wholearea=t_radius*t_radius;
+          t_radius=t_radius+1;
+        }
+
+        //standrized from 1:1 into width and height ratio
+        t_radius=t_radius-1;
+        let t_wscale=t_extent.width/(2*t_radius);
+        let t_hscale=t_extent.height/(2*t_radius);
+
+        for(let i=0;i<res_count;i++){
+          res_points[i][0]=res_points[i][0]*t_wscale+t_extent.center.x;
+          res_points[i][1]=res_points[i][1]*t_hscale+t_extent.center.y;
+        }
+        return res_points;
+      }
+      function GetSitesFromN(n,in_point,t_extent){
+        let t_portion=gwidth/gheight;
+        //n points
+        let res_points=[];
+        let t_poly=Polygon.fromExtent(t_extent);
+        //in_point=t_poly.centroid;
+        //calculate the shortiest distance from edge to
+        //----pass
+        //get the nearest point on t_poly from in_point
+        let res_nearst=0.5*Math.min(t_extent.width,t_extent.height);
+        //let res_nearst=geometryEngine.nearestVertex(t_poly,in_point,"meters").distance;
+        //nearestpoint.coordinate;
+        //nearestpoint.distance;
+        res_i=[];
+        for (let i=4;i<9;i++){
+          let j=0, m=0;
+          while(m<=n){
+            m=m+i*Math.pow(2,j);
+            j=j+1;
+          }
+          let t_x=n+i*2^j-m;
+          if(t_x<2 && j>1){
+            res_i.push([j-1,i,i*2^(j-1)+1]);
+          }
+          else{
+            res_i.push([j,i,t_x]);//[j circles, m-n the outer ring number]
+          }
+        }
+        let t_arr=res_i.pop();
+        while(t_arr[0]<=1 && res_i.length>0){
+          t_arr=res_i.pop();
+        }
+        let t_root=0;
+        let arr_root=[];
+        for(let i=0;i<t_arr[0];i++){
+          t_root+=Math.pow(2,i);
+          arr_root.push(t_root);
+        }
+        let r=res_nearst/Math.sqrt(t_root);
+        // r, a, r+a
+        let t_area=Math.pow(r,2);// the area of central circle
+        let s_area=0;
+        let t_pre_r=0;
+        let ncount=0;
+        for (let i=0;i<t_arr[0]-1;i++){
+          s_area=t_area*arr_root[i];
+          let t_ra=Math.sqrt(s_area);//
+          //draw points
+          let t_r=0.5*(t_ra+t_pre_r);//t_portion*t_pre_r
+          let k=2*Math.PI/(t_arr[1]*Math.pow(2,i)); // radin of each circle
+          for(let j=0;j<t_arr[1]*Math.pow(2,i);j++){
+            res_points.push([in_point.x+t_portion*t_r*Math.cos(j*k),in_point.y+t_r*Math.sin(j*k)]);
+            ncount+=1;
+          }
+          t_pre_r=t_ra;
+        }
+        let t_ra=res_nearst;
+        //draw points
+        let t_r=0.5*(t_ra+t_pre_r);
+        let k=2*Math.PI/(t_arr[2]);
+        for(let j=0;j<t_arr[2];j++){
+          res_points.push([in_point.x+t_portion*t_r*Math.cos(j*k),in_point.y+t_r*Math.sin(j*k)]);
+          ncount+=1;
+        }
+        if(0){
+          res_points=d3.range(n)//15
+                     .map(function(d) { return [Math.random() * t_extent.width+t_extent.xmin, Math.random() * t_extent.height+t_extent.ymin]; });
+        }
+        return res_points;
+      }
+
+      function addTriangle(){
+
+      }
+
+      function addFreedraw(){
+        var action = draw.create("polygon");
+        // focus the view to activate keyboard shortcuts for drawing polygons
+        view.focus();
+
+        // listen polygonDrawAction events to give immediate visual feedback
+        // to users as the polygon is being drawn on the view.
+        action.on("vertex-add", drawPolygon);
+        action.on("cursor-update", drawPolygon);
+        action.on("vertex-remove", drawPolygon);
+        action.on("redo", drawPolygon);
+        action.on("undo", drawPolygon);
+        action.on("draw-complete", drawPolygon);
+      }
+
+      function addGraphics(vtriangles) {
+        // transfer the voronoi polygon:vpolygons to gispolygon
+        //validSymbol = createSymbol([0, 170, 255, 0.4], "solid", 2, [255,255, 255]);
+        let text_symbol = {
+          type: "text",  // autocasts as new TextSymbol()
+          color: "white",
+          haloColor: "black",
+          haloSize: "1px",
+          text: "You are here",
+          xoffset: 3,
+          yoffset: 3,
+          font: {  // autocast as new Font()
+            size: 12,
+            family: "sans-serif",
+            weight: "bold"
+          }
+        };
+        for (var i=0;i<vtriangles.length;i++){
+          vtriangles[i].push(vtriangles[i][0]);
+          let polygon = createGeometry(vtriangles[i]);
+          let newDevelopmentGraphic = new Graphic({
+            geometry: polygon,
+            symbol: validSymbol,
+            attributes: {
+              newDevelopment: "new store",
+              cellindex:(i+1).toString(),
+              polygonindex:i.toString()
+            }
+          });
+          text_symbol.text="S"+(i+1).toString();
+          let t_point=new Graphic ({
+            geometry:newDevelopmentGraphic.geometry.centroid,
+            symbol:text_symbol
+          });
+          allpolygons.push(newDevelopmentGraphic);
+          allpolygons_text.push(t_point);
+        }
+        updated_polygonring=vtriangles;
+
+        graphicsLayer.addMany(allpolygons);
+        graphicsLayer.addMany(allpolygons_text);
+      }
+
+      function getGPSDisplayUpdate(){
+        gpsgraphicsLayer.removeAll();
+        //random a color
+        //draw all gpsdata
+        for (const key in gpspatharray){
+          //Testing
+          console.log(gpspatharray[key]);
+          let in_point=new Point({
+                  latitude:gpspatharray[key][0][1],//lat,
+                  longitude:gpspatharray[key][0][0],//long,
+                  spatialReference:view.spatialReference
+                });
+          let t_graphic1=  new Graphic({
+            geometry: in_point,
+            symbol:  {
+                 type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                 style:"circle",
+                 color: [getRandomInt(255), getRandomInt(255), getRandomInt(255)],//[t_mag, 0,0],
+                 size:20
+               }
+          });
+          gpsgraphicsLayer.add(t_graphic1);
+
+          // First create a line geometry (this is the Keystone pipeline)
+          var polyline = {
+            type: "polyline", // autocasts as new Polyline()
+            paths: gpspatharray[key]//  [[-80.582342,37.199622],[-80.581031,37.204559],[-80.577359,37.207806]]//[[-111.3, 52.68], [-98, 49.5], [-93.94, 29.89]]
+          };
+          // Create a symbol for drawing the line
+          var lineSymbol = {
+            type: "simple-line", // autocasts as SimpleLineSymbol()
+            color: [getRandomInt(255), getRandomInt(255), getRandomInt(255)],
+            width: 4
+          };
+          // Create an object for storing attributes related to the line
+          var lineAtt = {
+            Name: "GPS "+document.getElementById('sel_gpsdevice').options[key].text,
+            Owner: "SAR",
+            Length: "..."
+          };
+          var polylineGraphic = new Graphic({
+            geometry: polyline,
+            symbol: lineSymbol,
+            attributes: lineAtt,
+            popupTemplate: {
+              // autocasts as new PopupTemplate()
+              title: "{Name}",
+              content: [
+                {
+                  type: "fields",
+                  fieldInfos: [
+                    {
+                      fieldName: "Name"
+                    },
+                    {
+                      fieldName: "Owner"
+                    },
+                    {
+                      fieldName: "Length"
+                    }
+                  ]
+                }
+              ]
+            }
+          });
+          gpsgraphicsLayer.add(polylineGraphic);
+        }
+      }
+
+      function createGeometry(vertices) {
+        return new Polygon({
+          rings: vertices,
+          //spatialReference: {wkid: 102100 }
+          spatialReference: view.spatialReference
+        });
+      }
+
+      function createSymbol(color, style, width, outlineColor) {
+        return {
+          type: "simple-fill",
+          style: style,
+          color: color,
+          outline: {
+            color: outlineColor,
+            width: width
+          }
+        }
+      }
+
+      // Create new view, map and layers... set up the view
+      function setUpView() {
+        coordinateLayer=new FeatureLayer({
+          //wkid:4326
+          //spatialReference: { wkid: 4326  }
+          spatialReference: { wkid: 102100  }
+        });
+        var transportationLayer = new TileLayer({
+          url: "https://server.arcgisonline.com/arcgis/rest/services/Reference/World_Transportation/MapServer",
+          // This property can be used to uniquely identify the layer
+          id: "something",
+          visible: true
+        });
+        //map.add(transportationLayer);
+        var riverLayer = new FeatureLayer({
+          url:
+          "https://services8.arcgis.com/ZXMBUOxDBbivoAgJ/arcgis/rest/services/RiverMiles/FeatureServer"
+          // This property can be used to uniquely identify the layer
+        });
+        //map.add(riverLayer);
+        map.add(geojsonLayer);
+        //console.log(riverLayer.gdbVersion);
+        view = new MapView({
+          container: "viewDiv",
+          map: map,
+          zoom: scale,
+          center: m_scenarios[m_scenario_index].center//[gcx,gcy],//,35.4
+        });
+        m_experimentres["scenario"]=m_scenarios[m_scenario_index];
+        var toggle = new BasemapToggle({
+          // 2 - Set properties
+          view: view, // view that provides access to the map's 'topo' basemap
+          nextBasemap: "topo" // allows for toggling to the 'hybrid' basemap
+        });
+        // Add widget to the top right corner of the view
+        view.ui.add(toggle, "bottom-left");
+        //add track widget
+        var trackWidget = new Track({
+          view: view
+        });
+        view.ui.add(trackWidget, "top-left");
+        // Adds the search widget below other elements in
+        // the top left corner of the view
+        var searchWidget = new Search({
+          view: view
+        });
+        view.ui.add(searchWidget, {
+          position: "bottom-right",
+          index: 5
+        });
+        setupEditing();
+        //view.ui.add("draw-polygon", "top-left");
+        draw = new Draw({
+        view: view
+        });
+        //validSymbol = createSymbol([0, 170, 255, 0.4], "solid", 2, [255,255, 255]);//task generation
+        validSymbol = createSymbol([212,221,222, 0.2], "solid", 2, [255,255, 255]);//task generation
+
+      }
+
+      document.getElementById("btntaskassignment").onclick=function() {
+        m_experimentres["actions"].push({"id":"btntaskassignment","timestamp": Date.now(), "description":"click task assign"});
+        //console.log(m_experimentres);
+        //save to the database
+        AddTeams();
+        //draw the polygon
+        //m_searchedarea.concat(m_teamassign);
+        //console.log(m_teamassign);
+        for(let i=0;i<m_teamassign.length;i++){
+
+          //console.log(m_teamassign[i]);
+          if(m_teamassign[i]){
+            DrawPolygonToInitLayer(m_teamassign[i]);
+
+            //check if the target is in the array
+            if(m_teamassign[i].attributes.cellindex==m_targetpolygon.attributes.cellindex){
+              //display the targetarea
+              DrawPolygonToInitLayer(m_targetpolygon,"red");
+              DrawcongratulationsToInitLayer();
+
+              //name:unixtime_participantid_taskid
+              let filename=m_experimentres["participant_index"]+"_"+Date.now().toString();
+              m_experimentres["taskstop"]=Date.now();
+              m_experimentres["taskduration"]=m_experimentres["taskstop"]-m_experimentres["taskstart"];
+              download(filename+".txt",JSON.stringify(m_experimentres));
+
+            }
+          }
+
+        }
+        let t_stoptime=Date.now();
+        m_experimentres["step_details"].push({
+          "step_index":m_experimentres["step_details"].length+1,
+          "team_cell":m_teamassign,
+          "starttime":m_taskstarttime,
+          "stoptime":t_stoptime,
+          "duration":t_stoptime-m_taskstarttime
+        });
+
+        m_teamassign=[null,null,null,null,null];
+        m_taskstarttime=null;
+        //console.log(m_targetpolygon);
+        //DrawPolygonToInitLayer(m_targetpolygon,"red");
+      }
+
+      function download(filename, text) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+      }
+
+      function DrawcongratulationsToInitLayer(){
+        var graphic = new Graphic({
+          geometry: area_extent.center,//view.extent.center,
+          symbol: {
+            type: "text",
+            color: [255,125,0],
+            haloColor: "black",
+            haloSize: "2px",
+            text: "Congratulations!",
+            xoffset: 3,
+            yoffset: 50,
+            font: { // autocast as Font
+              size: 100,
+              family: "sans-serif"
+            }
+          }
+        });
+        graphicInitLayer.add(graphic);
+
+        graphic = new Graphic({
+          geometry: area_extent.center,//view.extent.center,
+          symbol: {
+            type: "text",
+            color: [255,125,0],
+            haloColor: "black",
+            haloSize: "2px",
+            text: "Target is found: S"+m_targetpolygon.attributes.cellindex.toString(),
+            xoffset: 3,
+            yoffset: 0,
+            font: { // autocast as Font
+              size: 50,
+              family: "sans-serif"
+            }
+          }
+        });
+        graphicInitLayer.add(graphic);
+
+      }
+      function DrawPolygonToInitLayer(t_obj,t_color=[0, 102, 255, 0.8]){
+        //draw the polygon into graphicInitLayer
+        var graphic = new Graphic({
+          geometry: t_obj.geometry,
+          symbol: {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: t_color,//[0, 102, 255, 0.8],//[178, 102, 234, 0.1],
+            style: "backward-diagonal"
+          }
+        });
+        //console.log(graphic);
+        graphicInitLayer.add(graphic);
+      }
+
+
+      document.getElementById("btndisplaytarget").onclick=function() {
+        DrawPolygonToInitLayer(m_targetpolygon,[255,0,0,0.8]);
+        m_experimentres["actions"].push({"id":"btndisplaytarget","timestamp": Date.now(), "description":"click dislpay"});
+
+      }
+      document.getElementById("btneditcells").onclick=function() {
+
+        if(m_editing){
+          document.getElementById("btneditcells").value="Edit cells (Stop)";
+          m_experimentres["actions"].push({"id":"btneditcells","timestamp": Date.now(), "description":"Edit cells stops"});
+          m_editing=false;
+        }
+        else{
+          document.getElementById("btneditcells").value="Edit cells (Editing)";
+          m_editing=true;
+          m_experimentres["actions"].push({"id":"btneditcells","timestamp": Date.now(), "description":"Edit cells start"});
+        }
+
+
+      }
+        //generate voronoi
+      document.getElementById("btngeneratearea").onclick=function() {
+        m_experimentres["actions"].push({"id":"btngeneratearea","timestamp": Date.now(), "description":"generate task"});
+        graphicsLayer.removeAll();
+        view.graphics.removeAll();
+        gpsgraphicsLayer.removeAll();
+
+        //draw teams
+
+
+        //wholetask=activeWidget.viewModel.measurement;
+        allpolygons=[];
+        allpolygons_text=[];
+        glverticeslist=[];
+        if(voronoistyle=="random"){
+          addVoronoi();
+          //view.complete();
+        }
+        else if(voronoistyle=="triangle"){
+          addTriangle();
+          //view.complete();
+        }
+        else if(voronoistyle=="clear"){
+          addFreedraw();
+        }
+
+        AddTeams(true);
+        DisplayLostPersonInfo();
+
+        m_experimentres["allpolygons"]=allpolygons;
+        m_experimentres["polygonnumbers"]=allpolygons.length;
+        m_targetpolygon=allpolygons[getRandomInt(allpolygons.length)];
+
+        m_experimentres["targetcellindex"]=m_targetpolygon.attributes.cellindex;
+
+      };
+
+      // this function is called from the polygon draw action events
+      // to provide a visual feedback to users as they are drawing a polygon
+      function drawPolygon(event) {
+        if(voronoistyle!="clear" && voronoistyle!="sidebar") return;
+        var glvertices = event.vertices;
+        //remove existing graphic
+        view.graphics.removeAll();
+        if(glverticeslist.length>0) addGraphics(glverticeslist);
+        // create a new polygon
+        var polygon = new Polygon({
+          rings: glvertices,
+          spatialReference: view.spatialReference
+        });
+        // create a new graphic representing the polygon, add it to the view
+        //taskgeneration
+        var graphic = new Graphic({
+          geometry: polygon,
+          symbol: {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: [178, 102, 234, 0.8],//[178, 102, 234, 0.1],
+            style: "solid",
+            outline: { // autocasts as SimpleLineSymbol
+              color: [255, 255, 255],
+              width: 2
+            }
+          }
+        });
+        view.graphics.add(graphic);
+        // calculate the area of the polygon
+        var area = geometryEngine.geodesicArea(polygon, "acres");
+        if (area < 0) {
+          // simplify the polygon if needed and calculate the area again
+          var simplifiedPolygon = geometryEngine.simplify(polygon);
+          if (simplifiedPolygon) {
+            area = geometryEngine.geodesicArea(simplifiedPolygon, "acres");
+          }
+        }
+        // start displaying the area of the polygon
+        labelAreas(polygon, area);
+        if(event.type=="draw-complete"){
+          addGraphics(glvertices);
+          if( voronoistyle=="clear"){
+            glverticeslist.push(glvertices);
+            //addFreedraw();
+          }
+        }
+      }
+
+      //Label polyon with its area
+      function labelAreas(geom, area) {
+        var graphic = new Graphic({
+          geometry: geom.centroid,
+          symbol: {
+            type: "text",
+            color: "white",
+            haloColor: "black",
+            haloSize: "1px",
+            text: area.toFixed(2) + " acres",
+            xoffset: 3,
+            yoffset: 3,
+            font: { // autocast as Font
+              size: 14,
+              family: "sans-serif"
+            }
+          }
+        });
+        view.graphics.add(graphic);
+      }
+
+      function setupEditing() {
+        // input boxes for the attribute editing
+        editArea = document.getElementById("editArea");
+        // Listen to the feature form's submit event.
+        // Expand widget for the editArea div.
+        const editExpand = new Expand({
+          expandIconClass: "esri-icon-edit",
+          expandTooltip: "Expand Edit",
+          expanded: true,
+          view: view,
+          content: editArea
+        });
+        view.ui.add(editExpand, "top-right");
+      }
+
+      var ccWidget = new CoordinateConversion({
+        view: view
+        //container: "coordinatesdiv"
+      });
+      view.ui.add(ccWidget, "bottom-left");
+      //view.ui.add(ccWidget,document.getElementById("coordinatesdiv"));
+//-----------------adding new functions here---------------------
+
+      function onGraphicUpdate(event){
+        let mover,temppolyset,t_pointIndex,orignalmover;//for reshape
+        let t_pt_array;//for move
+
+        //if(event.toolEventInfo != null){
+        //  console.log(event.toolEventInfo.mover.geometry.x +","+ event.toolEventInfo.mover.geometry.y+":"+ event.toolEventInfo.type );
+        //}
+        //if is the first active or not
+        if (event.state=="active"){
+          let graphic = event.graphics[0];
+          //console.log(event);
+          let t_status=0;//1: "reshape", 2: "move";
+          mover=event.toolEventInfo.mover.geometry;
+          //console.log(event.toolEventInfo.mover);
+
+
+          if(event.toolEventInfo.type=="reshape-start"){
+            t_status=1;
+            t_pointIndex=event.toolEventInfo.mover.attributes.pointIndex;
+            orignalmover=graphic.geometry.rings[0][t_pointIndex];
+
+            temppolyset=[];
+            activepolygonpoints=[];
+            //selected=event.toolEventInfo.selected[0].geometry;
+            for(let i=0;i<allpolygons.length;i++){
+              if(geometryEngine.equals(allpolygons[i].geometry,graphic.geometry)){
+                temppolyset.push(allpolygons[i]);
+                continue;
+              }
+              if(geometryEngine.touches(mover,allpolygons[i].geometry)){
+                //array, start end with the two nearby points
+                //let array_points=GetPolygonPoints(mover.x,mover.y,allpolygons[i].geometry.rings[0]);
+                let array_points=GetPolygonPoints(orignalmover[0],orignalmover[1],allpolygons[i].geometry.rings[0]);
+
+                activepolygonpoints.push(array_points);
+                //console.log("mover"+mover.x+","+mover.y);
+                //console.log("original"+orignalmover[0]+","+orignalmover[1]);
+                //console.log(activepolygonset);
+                activepolygonset.push(allpolygons[i]);
+              }
+              else{
+                temppolyset.push(allpolygons[i]);
+              }
+            }
+            allpolygons=temppolyset;
+          }
+          else if(event.toolEventInfo.type=="reshape"){
+            t_status=1;
+          }
+          else if(event.toolEventInfo.type=="reshape-stop"){
+
+            allpolygons=allpolygons.concat(activepolygonset);
+            activepolygonset=[];
+            t_status=1;
+          }
+          else if(event.toolEventInfo.type=="move-start"){
+            temppolyset=[];
+            activepolygonpoints=[];
+            //validSymbol = createSymbol([0, 170, 255, 0.4], "solid", 2, [255,255, 255]);
+            t_status=2;
+            for(let i=0;i<allpolygons.length;i++){
+              if(geometryEngine.equals(allpolygons[i].geometry,graphic.geometry)){
+                move_polygon = new Graphic({
+                  geometry: allpolygons[i].geometry,
+                  symbol: validSymbol,
+                  attributes: {
+                    newDevelopment: "new store",
+                    cellindex: allpolygons[i].attributes.cellindex,
+                    polygonindex: allpolygons.length
+                  }
+                });
+                activepolygonset.push(allpolygons[i]);
+                continue;
+              }
+              temppolyset.push(allpolygons[i]);
+            }
+            allpolygons=temppolyset;
+          }
+          else if(event.toolEventInfo.type=="move"){
+            t_status=2;
+          }
+          else if(event.toolEventInfo.type=="move-stop"){
+            t_status=2;
+            allpolygons.push(move_polygon);
+            //console.log(allpolygons);
+            graphicsLayer.removeMany(activepolygonset);
+            graphicsLayer.addMany([move_polygon]);
+
+            activepolygonset=[];
+          }
+          //renew the polygons
+          if(activepolygonset.length>0 && t_status==1){
+
+            graphicsLayer.removeMany(activepolygonset);
+            activepolygonset=GeneratePolygonBasedonPoints(mover.x,mover.y,activepolygonpoints);
+            graphicsLayer.addMany(activepolygonset);
+
+          }
+
+        }
+      }
+      function onTaskAssignmentGraphicUpdate(event){
+        let graphic = event.graphics[0];
+        //console.log("onTaskAssignmentGraphicUpdate");
+        //console.log(graphic);
+        //Teamindex
+
+        //detect the overlap area
+        if (event.state=="active"){
+          mover=event.toolEventInfo.mover.geometry;
+          if(event.toolEventInfo.type=="move-start"){
+            if(m_taskstarttime ==null){
+              m_taskstarttime=Date.now();
+            }
+
+          }
+          else if(event.toolEventInfo.type=="move"){
+
+
+          }
+          else if(event.toolEventInfo.type=="move-stop"){
+            //console.log(mover);
+            //console.log(graphic);
+            for(let i=0;i<allpolygons.length;i++){
+
+              if(geometryEngine.contains(allpolygons[i].geometry,mover)){
+                //document.getElementById(graphic.attributes.htmlid).text("S"+allpolygons[i].attributes.cellindex.toString());
+
+                $(graphic.attributes.htmlid).text("S"+allpolygons[i].attributes.cellindex.toString());
+                m_teamassign[graphic.attributes.Teamindex-1]=allpolygons[i];
+                break;
+              }
+
+            }
+
+          }
+        }
+
+      }
+
+      //tpoly is an array[[,],[,]]
+      function GetPolygonPoints(x,y,tpoly){
+        //break the ring
+
+        let t_array=[];
+        let i=0;
+        let pointofline=0;//0: not on line, 1: vertices, 2: center, 3: on the line
+        for(i=0;i<tpoly.length-1;i++){
+          if((Math.abs(tpoly[i][0]-x)< maxdistanceerror) && (Math.abs(tpoly[i][1]-y)< maxdistanceerror )){
+            pointofline=1;
+            break;
+          }
+        }
+        if( pointofline===1 ){
+          //console.log("points as vertices");
+          //poins as vertices of the line
+          t_array=t_array.concat(tpoly.slice(i+1,tpoly.length-1),tpoly.slice(0,i));
+          //console.log(t_array);
+          return t_array;
+        }
+
+        for(i=0;i<tpoly.length-1;i++){
+          if( ( Math.abs(0.5*( tpoly[i][0]+tpoly[i+1][0] )-x )< maxdistanceerror)
+                && ( Math.abs(0.5*( tpoly[i][1]+tpoly[i+1][1] )-y) < maxdistanceerror) ){
+                    pointofline=2;
+                    break;
+          }
+        }
+        if (pointofline===2){
+
+          //have problem need debug
+          t_array=t_array.concat(tpoly.slice(i+1,tpoly.length-1),tpoly.slice(0,i+1));
+        }
+        else{
+          //poins on the line
+          //add more pass
+
+          t_array=null;
+        }
+        return t_array;
+      }
+
+      function GetPolygonPoints_Vertices(x,y,tpoly){
+        //break the ring
+        let t_array=[];
+        for(let i=0;i<tpoly.length-1;i++){
+          if((Math.abs(tpoly[i][0]-x)< maxdistanceerror) && (Math.abs(tpoly[i][1]-y)< maxdistanceerror )){
+            pointofline=1;
+            t_array=t_array.concat(tpoly.slice(i+1,tpoly.length-1),tpoly.slice(0,i));
+            return t_array;
+          }
+        }
+        return tpoly;
+      }
+
+      //update new polygon
+      function GeneratePolygonBasedonPoints(x,y,array_points){
+        let tmppolysets=[];
+
+        //validSymbol = createSymbol([0, 170, 255, 0.4], "solid", 2, [255,255, 255]);
+
+        if(array_points.length==0){
+          return tmppolysets;
+        }
+        for(let i=0;i<array_points.length;i++){
+          entry=array_points[i];
+
+          let vertices=[];
+          vertices=vertices.concat([[x,y]],entry,[[x,y]]);
+          //console.log(vertices);
+          //console.log("-------------");
+          let polygon = createGeometry(vertices);
+          newDevelopmentGraphic = new Graphic({
+            geometry: polygon,
+            symbol: validSymbol,
+            attributes: {
+              newDevelopment: "new store"
+            }
+          });
+          tmppolysets.push(newDevelopmentGraphic);
+        }
+
+        return tmppolysets;
+      }
+
+      function PointsMerge(points_array,maxd){
+        //ring with no points repeated
+
+        resarray=[];
+        while(points_array.length>0){
+          entry=points_array.pop();
+          //console.log(entry);
+          //console.log("point merge");
+          let i=0;
+          for(i = 0;i<points_array.length;i++){
+            if(Math.abs(points_array[i][0]-entry[0]< maxd) && Math.abs(points_array[i][1]-entry[1])< maxd ){
+              break;
+            }
+          }
+          if(i<points_array.length){
+            continue;
+          }
+          else{
+            resarray.push(entry);
+          }
+        }
+        return resarray;
+      }
+//-----------------------------------------------------
+      document.getElementById("distanceButton").addEventListener("click",
+             function () {
+               setActiveWidget(null);
+               if (!this.classList.contains('active')) {
+                 setActiveWidget('distance');
+               } else {
+                 setActiveButton(null);
+               }
+               m_experimentres["actions"].push({"id":"distanceButton","timestamp": Date.now(), "description":"generate task"});
+             });
+
+      document.getElementById("areaButton").addEventListener("click",
+       function () {
+         setActiveWidget(null);
+         if (!this.classList.contains('active')) {
+           setActiveWidget('area');
+         } else {
+           setActiveButton(null);
+         }
+       });
+
+      function setActiveWidget(type) {
+       switch (type) {
+         case "distance":
+           activeWidget = new DistanceMeasurement2D({
+             view: view
+           });
+
+           // skip the initial 'new measurement' button
+           activeWidget.viewModel.newMeasurement();
+           activeWidget.
+
+           view.ui.add(activeWidget, "bottom-right");
+           setActiveButton(document.getElementById('distanceButton'));
+           break;
+         case "area":
+           activeWidget = new AreaMeasurement2D({
+             view: view
+           });
+
+           // skip the initial 'new measurement' button
+           activeWidget.viewModel.newMeasurement();
+
+           view.ui.add(activeWidget, "bottom-right");
+           //console.log(activeWidget);
+           setActiveButton(document.getElementById('areaButton'));
+           break;
+         case null:
+           if (activeWidget) {
+             view.ui.remove(activeWidget);
+             activeWidget.destroy();
+             activeWidget = null;
+           }
+           break;
+       }
+      }
+
+      function setActiveButton(selectedButton) {
+         // focus the view to activate keyboard shortcuts for sketching
+         view.focus();
+         var elements = document.getElementsByClassName("active");
+         for (var i = 0; i < elements.length; i++) {
+           elements[i].classList.remove("active");
+         }
+         if (selectedButton) {
+           selectedButton.classList.add("active");
+         }
+       }
+
+      document.getElementById("clearall").addEventListener("click",
+       function () {
+         m_experimentres["actions"].push({"id":"clearall","timestamp": Date.now(), "description":"clearall"});
+         ClearAll();
+         area_extent=view.extent;
+       });
+
+       function ClearAll(){
+         //console.log(activeWidget);
+         //console.log(activeWidget.viewModel.measurementLabel.area);
+         deletePointsToGeolayer();
+         allpolygons=[];
+         allpolygons_text=[];
+         activepolygonset=[];
+         activepolygonpoints=[];
+         glverticeslist=[];
+         updated_polygonring=[];
+         m_taskstarttime=null;
+         //area_extent=view.extent;
+         graphicsLayer.removeAll();
+         view.graphics.removeAll();
+         gpsgraphicsLayer.removeAll();
+         graphicPointsLayer.removeAll();
+         graphicTrajectoryLayer.removeAll();
+         graphicHeatmapsLayer.removeAll();
+         graphicControlLayer.removeAll();
+         graphicInitLayer.removeAll();
+         teamgraphicsLayer.removeAll();
+         graphicContourLayer.removeAll();
+
+         setActiveWidget(null);
+         sketchViewModel.complete();
+         //taskassignment_sketchViewModel.complete();
+         view.ui.remove(activeWidget);
+         //activeWidget.destroy();
+         activeWidget = null;
+       }
+
+       function PolyArrayToJson(polyarray)
+       {
+         if(polyarray.length<1){
+           return "";
+         }
+         res_json={};
+         for (let i=0;i<polyarray.length;i++){
+           res_json[i]=polyarray[i];
+         }
+         return JSON.stringify(res_json);
+       }
+
+       document.getElementById("savetasks").addEventListener("click",
+         function () {
+           m_experimentres["actions"].push({"id":"savetasks","timestamp": Date.now(), "description":"savetasks"});
+           let py_task_all_array={{ task_all |safe }}
+           let t_tasknotes=document.getElementById("tasknotes").value;
+           t_tasknotes=t_tasknotes.split(' ').join('_');
+           //console.log(py_task_all_array);
+           if(py_task_all_array.includes(t_tasknotes)){
+             //task_all
+             alert("Please try another task name.");
+             //console.log(document.getElementById("tasknotes").value+" is already exist, please enter another one!");
+           }
+           else {
+             var URL = "{% url 'tasksave' %}";
+             let dbpolystr=PolyArrayToJson(updated_polygonring);
+             var data = {
+                     csrfmiddlewaretoken: '{{ csrf_token }}',
+                     'task_notes': t_tasknotes,
+                     'task_id': t_tasknotes,
+                     'Taskarea': updated_polygonring.length.toString(),
+                     'task_polygon': dbpolystr
+                    };
+             $.post(URL, data, function(response){
+               var res=JSON.parse(response);
+
+                 if(res.flag == 'success'){
+                   //console.log(res.Taskarea);
+                   //add date and task number and a random number
+                   //task name:
+                   let task_url="{% url 'taskgenerationform' %}"+"/"+t_tasknotes+'_'+'0/';
+                   //console.log(task_url);
+                   //var win = window.open("{% url 'taskgenerationform' %}", '_blank');
+                   var win = window.open(task_url, '_blank');
+                   win.focus();
+                   //open a new tab for task TaskGeneration
+
+                   /*
+                   document.getElementById("tasknotes").value=res.taskinpy;
+                   document.getElementById("myRange3").value=res.DuressJ3;
+                   document.getElementById("myRange4").value=res.DuressJ4;
+                   */
+                  }
+                 else{ alert(response); }
+             });
+           }
+         });
+         function LoadLPFromCSV_con(t_url,t_arr_count,t_hour=0,t_rank=0){
+           var t_data;
+            $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+                 t_data = $.csv.toArrays(response).map(function(item){
+                   return item.map(Number);
+                 });
+                 m_lpdata_con.push({'hour':t_hour,'rank':t_rank,'data':t_data});
+              }
+            });
+            return true;
+         }
+
+         function LoadLPFromCSV(t_url,t_arr_count,t_hour=0,t_rank=0){
+           var t_data;
+            $.ajax({
+              type: "GET",
+              url:t_url,
+              dataType: "text",
+              success: function(response)
+              {
+                 t_data = $.csv.toArrays(response).map(function(item){
+                   return item.map(Number).slice(1);
+                 });
+                 //m_lpdata.push(t_data);
+                 m_lpdata.push({'hour':t_hour,'rank':t_rank,'data':t_data});
+                 let t_max=0;
+                 let t_index=0;
+                t_data.map(function(value,index) {
+                  if(t_max<value[2]){
+                    t_max=value[2];
+                    t_index=index;
+                  }
+                });
+                //console.log(m_lpdata_json);
+                m_lpdata_json['points'][t_hour]['data'][t_rank]['loc']=t_data[t_index];
+
+                 document.getElementById("loadlpmcsv").value="Load LPM Data (Loading "+m_lpdata.length.toString()+")";
+                 if (m_lpdata.length == t_arr_count){
+
+                   document.getElementById("loadlpmcsv").value="Load LPM Data (Loaded)";
+                   m_experimentres["actions"].push({"id":"loadlpmcsv","timestamp": Date.now(), "description":"loaded"});
+                 }
+              }
+            });
+            //get json file for m_lpdata_json
+
+            /*{"points":[
+            {"hour":0,"data"}
+                    ]}
+                    */
+            return true;
+         }
+
+         function AddTeams(init=false,teamcount=5){
+           teamgraphicsLayer.removeAll();
+           if(init){
+             m_teamiconlocation=null;
+           }
+           //team 1,2,3,4,5
+           if (m_teamiconlocation){
+             for(let i=0;i<m_teamiconlocation.length;i++){
+               $(m_teamiconlocation[i].attributes.htmlid).text("SX");
+             }
+
+           }
+           else{
+             m_teamiconlocation=[];
+             let t_y=0.95*view.extent.ymax+0.05*view.extent.ymin;
+             let t_start=0.2*view.extent.xmax+0.8*view.extent.xmin;
+             let t_stop=0.5*view.extent.xmax+0.5*view.extent.xmin;
+             let t_steps=(t_stop-t_start)/teamcount;
+             for(let i=0;i<teamcount;i++){
+               //console.log(view);
+               let in_point=new Point({
+                 x:t_start+i*t_steps,
+                 y:t_y,
+                 spatialReference:view.spatialReference
+               });
+
+               let t_graphic =  new Graphic({
+                 geometry: in_point,
+                 symbol:  {
+                   type: "picture-marker",  // autocasts as new PictureMarkerSymbol()
+                    url: "{% static 'img/user.png' %}",
+                    width: "64px",
+                    height: "64px"
+                  },
+                  attributes:{
+                    Name:"Team",
+                    Teamindex:i+1,
+                    Status:"Assigned",
+                    htmlid:"#th_team"+(i+1).toString()
+                  }
+                });
+                m_teamiconlocation.push(t_graphic);
+                $(t_graphic.attributes.htmlid).text("SX");
+             }
+           }
+           teamgraphicsLayer.addMany(m_teamiconlocation);
+           /*
+           for(let j=0;j<teamgraphicsLayer.graphics.length;j++){
+             taskassignment_sketchViewModel.update([teamgraphicsLayer.graphics.items[j]],{
+               tool:"move"//move
+             });
+           }*/
+         }
+
+
+          function AddLPDataToPointslayer(){
+            graphicPointsLayer.removeAll();
+            arr_featureset=[];
+            arr_hours=m_lpdata_json['points'];
+            let t_start=0,t_end=12;
+            arr_featureset=[];
+            let rank_start=0;
+            let rank_stop=2;
+            if(document.getElementById("sel_rank").value=='1'){
+              rank_start=0;
+              rank_stop=0;
+            }
+            else if(document.getElementById("sel_rank").value=='2'){
+              rank_start=1;
+              rank_stop=1;
+            }
+            else if(document.getElementById("sel_rank").value=='3'){
+              rank_start=2;
+              rank_stop=2;
+            }
+            let lat,long;
+            for(let rank=rank_stop;rank>=rank_start;rank--){
+              let paths=[];
+              let i_hr=document.getElementById("myRange").value;
+                //draw points, light of color changed with hours, end is the darkest, color hue changes with rank
+
+               let lat=arr_hours[i_hr]['data'][rank]['loc'][1];
+               let long=arr_hours[i_hr]['data'][rank]['loc'][0];
+
+
+                let in_point=new Point({
+                  latitude:lat,
+                  longitude:long,
+                  //latitude:parseFloat(arr_hours[i]['data'][rank]['loc'][1]),
+                  //longitude:parseFloat(arr_hours[i]['data'][rank]['loc'][0]),
+                  spatialReference:view.spatialReference
+                });
+
+                //t_rgb=hslToRgb(0, 1, 1-0.5*t_mag);//red
+                t_rgb=hslToRgb(0.1*rank+0.7,1 , 0.8*(t_end-i_hr)/(t_end-t_start)+0.2);//h:0.5-1,1,0.5, l:0.2-0.8
+                t_rgb.push(0.8);//transparency
+
+                let t_graphic =  new Graphic({
+                  geometry: in_point,
+                  symbol:  {
+                       type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                       style:"circle",
+                       color: t_rgb,//[t_mag, 0,0],
+                       size:10*(4-rank)
+                     },
+                   attributes:{
+                     Name:"Lost person model",
+                     Hour:i_hr,
+                     Rank:rank+1
+                   },
+                   popupTemplate:{
+                       title: "{Name}",
+                       content: [
+                         {
+                           type: "fields",
+                           fieldInfos: [
+                             {
+                               fieldName: "Name"
+                             },
+                             {
+                               fieldName: "Hour"
+                             },
+                             {
+                               fieldName: "Rank"
+                             }
+                           ]
+                         }
+                       ]
+                   }
+                });
+                arr_featureset.push(t_graphic);
+            }
+
+            graphicPointsLayer.addMany(arr_featureset);
+            graphicPointsLayer.visible=true;
+
+            //teamgraphicsLayer.addMany(arr_featureset);
+          }
+
+
+         function AddLPDataToTrajectorylayer(){
+           graphicTrajectoryLayer.removeAll();
+           //convert area_extent to [long,lat]
+           arr_hours=m_lpdata_json['points'];
+           let t_start=0,t_end=11;
+           arr_featureset=[];
+           let rank=0;
+
+           if(document.getElementById("sel_rank").value=='1'){
+             rank=0;
+           }
+           else if(document.getElementById("sel_rank").value=='2'){
+             rank=1;
+           }
+           else if(document.getElementById("sel_rank").value=='3'){
+             rank=2;
+           }
+
+             let paths=[];
+             for(let i=t_start;i<=t_end;i++){
+               //draw points, light of color changed with hours, end is the darkest, color hue changes with rank
+               let lat=arr_hours[i]['data'][rank]['loc'][1];
+               let long=arr_hours[i]['data'][rank]['loc'][0];
+               let in_point=new Point({
+                 latitude:lat,
+                 longitude:long,
+                 //latitude:parseFloat(arr_hours[i]['data'][rank]['loc'][1]),
+                 //longitude:parseFloat(arr_hours[i]['data'][rank]['loc'][0]),
+                 spatialReference:view.spatialReference
+               });
+
+               //t_rgb=hslToRgb(0, 1, 1-0.5*t_mag);//red
+               t_rgb=hslToRgb(0.1*rank+0.7,1 , 0.8*(t_end-i)/(t_end-t_start)+0.2);//h:0.5-1,1,0.5, l:0.2-0.8
+               t_rgb.push(0.8);//transparency
+
+               let t_graphic =  new Graphic({
+                 geometry: in_point,
+                 symbol:  {
+                      type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                      style:"circle",
+                      color: t_rgb,//[t_mag, 0,0],
+                      size:10*(4-rank)
+                    },
+                  attributes:{
+                    Name:"Lost person model",
+                    Hour:i,
+                    Rank:rank+1
+                  },
+                  popupTemplate:{
+                      title: "{Name}",
+                      content: [
+                        {
+                          type: "fields",
+                          fieldInfos: [
+                            {
+                              fieldName: "Name"
+                            },
+                            {
+                              fieldName: "Hour"
+                            },
+                            {
+                              fieldName: "Rank"
+                            }
+                          ]
+                        }
+                      ]
+                  }
+               });
+               arr_featureset.push(t_graphic);
+
+               //draw lines
+
+               paths.push([long,lat]);
+             }
+             let polyline = new Polyline({
+              hasZ: false,
+              hasM: true,
+              paths: [paths],
+              spatialReference: { wkid: 4326 }
+            });
+            let polylineGraphic=new Graphic({
+              geometry: polyline,
+              symbol:{
+                      type: "simple-line", // autocasts as new SimpleLineSymbol()
+                      color: t_rgb, // RGB color values as an array
+                      width: 1
+                    }
+            });
+            //console.log(polylineGraphic);
+            arr_featureset.push(polylineGraphic);
+
+
+           //console.log(arr_featureset);
+           graphicTrajectoryLayer.addMany(arr_featureset);
+           graphicTrajectoryLayer.visible=true;
+         }
+
+         function AddLPDataToControllayer(){
+           graphicControlLayer.removeAll();
+           arr_featureset=[];
+           arr_hours=m_lpdata_json['points'];
+           //console.log(m_lpdata_json);
+           let t_start=0,t_end=12;
+           arr_featureset=[];
+
+          let rank =0;
+          if(document.getElementById("sel_rank").value=='1'){
+            rank = 0;
+          }
+          else if(document.getElementById("sel_rank").value=='2'){
+            rank =1;
+          }
+          else if(document.getElementById("sel_rank").value=='3'){
+            rank =2;
+          }
+
+             let paths=[];
+             let i_hr=document.getElementById("myRange").value;
+               //draw points, light of color changed with hours, end is the darkest, color hue changes with rank
+               let lat=arr_hours[i_hr]['data'][rank]['loc'][1];
+               let long=arr_hours[i_hr]['data'][rank]['loc'][0];
+               let t_pro=arr_hours[i_hr]['data'][rank]['loc'][2];
+               let in_point=new Point({
+                 latitude:lat,
+                 longitude:long,
+                 //latitude:parseFloat(arr_hours[i]['data'][rank]['loc'][1]),
+                 //longitude:parseFloat(arr_hours[i]['data'][rank]['loc'][0]),
+                 spatialReference:view.spatialReference
+               });
+
+               let t_graphic = new Graphic({
+                 geometry:in_point,
+                 symbol: {
+                   type: "text",
+                   color: "white",
+                   haloColor: "black",
+                   haloSize: "1px",
+                   text: (100*t_pro).toFixed(6)+"%",
+                   xoffset: 5,
+                   yoffset: 5,
+                   font: { // autocast as Font
+                     size: 10,
+                     family: "sans-serif"
+                   }
+                 },
+                 attributes:{
+                   Name:"Lost person model",
+                   Hour:i_hr,
+                   Rank:rank+1
+                 },
+                 popupTemplate:{
+                     title: "{Name}",
+                     content: [{type: "fields",fieldInfos: [{fieldName: "Name"},{fieldName: "Hour"},{fieldName: "Rank"}]}]
+                 }
+               });
+
+               arr_featureset.push(t_graphic);
+
+               t_graphic =  new Graphic({
+                 geometry: in_point,
+                 symbol: {
+                  type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+                  style: "x",
+                  color: "blue",
+                  size: "10px"  // pixels
+                }
+
+               });
+               arr_featureset.push(t_graphic);
+
+           graphicControlLayer.addMany(arr_featureset);
+           graphicControlLayer.visible=true;
+         }
+         function AddLPDataToContourlayer(){
+           graphicContourLayer.removeAll();
+           arr_featureset=[];
+
+           if(m_lpdata_con == null){
+             return;
+           }
+           let t_hour=document.getElementById("myRange").value;
+           let t_rank=parseInt(document.getElementById("sel_rank").value)-1;
+           arr_heatpoints=[];
+           //console.log(m_lpdata_con);
+           let t_break=m_lpdata_con.length;
+           let i=0;
+           while(i<t_break){
+             if(m_lpdata_con[i]['hour']==t_hour && m_lpdata_con[i]['rank']==t_rank){
+               arr_heatpoints=m_lpdata_con[t_hour]['data'];
+               break;
+             }
+             i++;
+           }
+           //console.log(arr_heatpoints);
+
+           m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           //loop to find rings
+           let t_rings=[];//
+           let all_paths=[];
+           let t_startprobability=arr_heatpoints[0][0];
+
+           let col3 = arr_heatpoints.map(function(value,index) { return value[0]; });
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_range=t_max-t_min;
+
+           let t_mag=(t_startprobability-t_min)/t_range;
+
+           var markerSymbol = {
+             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+             color: [226, 119, 40],
+             outline: {
+               style:"none"
+             }
+           };
+          var fillSymbol= {
+            type: "simple-fill", // autocasts as SimpleFillSymbol
+            color: [226, 119, 40],
+            outline: { // autocasts as SimpleLineSymbol
+
+              style:"none"
+            }
+          };
+          m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           arr_heatpoints.map(function(item){
+             if(item[0]==t_startprobability){
+               t_rings.push(item.slice(1));
+             }
+             else{
+               //all_paths.push(t_rings);
+               t_rings.push(t_rings[t_rings.length-1]);
+
+               var tmulpt=new Polygon({
+                  rings: t_rings.reverse(),//[[view.extent.xmin,view.extent.ymax],[view.extent.xmax,view.extent.ymax]],
+                  spatialReference: { wkid: 4326 }
+                });
+                if (m_colormap==0){
+                  t_rgb=hslToRgb(1-t_mag, 1, 1-0.6*t_mag);//rainbow
+                }
+                else if (m_colormap==1){
+                  t_rgb=hslToRgb(0.2*(1-t_mag), 1, 1-0.5*t_mag);//red:0, yellow:0.2
+                }
+                else{
+                  t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//blue:0.6
+                }
+                t_rgb.push(0.8*t_mag);//oppacity
+
+                fillSymbol.color=t_rgb;
+                var polylineGraphic = new Graphic({
+                  geometry: tmulpt, // Add the geometry created in step 4
+                  symbol: fillSymbol
+                });
+                 arr_featureset.push(polylineGraphic);//t_graphic
+               t_rings=[];
+               t_startprobability=item[0];
+               t_mag=(t_startprobability-t_min)/t_range;
+             }
+           });
+           //console.log(arr_featureset);
+           graphicContourLayer.addMany(arr_featureset);
+           graphicContourLayer.visible=true;
+
+         }
+
+
+         function AddLPDataToHeatmapslayerFilter(t_filter){
+
+           graphicHeatmapsLayer.removeAll();
+           if(m_lpdata == null){
+             return;
+           }
+           //console.log(m_lpdata);
+           let t_hour=document.getElementById("myRange").value;
+           let t_rank=parseInt(document.getElementById("sel_rank").value)-1;
+
+           arr_heatpoints=[];
+           let t_break=m_lpdata.length;
+           let t_i=0;
+           while(t_i<t_break){
+             if(m_lpdata[t_i]['hour']==t_hour && m_lpdata[t_i]['rank']==t_rank){
+               arr_heatpoints=m_lpdata[t_i]['data'];
+               break;
+             }
+             t_i++;
+           }
+
+           //arr_heatpoints=m_lpdata[document.getElementById("myRange").value];
+
+           //loop the first line to find width
+           let t_width=1;
+           while(arr_heatpoints[0][0]==arr_heatpoints[t_width][0]){
+             t_width+=1;
+           }
+
+           let col3 = arr_heatpoints.map(function(value,index) { return value[2]; });
+           let add = (a, b) =>  a + b;
+           const sum = col3.reduce(add);
+
+            $("#lpsum").text("Percent: "+sum);
+
+           let t_min = Math.min(...col3);
+           let t_max=Math.max(...col3);
+           let t_stander=t_max-t_min;
+           let mean_elevation=0.5*(t_max+t_min);
+
+           arr_featureset=[];
+           let j_width=1;
+           let end_index=arr_heatpoints.length-t_width-1;
+           m_colormap=document.getElementById("sel_colormap").selectedIndex;
+           for (var i=0;i<end_index;i++){
+             //the last point doesn't need a polygon
+             if(j_width>=t_width){
+               j_width=1;
+               continue;
+             }
+             j_width+=1;
+
+             //rings
+           let t_pro=(arr_heatpoints[i][2]+arr_heatpoints[i+1][2]+arr_heatpoints[i+t_width+1][2]+arr_heatpoints[i+t_width][2])/4;
+           t_mag=(t_pro-t_min)/t_stander;
+           if(t_mag<t_filter){
+             continue;
+           }
+           let rings=[
+                  [arr_heatpoints[i][0], arr_heatpoints[i][1]],
+                  [arr_heatpoints[i+1][0], arr_heatpoints[i+1][1]],
+                  [arr_heatpoints[i+t_width+1][0], arr_heatpoints[i+t_width+1][1]],
+                  [arr_heatpoints[i+t_width][0], arr_heatpoints[i+t_width][1]],
+                  [arr_heatpoints[i][0], arr_heatpoints[i][1]]];
+
+
+             //t_rgb=hslToRgb(0, 1, 1-0.5*t_mag);//red
+             //rainbow 0-1
+             //console.log(m_colormap);
+             if (m_colormap==0){
+               t_rgb=hslToRgb(1-t_mag, 1, 1-0.5*t_mag);//rainbow
+             }
+             else if (m_colormap==1){
+               t_rgb=hslToRgb(0, 1, 1-0.5*t_mag);//red
+             }
+             else{
+               t_rgb=hslToRgb(0.6, 1, 1-0.5*t_mag);//red-blue
+             }
+             //t_rgb=hslToRgb(0.5*t_mag, 1, 0.5);//h:0.5-1,1,0.5
+             t_rgb.push(0.8*t_mag);//oppacity
+             let polygon = new Polygon({
+                 rings: rings,
+                 spatialReference: { wkid: 4326 }
+               });
+               var t_graphic = new Graphic({
+                 geometry: polygon,
+                 symbol: {
+                   type: "simple-fill", // autocasts as SimpleFillSymbol
+                   color: t_rgb,
+                   outline: { // autocasts as SimpleLineSymbol
+
+                     style:"none"
+                   }
+                 },
+                 style: "solid"
+               });
+             arr_featureset.push(t_graphic);
+           }
+           //console.log(arr_featureset);
+
+
+         graphicHeatmapsLayer.addMany(arr_featureset);
+         graphicHeatmapsLayer.visible=true;
+
+         }
+
+         document.getElementById("lpinfo").onclick=function() {
+           DisplayLostPersonInfo();
+           m_experimentres["actions"].push({"id":"lpinfo","timestamp": Date.now(), "description":"display lost person information"});
+         }
+
+         function DisplayLostPersonInfo(){
+           graphicInitLayer.removeAll();
+           let t_feature=[];
+
+           let t_center=new Point({
+             longitude:m_scenarios[m_scenario_index].center[0],
+             latitude:m_scenarios[m_scenario_index].center[1],
+             spatialReference:view.spatialReference
+           });//m_scenarios[m_scenario_index].center;
+
+           let t_graphic =  new Graphic({
+             geometry: t_center,//area_extent.center,//view.extent.center,
+             symbol:  {
+                  type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                  style:"triangle",
+                  color: [255,0,0],//[t_mag, 0,0],
+                  size:10
+                },
+              attributes:{
+                Name:"Last known position",
+                LostHour:2,
+                Type:"hiker"
+              },
+              popupTemplate:{
+                  title: "{Name}",
+                  content: [
+                    {
+                      type: "fields",
+                      fieldInfos: [{fieldName: "Name"},{fieldName: "LostHour"},{fieldName: "Type"}]
+                    }
+                  ]
+              }
+           });
+           t_feature.push(t_graphic);
+
+            //draw 25%,50%,75% ring
+           let rings_arr=[1100,3100,5800,18300];
+           let persontype=document.getElementById("sel_lpm").value;//lpm_hiker
+           rings_arr=m_scenarios_rings[persontype];
+           let ringsname_arr=["25% ring","50% ring","75% ring","95% ring"];
+           for(let i=0;i<4;i++){
+             let t_circle=new Circle({
+               center:t_center,//area_extent.center,
+               radius:rings_arr[i]
+             });
+             t_graphic =  new Graphic({
+               geometry: t_circle,//view.extent.center,
+               symbol:  {
+                    type: "simple-fill", // autocasts as new SimpleMarkerSymbol()
+                    style:"none",
+                    outline:{
+                      color:[255,i*50,0,0.6-0.4*i/4],
+                      width:2
+                    }
+                  },
+                attributes:{
+                  Name:ringsname_arr[i],
+                  LostHour:2,
+                  Type:"hiker"
+                }
+             });
+
+             t_feature.push(t_graphic);
+            }
+            // draw team rectangle
+            //from x: 0.05-0.6
+            //from y: 0.1 - 0.3
+            let t_rect=new Polygon({
+              rings:[
+                [0.85*view.extent.xmin+0.15*view.extent.xmax,0.02*view.extent.ymin+0.98*view.extent.ymax],
+                [0.5*view.extent.xmin+0.5*view.extent.xmax,0.02*view.extent.ymin+0.98*view.extent.ymax],
+                [0.5*view.extent.xmin+0.5*view.extent.xmax,0.08*view.extent.ymin+0.92*view.extent.ymax],
+                [0.85*view.extent.xmin+0.15*view.extent.xmax,0.08*view.extent.ymin+0.92*view.extent.ymax],
+                [0.85*view.extent.xmin+0.15*view.extent.xmax,0.02*view.extent.ymin+0.98*view.extent.ymax],
+              ],
+              spatialReference:view.spatialReference
+            });
+
+            t_graphic =  new Graphic({
+              geometry: t_rect,//view.extent.center,
+              symbol:  {
+                   type: "simple-fill", // autocasts as new SimpleMarkerSymbol()
+                   style:"none",
+                   outline:{
+                     color:[255,125,0,1],
+                     width:2
+                   }
+                 },
+               attributes:{
+                 Name:"team group"
+               }
+            });
+            //t_feature.push(t_graphic);
+
+            let t_point=new Point({
+              x:0.9*view.extent.xmin+0.1*view.extent.xmax,
+              y:0.07*view.extent.ymin+0.93*view.extent.ymax,
+              spatialReference:view.spatialReference
+            });
+            t_graphic=new Graphic ({
+              geometry:t_point,
+              symbol:{
+                type: "text",  // autocasts as new TextSymbol()
+                color: [255,125,0],//"white",
+                haloColor: "black",
+                haloSize: "1px",
+                text: "Teams: ",
+                xoffset: 3,
+                yoffset: 3,
+                font: {  // autocast as new Font()
+                  size: 50,
+                  family: "sans-serif",
+                  weight: "bold"
+                }
+              }
+            });
+            t_feature.push(t_graphic);
+            //draw the polygon into graphicInitLayer
+            //console.log(m_searchedarea);
+
+           graphicInitLayer.addMany(t_feature);
+
+         }
+
+          document.getElementById("gotoGPSLocation").onclick=function(){
+            view.goTo(gpspatharray[document.getElementById("sel_gpsdevice").selectedIndex]);
+          }
+          document.getElementById("gotoGPSLocation2").onclick=function(){
+            view.goTo(gpspatharray[document.getElementById("sel_gpsdevice2").selectedIndex]);
+          }
+
+         document.getElementById("loadlpmcsv").onclick=function() {
+           //draw initial condition centerpoints
+           m_experimentres["actions"].push({"id":"loadlpmcsv","timestamp": Date.now(), "description":"start loading"});
+
+           document.getElementById("lpmmodeldisplay").disabled=true;
+
+           $.getJSON("{% static 'data/lpmdata.json' %}", function(json) {
+             m_lpdata_json=json;
+              //console.log(json); // this will show the info it in firebug console
+          });
+
+          let t_arr_count=11;
+
+          document.getElementById("loadlpmcsv").value="Load LPM Data (Loading)";
+
+          let persontype=document.getElementById("sel_lpm").value;//lpm_hiker
+          let t_start = 1;//1
+          let t_stop = 12;//12;
+          let totalfiles=3*(t_stop-t_start+1);
+          console.log(m_scenario_index);
+          let lpmfolder="LPMdata4/"+m_scenarios[m_scenario_index]["scenario_name"]+"/";//"LPMdata3"
+          //data->LPMdata3
+          for(let i=t_start;i<=t_stop;i++){
+            for(let t_rank=1;t_rank<=3;t_rank++){
+                LoadLPFromCSV("/static/"+lpmfolder+persontype+"/point data csv/pt_"+persontype+"bf"+t_rank.toString()+"_t"+i.toString()+".csv",totalfiles,i-1,t_rank-1);
+                LoadLPFromCSV_con("/static/"+lpmfolder+persontype+"/contour data csv/con_"+persontype+"bf"+t_rank.toString()+"_t"+i.toString()+".csv",totalfiles,i-1,t_rank-1);
+
+            }
+          }
+          //console.log(m_lpdata_json);
+          document.getElementById("lpmmodeldisplay").disabled=false;
+         }
+
+         document.getElementById("sel_lpm").onchange=function(){
+           m_lpdata=[];
+           m_lpdata_con=[];
+           m_lpdata_json=[];
+           document.getElementById("loadlpmcsv").value="Load LPM Data";
+           DisableAllGraphicLayers();
+           DisplayLostPersonInfo();
+
+         }
+         document.getElementById("sel_rank").onchange=function(){
+
+             m_experimentres["visualization_type"]=document.getElementById("sel_lpmodel").value;
+             m_experimentres["actions"].push({"id":"sel_lpmodel","timestamp": Date.now(), "description":m_experimentres["visualization_type"]});
+
+             //console.log(m_experimentres);
+             graphicControlLayer.visible=false;
+             graphicPointsLayer.visible=false;
+             graphicTrajectoryLayer.visible=false;
+             graphicHeatmapsLayer.visible=false;
+             graphicContourLayer.visible=false;
+
+            //document.getElementById("sel_lpmodel").selectedIndex==0
+             UpdateVisualization();
+         }
+
+          document.getElementById("sel_lpmodel").onchange=function(){
+
+            m_experimentres["visualization_type"]=document.getElementById("sel_lpmodel").value;
+            m_experimentres["actions"].push({"id":"sel_lpmodel","timestamp": Date.now(), "description":m_experimentres["visualization_type"]});
+
+            //console.log(m_experimentres);
+            graphicControlLayer.visible=false;
+            graphicPointsLayer.visible=false;
+            graphicTrajectoryLayer.visible=false;
+            graphicHeatmapsLayer.visible=false;
+            graphicContourLayer.visible=false;
+
+            UpdateVisualization();
+          }
+
+        document.getElementById("myfilter").onchange=function(){
+          m_experimentres["actions"].push({"id":"myfilter","timestamp": Date.now(), "description":"Change heatmap filter to "+document.getElementById("myfilter").value.toString()});
+          //console.log("change");
+          let t_v=10-parseInt(document.getElementById("myfilter").value);
+          $("#lmyfilter").text("Heatmapsize(10-1): "+t_v.toString());
+
+          if(document.getElementById("sel_lpmodel").value==3){
+            //display heatmap
+            AddLPDataToHeatmapslayerFilter(document.getElementById("myfilter").value/10-0.05);
+          }
+        }
+         document.getElementById("myRange").onchange=function(){
+           //console.log("change");
+           m_experimentres["actions"].push({"id":"myRange","timestamp": Date.now(), "description":"Change hour to "+document.getElementById("myRange").value.toString()});
+           let t_hour=parseInt(document.getElementById("myRange").value)+1;
+            $("#lmyRange").text("Hour(1-12): "+t_hour);
+
+
+           UpdateVisualization();
+         }
+         document.getElementById("sel_ic").onchange=function(){
+           m_scenario_index=document.getElementById("sel_ic").selectedIndex;
+
+           view.goTo([ m_scenarios[m_scenario_index]['center'] ]);
+
+           m_lpdata=[];
+           m_lpdata_con=[];
+           m_lpdata_json=[];
+           document.getElementById("loadlpmcsv").value="Load LPM Data";
+           DisableAllGraphicLayers();
+
+         }
+
+         document.getElementById("sel_colormap").onchange=function(){
+
+             m_experimentres["visualization_type"]=document.getElementById("sel_lpmodel").value;
+             m_experimentres["actions"].push({"id":"sel_colormap","timestamp": Date.now(), "description":m_experimentres["visualization_type"]});
+
+             //console.log(m_experimentres);
+             DisableAllGraphicLayers();
+             UpdateVisualization();
+         }
+         //--------------------------------------------------
+           document.getElementById("lpmmodeldisplay").onclick=function() {
+             m_experimentres["actions"].push({"id":"lpmmodeldisplay","timestamp": Date.now(), "description":"diplay model"});
+             geojsonLayer.visible=false;
+             graphicPointsLayer.visible=false;
+             graphicTrajectoryLayer.visible=false;
+             graphicHeatmapsLayer.visible=false;
+             graphicControlLayer.visible=false;
+             graphicContourLayer.visible=false;
+             //document.getElementById("lpmmodeldisplay").values;
+             UpdateVisualization();
+           }
+
+           function DisableAllGraphicLayers(){
+             graphicPointsLayer.visible=false;
+             graphicTrajectoryLayer.visible=false;
+             graphicHeatmapsLayer.visible=false;
+             graphicControlLayer.visible=false;
+             graphicContourLayer.visible=false;
+           }
+           function UpdateVisualization(){
+
+             //document.getElementById("lpmmodeldisplay").values;
+             if(document.getElementById("sel_lpmodel").value=="control"){
+               //display point layer
+               AddLPDataToControllayer();
+             }
+             else if(document.getElementById("sel_lpmodel").value=="points"){
+               //display point layer
+               AddLPDataToPointslayer();
+             }
+             else if (document.getElementById("sel_lpmodel").value=="trajectory"){
+               //display Trajectory
+               AddLPDataToTrajectorylayer();
+             }
+             else if (document.getElementById("sel_lpmodel").value=="heatmap"){
+               //display heatmap
+               //AddLPDataToHeatmapslayerFilter_featurelayer(document.getElementById("myfilter").value/10-0.05);
+               AddLPDataToHeatmapslayerFilter(document.getElementById("myfilter").value/10-0.05);
+             }
+             else if (document.getElementById("sel_lpmodel").value=="contour"){
+               AddLPDataToControllayer();
+               AddLPDataToContourlayer();
+             }
+           }
+
+          function getRandomInt(max) {
+            return Math.floor(Math.random() * Math.floor(max));
+          }
+
+          let timerid1,timerid2;
+          function readDB(gpsdevice,Loadgpsid){
+
+            var sel_gpsdevice = document.getElementById(gpsdevice);
+
+              clearInterval(timerid1);
+
+               if(document.getElementById(Loadgpsid).value=="Load GPS"){
+                 document.getElementById(Loadgpsid).value='Stop&Save';
+                 all_gpsdata[sel_gpsdevice.selectedIndex]=[];
+                 gpspatharray[sel_gpsdevice.selectedIndex]=[];
+                 timerid1=setInterval(myTimer, 1000);
+               }
+               else{
+                 document.getElementById(Loadgpsid).value="Load GPS";
+                 savewholegpsdatatodb(sel_gpsdevice);
+                 return
+               }
+               function myTimer(e){
+                 getGPSDataUpdate(gpsdevice);
+                 getGPSDisplayUpdate();
+                 //addGPSPath();
+
+                 //display datetime
+                 var d = new Date();
+                 var t = d.toLocaleTimeString();
+                 document.getElementById("daytime").innerHTML = t;
+
+               }
+             }
+
+             function readDB2(gpsdevice,Loadgpsid){
+
+               var sel_gpsdevice = document.getElementById(gpsdevice);
+
+                 clearInterval(timerid2);
+
+                  if(document.getElementById(Loadgpsid).value=="Load GPS"){
+                    document.getElementById(Loadgpsid).value='Stop&Save';
+                    all_gpsdata[sel_gpsdevice.selectedIndex]=[];
+                    gpspatharray[sel_gpsdevice.selectedIndex]=[];
+                    timerid2=setInterval(myTimer, 1000);
+                  }
+                  else{
+                    document.getElementById(Loadgpsid).value="Load GPS";
+                    savewholegpsdatatodb(sel_gpsdevice);
+                    return
+                  }
+                  function myTimer(e){
+                    getGPSDataUpdate(gpsdevice);
+                    getGPSDisplayUpdate();
+                    //addGPSPath();
+
+                    //display datetime
+                    var d = new Date();
+                    var t = d.toLocaleTimeString();
+                    document.getElementById("daytime").innerHTML = t;
+
+                  }
+                }
+
+           function savewholegpsdatatodb(sel_gpsdevice){
+
+               var URL = "{% url 'gpsdatastorage' %}";
+
+               var data = {
+                       csrfmiddlewaretoken: '{{ csrf_token }}',
+                       'task_notes': document.getElementById("tasknotes").value,
+                       'rand_gpsdevicename':Date.now().toString(),
+                       'id_device_id': sel_gpsdevice.options[sel_gpsdevice.selectedIndex].text,
+                       'device_id': sel_gpsdevice.options[sel_gpsdevice.selectedIndex].text,
+                       'all_gpsdata' : all_gpsdata[sel_gpsdevice.selectedIndex].toString()
+                      };
+               $.post(URL, data, function(response){
+                 var res=JSON.parse(response);
+                   if(res.flag == 'success'){
+                     //console.log(res.gpsdata);
+                    }
+                   else{ alert(response); }
+               });
+           }
+
+
+         function getGPSDataUpdate(gpsdevice){
+           var sel_gpsdevice = document.getElementById(gpsdevice);
+           //console.log(document.getElementById("sel_gpsdevice").value);
+           var id_device_id = sel_gpsdevice.options[sel_gpsdevice.selectedIndex].text;
+             var URL = "{% url 'gpsupdate' %}";
+             var data = {
+                     csrfmiddlewaretoken: '{{ csrf_token }}',
+                     'task_notes': document.getElementById("tasknotes").value,
+                     'id_device_id': id_device_id
+                    };
+             $.post(URL, data, function(response){
+               var res=JSON.parse(response);
+                 if(res.flag == 'success'){
+                    gps_json=JSON.parse(res.gpsdata);
+                    gpspatharray[sel_gpsdevice.selectedIndex].push([gps_json.lat,gps_json.log]);
+                    all_gpsdata[sel_gpsdevice.selectedIndex].push([gps_json.stamp,gps_json.lat,gps_json.log]);
+                    //console.log(gps_json.gps[0]);
+                  }
+                 else{ alert(response); }
+             });
+         }
+
+
+         document.getElementById('GPSStart').addEventListener('click',function(){
+           readDB("sel_gpsdevice","GPSStart");
+         });
+         document.getElementById('GPSStart2').addEventListener('click',function(){
+           readDB2("sel_gpsdevice2","GPSStart2");
+         });
+         /*
+         document.getElementById("GPSStart").onclick=function() {
+
+           readDB2("sel_gpsdevice","GPSStart");
+         }
+
+         document.getElementById("GPSStart2").onclick=function() {
+
+           readDB2("sel_gpsdevice2","GPSStart2");
+         }*/
+
+
+      //--------------------------------------------------
+    });
+
+
+  </script>
+</head>
+
+<body>
+
+
+  <div id="editArea" class="editArea-container">
+    <h2 class="list-heading">Search & Rescue Tools</h2>
+    <div>
+      <h3 class="list-heading">Map Division</h3>
+      <div>
+        <label >Load a scene: </label>
+        <select id="sel_ic">
+          <option value="0">Scene 1</option>
+          <option value="1">Scene 2</option>
+          <option value="2">Scene 3</option>
+        </select>
+        <input type="button" id="label_ic" value="Load" style="display:none"></input>
+      </div>
+
+      <div>
+        <label >Lost person type: </label>
+        <select id="sel_lpm">
+          <option value="child10to12">Child</option>
+          <option value="dementia">Dementia</option>
+          <option value="hiker">Hiker</option>
+        </select>
+        <input type="button" id="label_lpt" value="Switch" style="display:none"></input>
+      </div>
+
+      <div>
+        <input type="button" class="edit-button" value="Load LPM Data" id="loadlpmcsv">
+      </div>
+
+      <!--div><input type="checkbox" name="voronoi" class="check" value="random"> Random Voronoi</input></div-->
+      <!--div><input type="checkbox" name="voronoi" class="check" value="triangle"> Triangle based on vertices</input></div-->
+      <!--div><input type="checkbox" name="voronoi" class="check" value="clear"> Freehand Polygon</input></div-->
+
+      <input type="button" class="edit-button" value="Generate task" id="btngeneratearea"/>
+      <input type="button" class="edit-button" value="Edit cells" id="btneditcells"/>
+
+      <div>
+        <input type="text" class="bt_save_edit" id="tasknotes" value="Task_name"></input>
+        <input type="button" class="bt_save" value="Save Task" id="savetasks"></input>
+      </div>
+    </div>
+
+    <hr/>
+    <div>
+      <h3>Lost person model</h3>
+
+      <div>
+
+
+      <div>
+        <label id="colormap">Color map: </label>
+        <select id="sel_colormap" class="sel_options">
+          <option value="o_rainbow">Rainbow</option>
+          <option value="o_yr">Yellow-red</option>
+          <option value="o_br">Blue-red</option>
+        </select>
+        <input type="button" id="colormap" value="Switch" style="display:none"></input>
+
+      </div>
+
+      <div>
+        <label >Model best fit: </label>
+        <select id="sel_rank">
+          <option value="1">bf1</option>
+          <option value="2">bf2</option>
+          <option value="3">bf3</option>
+        </select>
+        <input type="button" id="label_rank" value="Switch" style="display:none"></input>
+      </div>
+
+      <div class="slidecontainer">
+        <label for="myRange" id="lmyRange">Hour(1-12): 5</label>
+        <input type="range" min="0" max="11" value="4" class="slider" id="myRange">
+
+      </div>
+      <div class="slidecontainer" style="display:none">
+        <label for="myfilter" id="lmyfilter">Heatmapsize(10-1): 3</label>
+        <input type="range" min="0" max="10" value="7" class="slider" id="myfilter">
+
+      </div>
+
+      <div>
+        <select id="sel_lpmodel">
+          <option value="control">Probability</option>
+          <option value="points">Points</option>
+          <option value="trajectory">Trajectory</option>
+          <option value="contour">Contour map</option>
+          <option value="heatmap" style="display:none">Heat map</option>
+        </select>
+        <input type="button" id="lpmmodeldisplay" value="Display" disabled></input>
+        <label id="lpsum">ippm</label>
+      </div>
+    </div>
+  </div>
+
+    <hr/>
+    <div>
+      <h3>Task Assignment</h3>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>1</th>
+              <th>2</th>
+              <th>3</th>
+              <th>4</th>
+              <th>5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Cell</th>
+              <th id="th_team1">SX</th>
+              <th id="th_team2">SX</th>
+              <th id="th_team3">SX</th>
+              <th id="th_team4">SX</th>
+              <th id="th_team5">SX</th>
+            </tr>
+          </tbocy>
+        </table>
+        <input type="button"  class="edit-button" id="btntaskassignment" value="Assign"></input>
+      </div>
+    </div>
+
+    <hr>
+    <div id="draw" style="display:none">
+      <h3 class="list-heading">Map measurement tools</h3>
+      <div><input type="button" class="edit-button" value="Measure distance" id="distanceButton"></input></div>
+      <div><input type="button" class="edit-button" value="Measure area" id="areaButton"></input></div>
+    </div>
+    <div >
+      <input type="button" class="edit-button" value="Display Lost Person Info" id="lpinfo">
+      <input type="button"  class="edit-button" id="btndisplaytarget" value="Show Target"></input>
+    </div>
+    <div><input type="button" class="edit-button" value="Clear All" id="clearall"></input></div>
+
+    <hr/>
+    <div>
+        <div>
+          <select id="sel_gpsdevice">
+            <option value="">Select a device</option>
+            {% for device in gpsdevice %}
+            <option value="{{ device.id }}">{{ device.deviceid }}</option>
+            {% endfor %}
+          </select>
+          <input type="button" id="GPSStart"  value="Load GPS"></input>
+          <input type="button" id="gotoGPSLocation"  value="Locate"></input>
+        </div>
+        <div>
+          <select id="sel_gpsdevice2">
+            <option value="">Select a device</option>
+            {% for device in gpsdevice %}
+            <option value="{{ device.id }}">{{ device.deviceid }}</option>
+            {% endfor %}
+          </select>
+          <input type="button" id="GPSStart2"  value="Load GPS"></input>
+          <input type="button" id="gotoGPSLocation2"  value="Locate"></input>
+        </div>
+      <p id="daytime"></p>
+
+    </div>
+
+<div>
+      <div><label id="elevation">Elevation</label></div>
+          <hr/>
+          <h3 >Task Assist</h3>
+          <div>
+            <label for="cellname">Cell Name: </label>
+            <input type="text" id="cellname" value="SX"></input>
+          </div>
+
+          <div>
+            <label >Assign to team: </label>
+            <select>
+              <option value="team1">Team 1</option>
+              <option value="team2">Team 2</option>
+              <option value="team3">Team 3</option>
+              <option value="team4">Team 4</option>
+              <option value="team4">Team 5</option>
+            </select>
+          </div>
+
+
+</div>
+
+
+  </div>
+
+  <div id="viewDiv">
+    <div id="sidebar" class="esri-widget" style="display:none">
+
+    </div>
+  </div>
+
+
+</body>
+
+</html>
