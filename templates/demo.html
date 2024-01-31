@@ -1,92 +1,383 @@
 <!DOCTYPE html>
 {% load static %}
-<html>
+<html lang="en">
 <head>
-  <title>LEESH Projects</title>
-    <style>
-        header {
-          text-align: center;
-        }
-        body {
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          min-height: 100vh;
-          margin: 0;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Experiment 1 - TCIN</title>
 
-        .content {
-          flex: 1;
-        }
-        .image-container {
-          text-align: center;
-        }
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.28/"></script>
 
-        .image-container img {
-          display: block;
-          margin: 0 auto;
-        }
+  <style>
+    html,
+    body,
+    #viewDiv {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+    #logoDiv {
+      padding: 12px;
+      background-color: black;
+      color: pink;
+      text-align: center;
+      width: 100px;
+    }
+    #droneControl {
+      /* position: absolute; */
+      top: 0;
+      right: 0;
+      height: 100%;
+      background: rgba(255,255,255, 0.9);
+      width: 320px;
+    }
+    #droneRatings {
+    /* position: absolute; */
+    bottom: 0;
+    width: 100%;
+    background: rgba(255,255,255, 0.9);
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background: #ccc; /* Light grey line */
+      margin: 10px 0; /* Spacing above and below the line */
+    }
+  </style>
 
-        .image-title {
-          text-align: center;
-        }
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/Graphic",
+      "esri/geometry/Point",
+      "esri/geometry/Polyline",
+      "esri/widgets/Expand",
+      "esri/widgets/Search",
+      "esri/geometry/Polygon"
+    ], (Map, MapView, Graphic, Point, Polyline, Expand, Search, Polygon) => {
+      const map = new Map({
+        basemap: "hybrid"
+      });
 
-        .image-group {
-          display: flex;
-        }
+      const view = new MapView({
+        center: [-80, 35],
+        container: "viewDiv",
+        map: map,
+        zoom: 9
+      });
 
-        .image-group div {
-          flex: 1;
-          margin: 5px;
-        }
+      // Define the symbol for drawing the points
+      const markerSymbol1 = {
+        type: "simple-marker",
+        color: "blue",
+        size: "8px"
+      };
 
-        footer {
-          background-color: #f5f5f5;
-          padding: 20px;
-          text-align: center;
-        }
-    </style>
-</head>
-<body>
-  <header>
-    <h1>LEESH Projects</h1>
-  </header>
+      const markerSymbol2 = {
+        type: "simple-marker",
+        color: "red",
+        size: "8px"
+      };
 
-    <div class="content">
-            <div class="image-group">
-            <div class="image-container">
-                <a href="{% url 'sarwebinit' %}" target="_blank">
-                    <img src="{% static 'img/demopage/SAR2D.png' %}" alt="2D UI Simulation" height="150">
-                </a>
-                <div class="image-title">
-                  <p><a href="{% url 'sarwebinit' %}" target="_blank">TCIN</a></p>
-                </div>
-            </div>
+      // Create multiple point graphics - Drones
+      const pointGraphics = [
+        new Graphic({
+          geometry: new Point({ longitude: -84.75, latitude: 35.25 }), // Quadrant 1
+          symbol: markerSymbol1
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -85.25, latitude: 35.25 }), // Quadrant 2
+          symbol: markerSymbol1
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -85.25, latitude: 34.75 }), // Quadrant 3
+          symbol: markerSymbol2
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -84.75, latitude: 34.75 }), // Quadrant 4
+          symbol: markerSymbol2
+        })
+      ];
 
-            <div class="image-container">
-                <a href="{% url 'consentform' %}" target="_blank">
-                    <img src="{% static 'img/demopage/SAR2DExp.png' %}" alt="Study one -- Trust" height="150">
-                </a>
-                <div class="image-title">
-                    <p><a href="{% url 'consentform' %}" target="_blank">Study one -- TCIN</a></p>
-                </div>
-            </div>
+      //Line 1 - Xaxis
+      const Xaxis = {
+           type: "polyline", // autocasts as new Polyline()
+           paths: [[-95, 35], [-75, 35]]
+         };
+
+      // Line 2 - Yaxis
+      const Yaxis = {
+           type: "polyline", // autocasts as new Polyline()
+           paths: [[-85, 30], [-85, 40]]
+         };
+
+      // Symbol for drawing the lines
+      const lineSymbol = {
+           type: "simple-line", // autocasts as SimpleLineSymbol()
+           color: [226, 119, 40],
+           width: 4
+         };
+
+      // Symbol for grid lines
+      const gridLineSymbol = {
+             type: "simple-line",
+             color: [0, 0, 0, 0.3], // Semi-transparent black
+             width: "1px"
+           };
+
+      const XaxisGraphic = new Graphic({
+           geometry: Xaxis,
+           symbol: lineSymbol
+         });
+
+      const YaxisGraphic = new Graphic({
+           geometry: Yaxis,
+           symbol: lineSymbol
+         });
+
+      // Function to create a grid in a quadrant
+      function createGrid(xStart, yStart, xEnd, yEnd, cellSize) {
+           const gridGraphics = [];
+           for (let x = xStart; x < xEnd; x += cellSize) {
+             for (let y = yStart; y < yEnd; y += cellSize) {
+               const cell = new Polygon({
+                 rings: [
+                   [
+                     [x, y],
+                     [x + cellSize, y],
+                     [x + cellSize, y + cellSize],
+                     [x, y + cellSize],
+                     [x, y] // Close the polygon
+                   ]
+                 ]
+               });
+
+               const cellGraphic = new Graphic({
+                 geometry: cell,
+                 symbol: {
+                   type: "simple-fill",
+                   color: [0, 0, 0, 0], // Transparent fill
+                   outline: gridLineSymbol
+                 }
+               });
+
+               gridGraphics.push(cellGraphic);
+             }
+           }
+           return gridGraphics;
+         }
+
+      // Create grids for each quadrant
+      const gridSize = 0.5; // Size of each grid cell
+      const quadrant1 = createGrid(-85, 35, -75, 40, gridSize);
+      const quadrant2 = createGrid(-95, 35, -85, 40, gridSize);
+      const quadrant3 = createGrid(-95, 30, -85, 35, gridSize);
+      const quadrant4 = createGrid(-85, 30, -75, 35, gridSize);
+
+      // Add the point graphics to the view's graphics layer
+         view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+
+      // Define paths for each drone to follow
+      const dronePaths = {
+             drone1: [
+               [-84.75, 35.25], [-84.25, 35.25], [-84.25, 39.75], [-84.75, 39.75], // Top row of Quadrant 1
+               [-84.75, 39.25], [-84.25, 39.25], [-84.25, 35.25] // Return to start
+             ],
+             drone2: [
+               [-85.25, 35.25], [-85.75, 35.25], [-85.75, 39.75], [-85.25, 39.75], // Top row of Quadrant 2
+               [-85.25, 39.25], [-85.75, 39.25], [-85.75, 35.25] // Return to start
+             ],
+             drone3: [
+               [-85.25, 34.75], [-85.75, 34.75], [-85.75, 30.25], [-85.25, 30.25], // Bottom row of Quadrant 3
+               [-85.25, 30.75], [-85.75, 30.75], [-85.75, 34.75] // Return to start
+             ],
+             drone4: [
+               [-84.75, 34.75], [-84.25, 34.75], [-84.25, 30.25], [-84.75, 30.25], // Bottom row of Quadrant 4
+               [-84.75, 30.75], [-84.25, 30.75], [-84.25, 34.75] // Return to start
+             ]
+           };
+
+       // Function to move drones along their paths
+         function moveDrone(drone, path) {
+             const currentLocationIndex = path.findIndex(point =>
+               point[0] === drone.geometry.longitude && point[1] === drone.geometry.latitude
+             );
+             const nextLocationIndex = (currentLocationIndex + 1) % path.length;
+             drone.geometry = new Point({
+               longitude: path[nextLocationIndex][0],
+               latitude: path[nextLocationIndex][1]
+             });
+           }
+
+         // Animation function to update point positions
+         function animate() {
+             moveDrone(pointGraphics[0], dronePaths.drone1);
+             moveDrone(pointGraphics[1], dronePaths.drone2);
+             moveDrone(pointGraphics[2], dronePaths.drone3);
+             moveDrone(pointGraphics[3], dronePaths.drone4);
+
+             // Refresh the graphics on the view
+             view.graphics.removeAll();
+             view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+
+             // Request the next frame in the animation with a delay
+             setTimeout(() => {
+               requestAnimationFrame(animate);
+             }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
+           }
+
+         // Start the animation
+         requestAnimationFrame(animate);
+
+           // Stop the animation when the view is destroyed
+          view.on("destroy", () => {
+             if (animationFrameId) {
+               cancelAnimationFrame(animationFrameId);
+             }
+           });
+
+           const search = new Search({
+             view: view
+           });
+
+           // places the logo div in the bottom right corner of the view
+           view.ui.add("logoDiv", "bottom-right");
+           // places the search widget in the top right corner of the view
+           view.ui.add(search, "top-right");
+           // places the drone-control widget in the top right corner of the view
+           view.ui.add("droneControl", "top-right");
+           // places the drone-control widget in the bottom of the view
+           view.ui.add("droneRatings", "bottom-left");
+         });
+
+       </script>
+     </head>
+
+     <body>
+       <div id="viewDiv"></div>
+       <div id="logoDiv" class="esri-widget">Logo</div>
+       <div id="droneControl" class="droneControl-container">
+         <h2 class="main-heading">Drone control and Object detection</h2>
+           <hr>
+
+         <!-- <div>
+           <h4 class="current-drone">Current drone: </h3>
+           <h4 class="foliage-density">Foligage density: </h3>
+             <hr> -->
+           <h3 class="drone-motion">Drone Control Tools</h3>
+           <!-- <div> -->
+             <!-- <label >Load a scene: </label>
+             <select id="sel_ic">
+               <option value="0">Scene 1</option>
+               <option value="1">Scene 2</option>
+               <option value="2">Scene 3</option>
+             </select>
+             <input type="button" id="label_ic" value="Load" style="display:none"/>
+           </div> -->
+
+           <div>
+             <label >Object Search: </label>
+             <input type="button" class="start-button" value="Start Search" id="loadlpmcsv">
+             <input type="button" class="stop-button" value="Stop Search" id="loadlpmcsv">
+           </div>
+             <hr>
+
+           <!--div><input type="checkbox" name="voronoi" class="check" value="random"> Random Voronoi</input></div-->
+           <!--div><input type="checkbox" name="voronoi" class="check" value="triangle"> Triangle based on vertices</input></div-->
+           <!--div><input type="checkbox" name="voronoi" class="check" value="clear"> Freehand Polygon</input></div-->
 
 
-        </div>
+           <div>
+           <h3 class="detection-info">Object detection</h3>
+             <p>Current drone:</p>
+             <p>Foliage density:</p>
+             <p>Object detected:</p>
+           </div>
+           <div>
+             <label >Accept recommendation:</label>
+             <input type="button" class="yes-button" value="Yes" id="btneditcells" />
+             <input type="button" class="no-button" value="No" id="btneditcells" />
+           </div>
 
+           <!-- <div>
+             <input type="text" class="bt_save_edit" id="tasknotes" value="Task_name"/>
+             <input type="button" class="bt_save" value="Save Task" id="savetasks"/>
+           </div> -->
 
-      </div>
+           <div>
+             <label >Re-categorize object: </label>
+             <select id="sel_lpm">
+               <option value="living target">Living target</option>
+               <option value="non-living target">Non-living target</option>
+               <option value="living distractor" selected>Living distractor</option>
+               <option value="non-living distractor" selected>Non-living distractor</option>
 
-  <footer>
-    <div>
-      <p>Contact Information:</p>
-      <p>Email: anirudh1@vt.edu</p>
-    </div>
+             </select>
+             <input type="button" id="label_lpt" value="Switch" style="display:none"/>
+           </div>
+             <hr>
 
-    <div>
-      <p>&copy; 2024 SCEL. All rights reserved.</p>
-    </div>
-  </footer>
-</body>
-</html>
+             <div>
+             <h3 class="detection-info">Task assignment</h3>
+               <p>Current drone:</p>
+             </div>
+             <div>
+               <label >Re-assign task:</label>
+               <input type="button" class="yes-button" value="Yes" id="btneditcells" />
+               <input type="button" class="no-button" value="No" id="btneditcells" />
+             </div>
+             <div>
+               <label >Re-assign task to: </label>
+               <select id="sel_lpm">
+                 <option value="drone 1">Drone 1</option>
+                 <option value="drone 2">Drone 2</option>
+                 <option value="drone 3" selected>Drone 3</option>
+                 <option value="drone 4" selected>Drone 4</option>
+
+               </select>
+               <input type="button" id="label_lpt" value="Switch" style="display:none"/>
+             </div>
+
+       <div id="droneRatings" class="droneRatings-container">
+         <h2 class="list-heading">Drone competence and trust ratings</h2>
+         <div>
+         <hr>
+         <label> Drone 1: </label>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
+         </div>
+         <hr>
+         <div>
+         <label> Drone 2: </label>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
+         </div>
+         <hr>
+         <div>
+         <label> Drone 3: </label>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
+         </div>
+         <hr>
+         <div>
+         <label> Drone 4: </label>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
+         </div>
+       </div>
+
+     </body>
+     </html>
