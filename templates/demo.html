@@ -73,15 +73,17 @@
 
       // Define the symbol for drawing the points
       const markerSymbol1 = {
-        type: "simple-marker",
-        color: "blue",
-        size: "8px"
+        type: "picture-marker",
+        url: "{% static 'img/thermal-drone.png' %}",
+        width: "30px",
+        height: "30px"
       };
 
       const markerSymbol2 = {
-        type: "simple-marker",
-        color: "red",
-        size: "8px"
+        type: "picture-marker",
+        url: "{% static 'img/sniffer-drone.png' %}",
+        width: "30px",
+        height: "30px"
       };
 
       // Create multiple point graphics - Drones
