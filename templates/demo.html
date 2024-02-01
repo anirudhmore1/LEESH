@@ -203,7 +203,7 @@
            };
 
        // Function to move drones along their paths
-         function moveDrone(drone, path) {
+      function moveDrone(drone, path) {
              const currentLocationIndex = path.findIndex(point =>
                point[0] === drone.geometry.longitude && point[1] === drone.geometry.latitude
              );
@@ -214,16 +214,27 @@
              });
            }
 
+           //Start-stop search
+      const startButton = document.getElementById('startsearchbutton');
+      const stopButton = document.getElementById('stopsearchbutton');
+
          // Animation function to update point positions
-         function animate() {
+      let animationFrameId;
+      let isAnimating = false;
+
+      function animate() {
+        if (!isAnimating) {
+          return;
+        }
+      // function animate() {
              moveDrone(pointGraphics[0], dronePaths.drone1);
              moveDrone(pointGraphics[1], dronePaths.drone2);
              moveDrone(pointGraphics[2], dronePaths.drone3);
              moveDrone(pointGraphics[3], dronePaths.drone4);
 
              // Refresh the graphics on the view
-             view.graphics.removeAll();
-             view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+     view.graphics.removeAll();
+     view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
 
              // Request the next frame in the animation with a delay
              setTimeout(() => {
@@ -231,34 +242,48 @@
              }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
            }
 
-         // Start the animation
-         requestAnimationFrame(animate);
+         // // Start the animation
+         // requestAnimationFrame(animate);
 
-           // Stop the animation when the view is destroyed
-          view.on("destroy", () => {
-             if (animationFrameId) {
-               cancelAnimationFrame(animationFrameId);
-             }
-           });
+          //  // Stop the animation when the view is destroyed
+          // view.on("destroy", () => {
+          //    if (animationFrameId) {
+          //      cancelAnimationFrame(animationFrameId);
+          //    }
+          //  });
 
-           const search = new Search({
+          // Event listener for the Start Search button
+          document.getElementById('startsearchbutton').addEventListener('click', function() {
+            isAnimating = true; // Set the flag to true to start the animation
+            cancelAnimationFrame(animationFrameId); // Cancel any previous animation frame
+            animate(); // Start the animation
+                    });
+
+          // Event listener for the Stop Search button
+          document.getElementById('stopsearchbutton').addEventListener('click', function() {
+            isAnimating = false; // Set the flag to false to stop the animation
+          });
+
+    //Search funtion
+     const search = new Search({
              view: view
            });
 
            // places the logo div in the bottom right corner of the view
-           view.ui.add("logoDiv", "bottom-right");
+     view.ui.add("logoDiv", "bottom-right");
            // places the search widget in the top right corner of the view
-           view.ui.add(search, "top-right");
+     view.ui.add(search, "top-right");
            // places the drone-control widget in the top right corner of the view
-           view.ui.add("droneControl", "top-right");
+     view.ui.add("droneControl", "top-right");
            // places the drone-control widget in the bottom of the view
-           view.ui.add("droneRatings", "bottom-left");
+     view.ui.add("droneRatings", "bottom-left");
          });
 
-       </script>
-     </head>
+  </script>
 
-     <body>
+</head>
+
+<body>
        <div id="viewDiv"></div>
        <div id="logoDiv" class="esri-widget">Logo</div>
        <div id="droneControl" class="droneControl-container">
@@ -282,8 +307,8 @@
 
            <div>
              <label >Object Search: </label>
-             <input type="button" class="start-button" value="Start Search" id="loadlpmcsv">
-             <input type="button" class="stop-button" value="Stop Search" id="loadlpmcsv">
+             <input type="button" class="start-button" value="Start Search" id="startsearchbutton">
+             <input type="button" class="stop-button" value="Stop Search" id="stopsearchbutton">
            </div>
              <hr>
 
@@ -379,5 +404,5 @@
          </div>
        </div>
 
-     </body>
-     </html>
+</body>
+</html>
