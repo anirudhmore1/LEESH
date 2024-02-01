@@ -1,12 +1,9 @@
 # SAROnline Index (Updated 02/2023)
 http://127.0.0.1:8000
 
-# SAR Web User Interface Demo (Updated 07/2022)
+# SAR Web User Interface Demo (Updated 01/2024)
 ![Web interface_new](screen/main_07072022.png)
 ![Web interface_switch](screen/switch_to_3D.png)
-![Web interface_study2](screen/study2_HeatMap3D.png)
-![Web interface_study2_weighted](screen/study2_WeightedMap3D_.png)
-![Web interface_study2_Terrain3D2](screen/study2_Terrain3D2.png)
 ![Web interface_3D](screen/UAV_search_experiment_steps.gif)
 ![Trajectory](screen/trajectory.gif)
 [more examples](screen/)
