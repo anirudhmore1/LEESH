@@ -44,7 +44,7 @@
     hr {
       border: 0;
       height: 1px;
-      background: #ccc; /* Light grey line */
+      background: #ccc; /* Lig"% static 'img/clue2.png' %"ht grey line */
       margin: 10px 0; /* Spacing above and below the line */
     }
   </style>
@@ -244,6 +244,17 @@
         },
       };
 
+      //Detected object
+      // const clueImage = {
+      //   type: "picture-marker",
+      //   url: "{% static 'img/clue2.png' %}",
+      //   width: "30px",
+      //   height: "30px"
+      // };
+
+      // Define the URL for the image
+      var clueImageUrl = "{% static 'img/clue2.png' %}";
+
       // Function to move drones along their paths
       function moveDrone(drone, dronePath) {
         const currentLocationIndex = dronePath.path.findIndex(point =>
@@ -263,15 +274,36 @@
         if (detected) {
           // If an object is detected, display the pop-up with the image of the detected object
           // Pass actual URL of the image you want to show object
-          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "));
+          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, clueImageUrl);
+
+
+          // Update the "Current drone:" field in the "drone control" UI
+          updateDroneControlUI(drone.attributes.id);
         }
       }
 
+      // Function to update the "drone control" UI
+      function updateDroneControlUI(droneName) {
+        // Select the paragraph element for the "Current drone:" field
+        const currentDroneElement = document.querySelector('#current-drone'); //To update name of detecting drone
+        // Update its text content with the name of the drone
+        currentDroneElement.textContent = `Current drone: ${droneName}`;
+      }
+
       //Function for pop-up of object detected
-     function showObjectDetectedPopup(message) {
+     function showObjectDetectedPopup(message, droneName, imageUrl) {
        const popup = document.createElement("div");
-       // popup.innerHTML = `<img src="${imageUrl}" alt="Detected Object" style="width: 100px; height: 100px;">`;
-       popup.textContent = message;
+       const image = document.createElement("img");
+       image.src = imageUrl;
+       image.alt = "Detected Object";
+       image.style.width = "100px"; // Set the width of the image
+       image.style.height = "100px"; // Set the height of the image
+       image.style.display = "block"; // Display the image as a block element
+       image.style.marginBottom = "10px"; // Margin below the image
+
+       const textNode = document.createTextNode(droneName + ": " + message);
+       popup.appendChild(image); // Append the image to the popup
+       popup.appendChild(textNode); // Append the text message to the popup
        popup.style.position = "absolute";
        popup.style.left = "50%";
        popup.style.top = "50%";
@@ -399,7 +431,7 @@
            <!-- <hr> -->
            <div>
            <h3 class="detection-info">Object detection</h3>
-             <p>Current drone:</p>
+             <p id="current-drone">Current drone:</p>
              <p>Foliage density:</p>
              <p>Object detected:</p>
            </div>
