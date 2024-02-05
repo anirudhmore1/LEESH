@@ -244,6 +244,24 @@
         },
       };
 
+       //Pop-up of object detected
+      function showObjectDetectedPopup(imageUrl) {
+        const popup = document.createElement("div");
+        popup.innerHTML = `<img src="${imageUrl}" alt="Detected Object" style="width: 100px; height: 100px;">`;
+        popup.style.position = "fixed";
+        popup.style.bottom = "20px";
+        popup.style.right = "20px";
+        popup.style.backgroundColor = "white";
+        popup.style.padding = "10px";
+        popup.style.border = "1px solid black";
+        document.body.appendChild(popup);
+
+        // Automatically close the popup after 5 seconds
+        setTimeout(() => {
+          document.body.removeChild(popup);
+        }, 5000);
+      }
+
       // Function to move drones along their paths
       function moveDrone(drone, dronePath) {
         const currentLocationIndex = dronePath.path.findIndex(point =>
@@ -251,40 +269,16 @@
         );
         const nextLocationIndex = (currentLocationIndex + 1) % dronePath.path.length;
         const nextPoint = dronePath.path[nextLocationIndex];
-        drone.geometry = new Point({
-          longitude: nextPoint[0],
-          latitude: nextPoint[1]
-        });
+        drone.geometry = new Point({ longitude: nextPoint[0], latitude: nextPoint[1] });
 
         // Check if the drone's current position matches any object detection points
         const detected = dronePath.objectDetectionPoints.some(point =>
-          point[0] === nextPoint[0] && point[1] === nextPoint[1]
+          point.longitude === nextPoint[0] && point.latitude === nextPoint[1]
         );
-        if (detected) {
-          // If an object is detected, display the pop-up with the image of the detected object
-          // Replace 'imageUrl' with the actual URL of the image you want to show
+        if (detected) {// If an object is detected, display the pop-up with the image of the detected object // Replace 'imageUrl' with the actual URL of the image you want to show
           showObjectDetectedPopup('imageUrl');
         }
       }
-
-      //Function for pop-up of object detected
-     function showObjectDetectedPopup(imageUrl) {
-       const popup = document.createElement("div");
-       // popup.innerHTML = `<img src="${imageUrl}" alt="Detected Object" style="width: 100px; height: 100px;">`;
-       popup.textContent = "Object detected";
-       popup.style.position = "fixed";
-       popup.style.bottom = "20px";
-       popup.style.right = "20px";
-       popup.style.backgroundColor = "white";
-       popup.style.padding = "10px";
-       popup.style.border = "1px solid black";
-       document.body.appendChild(popup);
-
-       // Automatically close the popup after 5 seconds
-       setTimeout(() => {
-         document.body.removeChild(popup);
-       }, 5000);
-     }
 
       // //Start-stop search
       // const startButton = document.getElementById('startsearchbutton');
@@ -298,7 +292,6 @@
         if (!isAnimating) {
           return;
         }
-
         pointGraphics.forEach(graphic => {
           const droneId = graphic.attributes.id;
           const dronePath = dronePaths[droneId];
@@ -309,15 +302,15 @@
           }
         });
 
-    // Refresh the graphics on the view
+             // Refresh the graphics on the view
      view.graphics.removeAll();
      view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
 
-     // Request the next frame in the animation with a delay
-     setTimeout(() => {
-       animationFrameId = requestAnimationFrame(animate);
-     }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
-   }
+             // Request the next frame in the animation with a delay
+             setTimeout(() => {
+               animationFrameId = requestAnimationFrame(animate);
+             }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
+           }
 
          // // Start the animation
          // requestAnimationFrame(animate);
