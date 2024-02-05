@@ -208,36 +208,67 @@
       //   ]
       // };
 
-      // Define paths for each drone to follow
+      //// Function to generate a lawnmower pattern path
+      function generateLawnmowerPattern(xStart, yStart, xEnd, yEnd, stepSize) {
+        let path = [];
+        let direction = 1;
+
+        for (let y = yStart; y <= yEnd; y += stepSize) {
+          if (direction > 0) {
+            for (let x = xStart; x <= xEnd; x += stepSize) {
+              path.push([x, y]);
+            }
+          } else {
+            for (let x = xEnd; x >= xStart; x -= stepSize) {
+              path.push([x, y]);
+            }
+          }
+          direction *= -1; // Reverse direction
+        }
+
+        return path;
+      }
+
+      // Generate lawnmower pattern paths for each drone
+      const drone1Path = generateLawnmowerPattern(-84.75, 35.25, -84.25, 35.75, 0.1);
+      const drone2Path = generateLawnmowerPattern(-85.75, 35.25, -85.25, 35.75, 0.1);
+      const drone3Path = generateLawnmowerPattern(-85.75, 34.75, -85.25, 34.25, 0.1);
+      const drone4Path = generateLawnmowerPattern(-84.75, 34.75, -84.25, 34.25, 0.1);
+
+      //Define paths for each drone to follow
       const dronePaths = {
         drone1: {
-          path: [
-            [-84.75, 35.25], [-84.25, 35.25], [-84.25, 39.75], [-84.75, 39.75], [-84.75, 39.25], [-84.25, 39.25], [-84.25, 35.25]
-          ],
+          // path: [
+          //   [-84.75, 35.25], [-84.25, 35.25], [-84.25, 39.75], [-84.75, 39.75], [-84.75, 39.25], [-84.25, 39.25], [-84.25, 35.25]
+          // ],
+          path: drone1Path,
           objectDetectionPoints: [
             [-84.25, 35.25], [-84.25, 39.5]
           ]
         },
         drone2: {
-          path: [
-            [-85.25, 35.25], [-85.75, 35.25], [-85.75, 39.75], [-85.25, 39.75], [-85.25, 39.25], [-85.75, 39.25], [-85.75, 35.25]
-          ],
+          // path: [
+          //   [-85.25, 35.25], [-85.75, 35.25], [-85.75, 39.75], [-85.25, 39.75], [-85.25, 39.25], [-85.75, 39.25], [-85.75, 35.25]
+          // ],
+          path: drone2Path,
           objectDetectionPoints: [
             [-84.5, 35.5], [-84.25, 39.5]
           ]
         },
         drone3: {
-          path: [
-            [-85.25, 34.75], [-85.75, 34.75], [-85.75, 30.25], [-85.25, 30.25], [-85.25, 30.75], [-85.75, 30.75], [-85.75, 34.75]
-          ],
+          // path: [
+          //   [-85.25, 34.75], [-85.75, 34.75], [-85.75, 30.25], [-85.25, 30.25], [-85.25, 30.75], [-85.75, 30.75], [-85.75, 34.75]
+          // ],
+          path: drone3Path,
           objectDetectionPoints: [
             [-84.5, 35.5], [-84.25, 39.5]
           ]
         },
         drone4: {
-          path: [
-            [-84.75, 34.75], [-84.25, 34.75], [-84.25, 30.25], [-84.75, 30.25], [-84.75, 30.75], [-84.25, 30.75], [-84.25, 34.75]
-          ],
+          // path: [
+          //   [-84.75, 34.75], [-84.25, 34.75], [-84.25, 30.25], [-84.75, 30.25], [-84.75, 30.75], [-84.25, 30.75], [-84.25, 34.75]
+          // ],
+          path: drone4Path,
           objectDetectionPoints: [
             [-84.5, 35.5], [-84.25, 39.5]
           ]
@@ -262,25 +293,31 @@
         );
         const nextLocationIndex = (currentLocationIndex + 1) % dronePath.path.length;
         const nextPoint = dronePath.path[nextLocationIndex];
-        drone.geometry = new Point({
-          longitude: nextPoint[0],
-          latitude: nextPoint[1]
-        });
+        if (nextPoint) { // Ensure nextPoint is defined
+          drone.geometry = new Point({
+            longitude: nextPoint[0],
+            latitude: nextPoint[1]
+          });
 
         // Check if the drone's current position matches any object detection points
-        const detected = dronePath.objectDetectionPoints.some(point =>
-          point[0] === nextPoint[0] && point[1] === nextPoint[1]
+        const detected = dronePath.objectDetectionPoints.some(detectedPoint =>
+          detectedPoint[0] === nextPoint[0] && detectedPoint[1] === nextPoint[1]
         );
         if (detected) {
           // If an object is detected, display the pop-up with the image of the detected object
           // Pass actual URL of the image you want to show object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, clueImageUrl);
-
-
-          // Update the "Current drone:" field in the "drone control" UI
-          updateDroneControlUI(drone.attributes.id);
         }
+      } else {
+        console.error("Next point is undefined. Check the path definition for drone:", drone.attributes.id);
       }
+    }
+
+
+      //     // Update the "Current drone:" field in the "drone control" UI
+      //     updateDroneControlUI(drone.attributes.id);
+      //   }
+      // }
 
       // Function to update the "drone control" UI
       function updateDroneControlUI(droneName) {
@@ -380,28 +417,7 @@
              view: view
            });
 
-           //
-     //// Function to update the displayed value of the competence rating
-    function updateCompetenceValue(value) {
-      document.getElementById('competenceValue').textContent = value;
-    }
-
-    // Function to update the displayed value of the trust rating
-    function updateTrustValue(value) {
-      document.getElementById('trustValue').textContent = value;
-    }
-
-    // Event listener for the competence slider
-    document.getElementById('competenceRange').addEventListener('input', function() {
-      updateCompetenceValue(this.value);
-    });
-
-    // Event listener for the trust slider
-    document.getElementById('trustRange').addEventListener('input', function() {
-      updateTrustValue(this.value);
-    });
-
-     //places the logo div in the bottom right corner of the view
+           // places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
            // places the search widget in the top right corner of the view
      view.ui.add(search, "top-right");
@@ -506,58 +522,34 @@
          <div>
          <hr>
          <label> Drone 1: </label>
-         <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
-             </div>
-             <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
-             </div>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
          </div>
          <hr>
          <div>
          <label> Drone 2: </label>
-         <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
-             </div>
-             <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
-             </div>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
          </div>
          <hr>
          <div>
          <label> Drone 3: </label>
-         <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
-             </div>
-             <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
-             </div>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
          </div>
          <hr>
          <div>
          <label> Drone 4: </label>
-         <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
-             </div>
-             <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
-             </div>
+               <label for="myRange" id="lmyRange">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myRange">
+               <label for="myClues" id="lmyClue">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="0" class="slider" id="myClues">
          </div>
        </div>
 
