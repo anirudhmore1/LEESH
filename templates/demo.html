@@ -211,38 +211,98 @@
       // Define paths for each drone to follow
       const dronePaths = {
         drone1: {
-          path: [
-            [-84.75, 35.25], [-84.25, 35.25], [-84.25, 39.75], [-84.75, 39.75], [-84.75, 39.25], [-84.25, 39.25], [-84.25, 35.25]
-          ],
+          path: generateLawnmowerPatternQuadrant1(-84.75, 35.25),
           objectDetectionPoints: [
             [-84.25, 35.25], [-84.25, 39.5]
           ]
         },
         drone2: {
-          path: [
-            [-85.25, 35.25], [-85.75, 35.25], [-85.75, 39.75], [-85.25, 39.75], [-85.25, 39.25], [-85.75, 39.25], [-85.75, 35.25]
-          ],
+          path: generateLawnmowerPatternQuadrant2(-85.25, 35.25),
           objectDetectionPoints: [
             [-84.5, 35.5], [-84.25, 39.5]
           ]
         },
         drone3: {
-          path: [
-            [-85.25, 34.75], [-85.75, 34.75], [-85.75, 30.25], [-85.25, 30.25], [-85.25, 30.75], [-85.75, 30.75], [-85.75, 34.75]
-          ],
+          path: generateLawnmowerPatternQuadrant3(-85.25, 34.75),
           objectDetectionPoints: [
             [-84.5, 35.5], [-84.25, 39.5]
           ]
         },
         drone4: {
-          path: [
-            [-84.75, 34.75], [-84.25, 34.75], [-84.25, 30.25], [-84.75, 30.25], [-84.75, 30.75], [-84.25, 30.75], [-84.25, 34.75]
-          ],
+          path: generateLawnmowerPatternQuadrant4(-84.75, 34.75),
           objectDetectionPoints: [
             [-84.5, 35.5], [-84.25, 39.5]
           ]
         },
       };
+
+      // Function to generate lawnmower pattern for quadrant 1
+      function generateLawnmowerPatternQuadrant1(startX, startY) {
+          let path = [];
+          for (let y = 35; y <= 40; y += 0.5) {
+              if (y % 1 === 0) { // even row
+                  for (let x = -85; x <= -75; x += 0.5) {
+                      path.push([x, y]);
+                  }
+              } else { // odd row
+                  for (let x = -75; x >= -85; x -= 0.5) {
+                      path.push([x, y]);
+                  }
+              }
+          }
+          return path;
+      }
+
+      // Function to generate lawnmower pattern for quadrant 2
+      function generateLawnmowerPatternQuadrant2(startX, startY) {
+          let path = [];
+          for (let y = 35; y <= 40; y += 0.5) {
+              if (y % 1 === 0) { // even row
+                  for (let x = -85; x >= -95; x -= 0.5) {
+                      path.push([x, y]);
+                  }
+              } else { // odd row
+                  for (let x = -95; x <= -85; x += 0.5) {
+                      path.push([x, y]);
+                  }
+              }
+          }
+          return path;
+      }
+
+      // Function to generate lawnmower pattern for quadrant 3
+      function generateLawnmowerPatternQuadrant3(startX, startY) {
+          let path = [];
+          for (let y = 35; y >= 30; y -= 0.5) {
+              if (y % 1 === 0) { // even row
+                  for (let x = -85; x >= -95; x -= 0.5) {
+                      path.push([x, y]);
+                  }
+              } else { // odd row
+                  for (let x = -95; x <= -85; x += 0.5) {
+                      path.push([x, y]);
+                  }
+              }
+          }
+          return path;
+      }
+
+      // Function to generate lawnmower pattern for quadrant 4
+      function generateLawnmowerPatternQuadrant4(startX, startY) {
+          let path = [];
+          for (let y = 35; y >= 30; y -= 0.5) {
+              if (y % 1 === 0) { // even row
+                  for (let x = -85; x <= -75; x += 0.5) {
+                      path.push([x, y]);
+                  }
+              } else { // odd row
+                  for (let x = -75; x >= -85; x -= 0.5) {
+                      path.push([x, y]);
+                  }
+              }
+          }
+          return path;
+      }
 
       //Detected object
       // const clueImage = {
@@ -380,26 +440,27 @@
              view: view
            });
 
-           //
-     //// Function to update the displayed value of the competence rating
-    function updateCompetenceValue(value) {
-      document.getElementById('competenceValue').textContent = value;
+     // Function to update the displayed value of the competence rating
+     function updateCompetenceValue(value, droneNumber) {
+      document.getElementById('competenceValue' + droneNumber).textContent = value;
     }
 
     // Function to update the displayed value of the trust rating
-    function updateTrustValue(value) {
-      document.getElementById('trustValue').textContent = value;
+    function updateTrustValue(value, droneNumber) {
+      document.getElementById('trustValue' + droneNumber).textContent = value;
     }
 
     // Event listener for the competence slider
-    document.getElementById('competenceRange').addEventListener('input', function() {
-      updateCompetenceValue(this.value);
-    });
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('competenceRange' + i).addEventListener('input', function() {
+        updateCompetenceValue(this.value, i);
+      });
 
-    // Event listener for the trust slider
-    document.getElementById('trustRange').addEventListener('input', function() {
-      updateTrustValue(this.value);
-    });
+      // Event listeners for the trust sliders
+         document.getElementById('trustRange' + i).addEventListener('input', function() {
+           updateTrustValue(this.value, i);
+         });
+       }
 
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
@@ -501,62 +562,62 @@
                <input type="button" id="label_lpt" value="Switch" style="display:none"/>
              </div>
 
-       <div id="droneRatings" class="droneRatings-container">
+       <div id="droneRatings" class="droneRatings-container">//change label class for each drone type
          <h2 class="list-heading">Drone competence and trust ratings</h2>
          <div>
          <hr>
          <label> Drone 1: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange1">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange1">
+               <span id="competenceValue1">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange1">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange1">
+               <span id="trustValue1">3</span>
              </div>
          </div>
          <hr>
          <div>
          <label> Drone 2: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange2">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange2">
+               <span id="competenceValue2">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange2">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange2">
+               <span id="trustValue2">3</span>
              </div>
          </div>
          <hr>
          <div>
          <label> Drone 3: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange3">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange3">
+               <span id="competenceValue3">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange3">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange3">
+               <span id="trustValue3">3</span>
              </div>
          </div>
          <hr>
          <div>
          <label> Drone 4: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange4">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange4">
+               <span id="competenceValue4">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange4">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange4">
+               <span id="trustValue4">3</span>
              </div>
          </div>
        </div>

@@ -380,26 +380,27 @@
              view: view
            });
 
-           //
-     //// Function to update the displayed value of the competence rating
-    function updateCompetenceValue(value) {
-      document.getElementById('competenceValue').textContent = value;
+     // Function to update the displayed value of the competence rating
+     function updateCompetenceValue(value, droneNumber) {
+      document.getElementById('competenceValue' + droneNumber).textContent = value;
     }
 
     // Function to update the displayed value of the trust rating
-    function updateTrustValue(value) {
-      document.getElementById('trustValue').textContent = value;
+    function updateTrustValue(value, droneNumber) {
+      document.getElementById('trustValue' + droneNumber).textContent = value;
     }
 
     // Event listener for the competence slider
-    document.getElementById('competenceRange').addEventListener('input', function() {
-      updateCompetenceValue(this.value);
-    });
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('competenceRange' + i).addEventListener('input', function() {
+        updateCompetenceValue(this.value, i);
+      });
 
-    // Event listener for the trust slider
-    document.getElementById('trustRange').addEventListener('input', function() {
-      updateTrustValue(this.value);
-    });
+      // Event listeners for the trust sliders
+         document.getElementById('trustRange' + i).addEventListener('input', function() {
+           updateTrustValue(this.value, i);
+         });
+       }
 
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
@@ -501,62 +502,62 @@
                <input type="button" id="label_lpt" value="Switch" style="display:none"/>
              </div>
 
-       <div id="droneRatings" class="droneRatings-container">
+       <div id="droneRatings" class="droneRatings-container">//change label class for each drone type
          <h2 class="list-heading">Drone competence and trust ratings</h2>
          <div>
          <hr>
          <label> Drone 1: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange1">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange1">
+               <span id="competenceValue1">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange1">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange1">
+               <span id="trustValue1">3</span>
              </div>
          </div>
          <hr>
          <div>
          <label> Drone 2: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange2">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange2">
+               <span id="competenceValue2">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange2">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange2">
+               <span id="trustValue2">3</span>
              </div>
          </div>
          <hr>
          <div>
          <label> Drone 3: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange3">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange3">
+               <span id="competenceValue3">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange3">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange3">
+               <span id="trustValue3">3</span>
              </div>
          </div>
          <hr>
          <div>
          <label> Drone 4: </label>
          <div>
-               <label for="competenceRange">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange">
-               <span id="competenceValue">3</span>
+               <label for="competenceRange4">Competence(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange4">
+               <span id="competenceValue4">3</span>
              </div>
              <div>
-               <label for="trustRange">Trust(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange">
-               <span id="trustValue">3</span>
+               <label for="trustRange4">Trust(1-5): </label>
+               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange4">
+               <span id="trustValue4">3</span>
              </div>
          </div>
        </div>
