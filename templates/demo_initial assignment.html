@@ -42,12 +42,6 @@
     width: 100%;
     background: rgba(255,255,255, 0.9);
     }
-    #droneSelectionForm {
-    /* position: absolute; */
-    top: 0;
-    width: 100%;
-    background: rgba(255,255,255, 0.9);
-    }
     hr {
       border: 0;
       height: 1px;
@@ -215,32 +209,36 @@
       //   ]
       // };
 
-      // Function to assign drones to quadrants based on user input
+      // Initialize pointGraphics array without specific positions
+      let pointGraphics = [];
+
+      // Function to assign drones to quadrants and update their positions
       function assignDronesToQuadrants() {
-          const quadrant1Drone = document.getElementById('quadrant1').value;
-          const quadrant2Drone = document.getElementById('quadrant2').value;
-          const quadrant3Drone = document.getElementById('quadrant3').value;
-          const quadrant4Drone = document.getElementById('quadrant4').value;
+        const quadrant1Drone = document.getElementById('quadrant1Drone').value;
+        const quadrant1Drone = document.getElementById('quadrant2Drone').value;
+        const quadrant1Drone = document.getElementById('quadrant3Drone').value;
+        const quadrant1Drone = document.getElementById('quadrant4Drone').value;
 
-          dronePaths[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.75, 35.25);
-          dronePaths[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.25, 35.25);
-          dronePaths[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.25, 34.75);
-          dronePaths[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.75, 34.75);
+        // Logic to update drone positions based on the selected quadrant
+        // This includes updating the `pointGraphics` array with new positions
       }
 
-      // Function to update the map with the assigned drone positions
-      function updateMap() {
-          // Refresh the graphics on the view
-          view.graphics.removeAll();
-          view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
-      }
-
+      // Event listener for the initial drone assignment event
       document.getElementById('droneSelectionForm').addEventListener('submit', function(event) {
-          event.preventDefault(); // Prevent the form from submitting normally
-          assignDronesToQuadrants();
-          updateMap(); // Update the map after assigning drones to quadrants
-      });
+        event.preventDefault();
 
+        // const quadrant1Drone = document.getElementById('quadrant1').value;
+        // const quadrant2Drone = document.getElementById('quadrant2').value;
+        // const quadrant3Drone = document.getElementById('quadrant3').value;
+        // const quadrant4Drone = document.getElementById('quadrant4').value;
+
+        assignDronesToQuadrants({
+          quadrant1: quadrant1Drone,
+          quadrant2: quadrant2Drone,
+          quadrant3: quadrant3Drone,
+          quadrant4: quadrant4Drone,
+        });
+      });
 
       // Define paths for each drone to follow
       const dronePaths = {
@@ -499,19 +497,12 @@
 
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
-
-     // places the search widget in the top right corner of the view
+           // places the search widget in the top right corner of the view
      view.ui.add(search, "top-right");
-
-     // places the drone-assignment widget in the top right corner of the view
-     view.ui.add("droneSelectionForm", "top-right");
-
-     // places the drone-control widget in the top right corner of the view
+           // places the drone-control widget in the top right corner of the view
      view.ui.add("droneControl", "top-right");
-
-     // places the drone-control widget in the bottom of the view
+           // places the drone-control widget in the bottom of the view
      view.ui.add("droneRatings", "bottom-left");
-
          });
 
       // //storinjg droneRatings
@@ -540,7 +531,6 @@
        <div id="logoDiv" class="esri-widget">SCEL/VT</div>
 
        <form id="droneSelectionForm">
-          <h2 class="main-heading">Drone assignment</h2>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
            <option value="drone1">Drone 1</option>
