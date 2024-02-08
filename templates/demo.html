@@ -78,19 +78,29 @@
         zoom: 9
       });
 
+      // Assuming gridSize is the size of your grid cells
+      const gridSize = 0.5; // Size of each grid cell in some unit
+
+      // Dynamic size of drones based on gridSize
+      const droneSymbolSize = `${gridSize * 100}px`; // Convert gridSize to pixels if necessary
+
      // Define the symbol for drawing the points
       const markerSymbol1 = {
         type: "picture-marker",
         url: "{% static 'img/thermal-drone.png' %}",
-        width: "30px",
-        height: "30px"
+        width: droneSymbolSize,
+        height: droneSymbolSize
+        // width: "30px",
+        // height: "30px"
       };
 
       const markerSymbol2 = {
         type: "picture-marker",
         url: "{% static 'img/sniffer-drone.png' %}",
-        width: "30px",
-        height: "30px"
+        width: droneSymbolSize,
+        height: droneSymbolSize
+        // width: "30px",
+        // height: "30px"
       };
 
       // Create multiple point graphics - Drones
@@ -186,7 +196,7 @@
          }
 
       // Create grids for each quadrant
-      const gridSize = 0.5; // Size of each grid cell
+      // const gridSize = 0.5; // Size of each grid cell
       const quadrant1 = createGrid(-85, 35, -75, 40, gridSize);
       const quadrant2 = createGrid(-95, 35, -85, 40, gridSize);
       const quadrant3 = createGrid(-95, 30, -85, 35, gridSize);
@@ -222,11 +232,22 @@
           const quadrant3Drone = document.getElementById('quadrant3').value;
           const quadrant4Drone = document.getElementById('quadrant4').value;
 
+          // Update the drone paths based on the selected quadrants
           dronePaths[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.75, 35.25);
           dronePaths[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.25, 35.25);
           dronePaths[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.25, 34.75);
           dronePaths[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.75, 34.75);
-      }
+
+          // Update the drone graphics' geometry to the starting point of their new paths
+          pointGraphics.forEach(graphic => {
+              const droneId = graphic.attributes.id;
+              const dronePath = dronePaths[droneId];
+              if (dronePath && dronePath.path.length > 0) {
+                  const startPoint = dronePath.path[0];
+                  graphic.geometry = new Point({ longitude: startPoint[0], latitude: startPoint[1] });
+              }
+            });
+          }
 
       // Function to update the map with the assigned drone positions
       function updateMap() {
@@ -240,7 +261,6 @@
           assignDronesToQuadrants();
           updateMap(); // Update the map after assigning drones to quadrants
       });
-
 
       // Define paths for each drone to follow
       const dronePaths = {
