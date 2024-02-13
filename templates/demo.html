@@ -398,8 +398,21 @@
       //   height: "30px"
       // };
 
-      // Define the URL for the image
-      var clueImageUrl = "{% static 'img/targetsampleH.png' %}";
+      // Define the URL for the images // Change text to include foliage, obj type
+      var imagesAndTexts = [
+        { url: "{% static 'img/opticonly_sample.png' %}", text: " Obj type A - Optic sensor" },
+        { url: "{% static 'img/thermal_sample.png' %}", text: " Obj type B - Thermal image" },
+        { url: "{% static 'img/tracer_sample.png' %}", text: " Obj type B - Tracer image" },
+        // ... add more images and texts as needed
+      ];
+
+      // var clueImageUrl = "{% static 'img/targetsampleH.png' %}";
+
+      // Function to get a random image and text
+      function getRandomImageAndText() {
+        var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
+        return imagesAndTexts[randomIndex];
+      }
 
       // Function to move drones along their paths
       function moveDrone(drone, dronePath) {
@@ -426,7 +439,7 @@
 
         if (detected) {
           // If an object is detected, display the pop-up with the image of the detected object
-          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, clueImageUrl);
+          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id);
         }
       }
 
@@ -439,7 +452,11 @@
       }
 
       //Function for pop-up of object detected
-     function showObjectDetectedPopup(message, droneName, imageUrl) {
+     function showObjectDetectedPopup(message, droneName) {
+       var randomImageAndText = getRandomImageAndText();
+       var imageUrl = randomImageAndText.url;
+       var imageText = randomImageAndText.text;
+
        const popup = document.createElement("div");
        const image = document.createElement("img");
        image.src = imageUrl;
@@ -449,9 +466,10 @@
        image.style.display = "block"; // Display the image as a block element
        image.style.marginBottom = "10px"; // Margin below the image
 
-       const textNode = document.createTextNode(droneName + ": " + message);
+       const textNode = document.createTextNode(message + " by " + droneName + imageText); //Message appearing when object detected
        popup.appendChild(image); // Append the image to the popup
        popup.appendChild(textNode); // Append the text message to the popup
+
        popup.style.position = "absolute";
        popup.style.left = "50%";
        popup.style.top = "50%";
@@ -460,6 +478,7 @@
        popup.style.padding = "10px";
        popup.style.border = "1px solid black";
        popup.style.zIndex = "1000"; // Ensure the popup is above other elements
+
        document.body.appendChild(popup);
 
        // Automatically close the popup after 5 seconds
