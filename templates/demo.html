@@ -438,7 +438,10 @@
         );
 
         if (detected) {
-          // If an object is detected, display the pop-up with the image of the detected object
+          // If an object is detected, pause the drone movement
+          isAnimating = false;
+
+          // And display the pop-up with the image of the detected object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id);
         }
       }
@@ -481,10 +484,10 @@
 
        document.body.appendChild(popup);
 
-       // Automatically close the popup after 5 seconds
+       // Automatically close the popup after 10 seconds
        setTimeout(() => {
          document.body.removeChild(popup);
-       }, 5000);
+       }, 10000);
      }
 
       // //Start-stop search
@@ -612,7 +615,7 @@
        <div id="logoDiv" class="esri-widget">SCEL/VT</div>
 
        <form id="droneSelectionForm">
-          <h2 class="main-heading">Drone assignment</h2>
+          <h2 class="main-heading">Initial Drone assignment</h2>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
            <option value="drone1">Drone 1</option>
