@@ -398,11 +398,11 @@
       //   height: "30px"
       // };
 
-      // Define the URL for the images // Change text to include foliage, obj type
+      // Object detection image and text // Text1: for obj type & Text2: for Foliage level
       var imagesAndTexts = [
-        { url: "{% static 'img/opticonly_sample.png' %}", text: " Obj type A - Optic sensor" },
-        { url: "{% static 'img/thermal_sample.png' %}", text: " Obj type B - Thermal image" },
-        { url: "{% static 'img/tracer_sample.png' %}", text: " Obj type B - Tracer image" },
+        { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
+        { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
+        { url: "{% static 'img/tracer_sample.png' %}", text1: "Obj type B - Tracer image", text2: "Foliage level" },
         // ... add more images and texts as needed
       ];
 
@@ -447,18 +447,24 @@
       }
 
       // Function to update the "drone control" UI
-      function updateDroneControlUI(droneName) {
-        // Select the paragraph element for the "Current drone:" field
-        const currentDroneElement = document.querySelector('#current-drone'); //To update name of detecting drone
-        // Update its text content with the name of the drone
+      function updateDroneControlUI(droneName, imageText1, imageText2) {
+        // Select the paragraph elements for the "Current drone:", "Object detected:", and "Foliage density:"
+        const currentDroneElement = document.querySelector('#current-drone');
+        const objectDetectedElement = document.querySelector('#object-detected');
+        const foliageDensityElement = document.querySelector('#foliage-density');
+
+        // Update their text content with the name of the drone and the image texts
         currentDroneElement.textContent = `Current drone: ${droneName}`;
+        objectDetectedElement.textContent = `Object detected: ${imageText1}`;
+        foliageDensityElement.textContent = `Foliage density: ${imageText2}`;
       }
 
       //Function for pop-up of object detected
      function showObjectDetectedPopup(message, droneName) {
        var randomImageAndText = getRandomImageAndText();
        var imageUrl = randomImageAndText.url;
-       var imageText = randomImageAndText.text;
+       var imageText1 = randomImageAndText.text1;
+       var imageText2 = randomImageAndText.text2
 
        const popup = document.createElement("div");
        const image = document.createElement("img");
@@ -469,9 +475,12 @@
        image.style.display = "block"; // Display the image as a block element
        image.style.marginBottom = "10px"; // Margin below the image
 
-       const textNode = document.createTextNode(message + " by " + droneName + imageText); //Message appearing when object detected
+       const textNode1 = document.createTextNode(message + " by " + droneName + imageText1); //Message appearing when object detected
+       const textNode2 = document.createTextNode(imageText2);
        popup.appendChild(image); // Append the image to the popup
-       popup.appendChild(textNode); // Append the text message to the popup
+       popup.appendChild(textNode1); // Append the text message to the popup - from image text1
+       popup.appendChild(document.createElement("br")); // Line break between texts
+       popup.appendChild(textNode2); // Append the text message to the popup - from image text2
 
        popup.style.position = "absolute";
        popup.style.left = "50%";
@@ -484,10 +493,13 @@
 
        document.body.appendChild(popup);
 
-       // Automatically close the popup after 5 seconds
+       // Automatically close the popup after 10 seconds
        setTimeout(() => {
          document.body.removeChild(popup);
-       }, 5000);
+       }, 10000);
+
+       // Update the drone control UI with the name of the drone that detected the object
+       updateDroneControlUI(droneName, imageText1, imageText2);
      }
 
       // //Start-stop search
@@ -615,7 +627,7 @@
        <div id="logoDiv" class="esri-widget">SCEL/VT</div>
 
        <form id="droneSelectionForm">
-          <h2 class="main-heading">Drone assignment</h2>
+          <h2 class="main-heading">Initial Drone assignment</h2>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
            <option value="drone1">Drone 1</option>
@@ -682,8 +694,8 @@
            <div>
            <h3 class="detection-info">Object detection</h3>
              <p id="current-drone">Current drone:</p>
-             <p>Foliage density:</p>
-             <p>Object detected:</p>
+             <p id="foliage-density">Foliage density:</p>
+             <p id="object-detected">Object detected:</p>
            </div>
            <div>
              <label >Accept recommendation:</label>
@@ -711,7 +723,7 @@
 
              <div>
              <h3 class="detection-info">Task assignment</h3>
-               <p>Current drone:</p>
+               <!-- <p id="current-drone">Current drone:</p> -->
              </div>
              <div>
                <label >Re-assign task:</label>

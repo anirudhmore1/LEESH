@@ -398,7 +398,7 @@
       //   height: "30px"
       // };
 
-      // Define the URL for the images // Change text to include foliage, obj type
+      // Object detection image and text // Text1: for obj type & Text2: for Foliage level
       var imagesAndTexts = [
         { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
         { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
@@ -447,11 +447,16 @@
       }
 
       // Function to update the "drone control" UI
-      function updateDroneControlUI(droneName) {
-          // Select the paragraph element for the "Current drone:" field
-          const currentDroneElement = document.querySelector('#current-drone');
-          // Update its text content with the name of the drone
-          currentDroneElement.textContent = `Current drone: ${droneName}`;
+      function updateDroneControlUI(droneName, imageText1, imageText2) {
+        // Select the paragraph elements for the "Current drone:", "Object detected:", and "Foliage density:"
+        const currentDroneElement = document.querySelector('#current-drone');
+        const objectDetectedElement = document.querySelector('#object-detected');
+        const foliageDensityElement = document.querySelector('#foliage-density');
+
+        // Update their text content with the name of the drone and the image texts
+        currentDroneElement.textContent = `Current drone: ${droneName}`;
+        objectDetectedElement.textContent = `Object detected: ${imageText1}`;
+        foliageDensityElement.textContent = `Foliage density: ${imageText2}`;
       }
 
       //Function for pop-up of object detected
@@ -494,7 +499,7 @@
        }, 10000);
 
        // Update the drone control UI with the name of the drone that detected the object
-       updateDroneControlUI(droneName);
+       updateDroneControlUI(droneName, imageText1, imageText2);
      }
 
       // //Start-stop search
@@ -689,8 +694,8 @@
            <div>
            <h3 class="detection-info">Object detection</h3>
              <p id="current-drone">Current drone:</p>
-             <p>Foliage density:</p>
-             <p>Object detected:</p>
+             <p id="foliage-density">Foliage density:</p>
+             <p id="object-detected">Object detected:</p>
            </div>
            <div>
              <label >Accept recommendation:</label>
@@ -718,7 +723,7 @@
 
              <div>
              <h3 class="detection-info">Task assignment</h3>
-               <p>Current drone:</p>
+               <!-- <p id="current-drone">Current drone:</p> -->
              </div>
              <div>
                <label >Re-assign task:</label>
