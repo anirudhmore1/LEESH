@@ -43,10 +43,14 @@
     background: rgba(255,255,255, 0.9);
     }
     #droneSelectionForm {
-    /* position: absolute; */
-    top: 0;
-    width: 100%;
-    background: rgba(255,255,255, 0.9);
+      top: 0;
+      width: 100%;
+      background: rgba(255,255,255, 0.9);
+      display: flex;
+      flex-direction: column; /* This will stack the fields vertically */
+    }
+    #droneSelectionForm > div {
+      margin-bottom: 10px; /* Adds space between the form elements */
     }
     hr {
       border: 0;
@@ -628,6 +632,7 @@
 
        <form id="droneSelectionForm">
           <h2 class="main-heading">Initial Drone assignment</h2>
+          <div>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
            <option value="drone1">Drone 1</option>
@@ -635,6 +640,8 @@
            <option value="drone3">Drone 3</option>
            <option value="drone4">Drone 4</option>
          </select>
+       </div>
+       <div>
          <label for="quadrant2">Quadrant 2:</label>
          <select id="quadrant2" name="quadrant2">
            <option value="drone1">Drone 1</option>
@@ -642,6 +649,8 @@
            <option value="drone3">Drone 3</option>
            <option value="drone4">Drone 4</option>
          </select>
+       </div>
+       <div>
          <label for="quadrant3">Quadrant 3:</label>
          <select id="quadrant3" name="quadrant3">
            <option value="drone1">Drone 1</option>
@@ -649,6 +658,8 @@
            <option value="drone3">Drone 3</option>
            <option value="drone4">Drone 4</option>
          </select>
+       </div>
+       <div>
          <label for="quadrant4">Quadrant 4:</label>
          <select id="quadrant4" name="quadrant4">
            <option value="drone1">Drone 1</option>
@@ -656,6 +667,7 @@
            <option value="drone3">Drone 3</option>
            <option value="drone4">Drone 4</option>
          </select>
+       </div>
          <input type="submit" value="Submit">
        </form>
 
