@@ -8,11 +8,11 @@ http://127.0.0.1:8000
 ![Trajectory](screen/trajectory.gif)
 [more examples](screen/)
 ## Built based on
-- DJango as sever
+- DJango as server
 - ESRI js development platform,
 - d3 for polygon and voronoi.
 - SQLite as database
-- DJango REST freamwork is needed
+- DJango REST framework is needed
 
 
 # Experiment flow:
