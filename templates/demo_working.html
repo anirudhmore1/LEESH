@@ -565,10 +565,10 @@
         isAnimating = false;
       });
 
-    //Search funtion
-     const search = new Search({
-             view: view
-           });
+    // //Search funtion
+    //  const search = new Search({
+    //          view: view
+    //        });
 
      // Function to update the displayed value of the competence rating
      function updateCompetenceValue(value, droneNumber) {
@@ -595,8 +595,8 @@
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
 
-     // places the search widget in the top right corner of the view
-     view.ui.add(search, "top-right");
+     // // places the search widget in the top right corner of the view
+     // view.ui.add(search, "top-right");
 
      // places the drone-assignment widget in the top right corner of the view
      view.ui.add("droneSelectionForm", "top-right");
@@ -724,16 +724,16 @@
              <input type="button" class="bt_save" value="Save Task" id="savetasks"/>
            </div> -->
 
-           <div>
+           <div id="recategorizeObject" style="display:none">
              <label >Re-categorize object: </label>
-             <select id="sel_lpm">
+             <select id="sel_obj">
                <option value="living target">Living target</option>
                <option value="non-living target">Non-living target</option>
                <option value="living distractor" selected>Living distractor</option>
                <option value="non-living distractor" selected>Non-living distractor</option>
 
              </select>
-             <input type="button" id="label_lpt" value="Switch" style="display:none"/>
+             <input type="button" id="confirmObjCat" value="Confirm" style="display:none"/>
            </div>
              <hr>
 
@@ -741,21 +741,20 @@
              <h3 class="detection-info">Task assignment</h3>
                <!-- <p id="current-drone">Current drone:</p> -->
              </div>
-             <div>
+             <div id="resassignTaskSection">
                <label >Re-assign task:</label>
-               <input type="button" class="yes-button" value="Yes" id="btneditcells" />
-               <input type="button" class="no-button" value="No" id="btneditcells" />
+               <input type="button" class="yes-button" value="Yes" id="yesBtn" />
+               <input type="button" class="no-button" value="No" id="noBtn" />
              </div>
-             <div>
+             <div id="reassignToDroneSection" style="display:none;">
                <label >Re-assign task to: </label>
-               <select id="sel_lpm">
-                 <option value="drone 1">Drone 1</option>
-                 <option value="drone 2">Drone 2</option>
-                 <option value="drone 3" selected>Drone 3</option>
-                 <option value="drone 4" selected>Drone 4</option>
-
+               <select id="sel_drone">
+                 <option value="drone1">Drone 1</option>
+                 <option value="drone2">Drone 2</option>
+                 <option value="drone3">Drone 3</option>
+                 <option value="drone4">Drone 4</option>
                </select>
-               <input type="button" id="label_lpt" value="Switch" style="display:none"/>
+               <input type="button" id="reassignBtn" value="Reassign" style="display:none"/>
              </div>
 
        <!-- change label class for each drone type -->

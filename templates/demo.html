@@ -269,10 +269,11 @@
 
       // Function to update the map with the assigned drone positions
       function updateMap() {
-          // Refresh the graphics on the view
-          view.graphics.removeAll();
-          view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+        // Refresh the graphics on the view
+        view.graphics.removeAll();
+        view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
       }
+
 
       document.getElementById('droneSelectionForm').addEventListener('submit', function(event) {
           event.preventDefault(); // Prevent the form from submitting normally
@@ -318,6 +319,14 @@
           path: generateLawnmowerPatternQuadrant4(-84.75, 34.75),
           objectDetectionPoints: objectDetectionPoints.drone4
         },
+      };
+
+      // Global object to track drone paths and object detection points initialized with paths and object detection points
+      var dronePathsTrack = {
+          drone1: { path: dronePaths.drone1, objectDetectionPoints: objectDetectionPoints.drone1 },
+          drone2: { path: dronePaths.drone2, objectDetectionPoints: objectDetectionPoints.drone2 },
+          drone3: { path: dronePaths.drone3, objectDetectionPoints: objectDetectionPoints.drone3 },
+          drone4: { path: dronePaths.drone4, objectDetectionPoints: objectDetectionPoints.drone4 }
       };
 
       // Print the object detection points for each drone
@@ -398,14 +407,6 @@
         return path;
       }
 
-      //Detected object
-      // const clueImage = {
-      //   type: "picture-marker",
-      //   url: "{% static 'img/clue2.png' %}",
-      //   width: "30px",
-      //   height: "30px"
-      // };
-
       // Object detection image and text // Text1: for obj type & Text2: for Foliage level
       var imagesAndTexts = [
         { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
@@ -451,6 +452,9 @@
 
           // And display the pop-up with the image of the detected object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id);
+
+          //drone that detected the objects
+          currentDroneId = drone.attributes.id
         }
       }
 
@@ -525,7 +529,7 @@
 
         pointGraphics.forEach(graphic => {
           const droneId = graphic.attributes.id;
-          const dronePath = dronePaths[droneId];
+          const dronePath = dronePathsTrack[droneId].path; // Use dronePathsTrack instead of dronePaths
           if (dronePath) {
             moveDrone(graphic, dronePath);
           } else {
@@ -533,25 +537,56 @@
           }
         });
 
-    // Refresh the graphics on the view
-     view.graphics.removeAll();
-     view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+        // Refresh the graphics on the view
+        view.graphics.removeAll();
+        view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
 
-     // Request the next frame in the animation with a delay
-     setTimeout(() => {
-       animationFrameId = requestAnimationFrame(animate);
-     }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
+        // Request the next frame in the animation with a delay
+        setTimeout(() => {
+          animationFrameId = requestAnimationFrame(animate);
+        }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
+      }
+
+   // Object detection task reassignment to another drone
+   function reassignTaskToDrone(currentDroneId, newDroneId) {
+     // Swap paths and object detection points between drones
+     let tempPath = dronePathsTrack[currentDroneId].path;
+     let tempObjectDetectionPoints = dronePathsTrack[currentDroneId].objectDetectionPoints;
+     let currentDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === currentDroneId).geometry;
+     let newDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === newDroneId).geometry;
+
+     dronePathsTrack[currentDroneId].path = dronePathsTrack[newDroneId].path;
+     dronePathsTrack[currentDroneId].objectDetectionPoints = dronePathsTrack[newDroneId].objectDetectionPoints;
+
+     dronePathsTrack[newDroneId].path = tempPath;
+     dronePathsTrack[newDroneId].objectDetectionPoints = tempObjectDetectionPoints;
+
+     // Move the new drone to the current drone's previous location
+     moveDroneToPoint(newDroneId, [currentDroneLocation.longitude, currentDroneLocation.latitude]);
+
+     // Move the current drone to the new drone's previous location
+     moveDroneToPoint(currentDroneId, [newDroneLocation.longitude, newDroneLocation.latitude]);
+
+     // Update the map with the new positions
+     updateMap();
    }
 
-         // // Start the animation
-         // requestAnimationFrame(animate);
-
-          //  // Stop the animation when the view is destroyed
-          // view.on("destroy", () => {
-          //    if (animationFrameId) {
-          //      cancelAnimationFrame(animationFrameId);
-          //    }
-          //  });
+   function moveDroneToPoint(droneId, point) {
+     // Find the drone graphic by id
+     const droneGraphic = pointGraphics.find(graphic => graphic.attributes.id === droneId);
+     if (droneGraphic && point) {
+       // Update the drone's location
+       droneGraphic.geometry = new Point({
+         longitude: point[0], // Use the first element of the point array for longitude
+         latitude: point[1] // Use the second element of the point array for latitude
+       });
+     //   // Refresh the graphics on the view
+     //   view.graphics.removeAll();
+     //   view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+     } else {
+       console.error(`Drone with id ${droneId} or point is undefined`);
+     }
+   } // Update the UI or map to reflect the new positions and assignments
 
       // Event listener for the Start Search button
       document.getElementById('startsearchbutton').addEventListener('click', function() {
@@ -565,10 +600,27 @@
         isAnimating = false;
       });
 
-    //Search funtion
-     const search = new Search({
-             view: view
-           });
+      // Event listener for the 'Yes' button
+      document.getElementById('yesBtn').addEventListener('click', function() {
+        document.getElementById('reassignToDroneSection').style.display = 'block';
+      });
+
+      // Event listener for the 'No' button
+      document.getElementById('noBtn').addEventListener('click', function() {
+        document.getElementById('reassignToDroneSection').style.display = 'none';
+        // Optionally, resume the current drone's task or take other actions
+      });
+
+      // Event listener for the 'Reassign' button
+      document.getElementById('reassignBtn').addEventListener('click', function() {
+        const newDroneId = document.getElementById('sel_drone').value;
+        reassignTaskToDrone(currentDroneId, newDroneId);
+      });
+
+    // //Search funtion
+    //  const search = new Search({
+    //          view: view
+    //        });
 
      // Function to update the displayed value of the competence rating
      function updateCompetenceValue(value, droneNumber) {
@@ -595,8 +647,8 @@
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
 
-     // places the search widget in the top right corner of the view
-     view.ui.add(search, "top-right");
+     // // places the search widget in the top right corner of the view
+     // view.ui.add(search, "top-right");
 
      // places the drone-assignment widget in the top right corner of the view
      view.ui.add("droneSelectionForm", "top-right");
@@ -724,16 +776,16 @@
              <input type="button" class="bt_save" value="Save Task" id="savetasks"/>
            </div> -->
 
-           <div>
+           <div id="recategorizeObject" style="display:none">
              <label >Re-categorize object: </label>
-             <select id="sel_lpm">
+             <select id="sel_obj">
                <option value="living target">Living target</option>
                <option value="non-living target">Non-living target</option>
                <option value="living distractor" selected>Living distractor</option>
                <option value="non-living distractor" selected>Non-living distractor</option>
 
              </select>
-             <input type="button" id="label_lpt" value="Switch" style="display:none"/>
+             <input type="button" id="confirmObjCat" value="Confirm" style="display:none"/>
            </div>
              <hr>
 
@@ -741,21 +793,20 @@
              <h3 class="detection-info">Task assignment</h3>
                <!-- <p id="current-drone">Current drone:</p> -->
              </div>
-             <div>
+             <div id="resassignTaskSection">
                <label >Re-assign task:</label>
-               <input type="button" class="yes-button" value="Yes" id="btneditcells" />
-               <input type="button" class="no-button" value="No" id="btneditcells" />
+               <input type="button" class="yes-button" value="Yes" id="yesBtn" />
+               <input type="button" class="no-button" value="No" id="noBtn" />
              </div>
-             <div>
+             <div id="reassignToDroneSection" style="display:none;">
                <label >Re-assign task to: </label>
-               <select id="sel_lpm">
-                 <option value="drone 1">Drone 1</option>
-                 <option value="drone 2">Drone 2</option>
-                 <option value="drone 3" selected>Drone 3</option>
-                 <option value="drone 4" selected>Drone 4</option>
-
+               <select id="sel_drone">
+                 <option value="drone1">Drone 1</option>
+                 <option value="drone2">Drone 2</option>
+                 <option value="drone3">Drone 3</option>
+                 <option value="drone4">Drone 4</option>
                </select>
-               <input type="button" id="label_lpt" value="Switch" style="display:none"/>
+               <input type="button" id="reassignBtn" value="Reassign/Swap" />
              </div>
 
        <!-- change label class for each drone type -->

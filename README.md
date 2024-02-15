@@ -1,7 +1,7 @@
-# SAROnline Index (Updated 02/2023)
+# Online Index (Updated 02/2023)
 http://127.0.0.1:8000
 
-# SAR Web User Interface Demo (Updated 01/2024)
+# LEESH Web User Interface Demo (Updated 01/2024)
 ![Web interface_new](screen/main_07072022.png)
 ![Web interface_switch](screen/switch_to_3D.png)
 ![Web interface_3D](screen/UAV_search_experiment_steps.gif)
@@ -122,7 +122,7 @@ Open the link in chrome: http://127.0.0.1:8000/app3/gpsdatas/
 Updates Log
 
 --------------Nov------------------
-1. Need to find the algrithm of generating convex polygon based on multi-points.
+1. Need to find the algorithm of generating convex polygon based on multi-points.
 2. Add function of marking
 
 -----------2019 02 18---------------
