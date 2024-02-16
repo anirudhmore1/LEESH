@@ -2,11 +2,7 @@
 http://127.0.0.1:8000
 
 # LEESH Web User Interface Demo (Updated 01/2024)
-![Web interface_new](screen/main_07072022.png)
-![Web interface_switch](screen/switch_to_3D.png)
-![Web interface_3D](screen/UAV_search_experiment_steps.gif)
-![Trajectory](screen/trajectory.gif)
-[more examples](screen/)
+
 ## Built based on
 - DJango as server
 - ESRI js development platform,
@@ -16,17 +12,9 @@ http://127.0.0.1:8000
 
 
 # Experiment flow:
-http://localhost:8000/experiment/consentform3D
 
-- consent form remind (have a link to the qualtrics and check)
-- a demographic questionnaire (once)
-  - here we have an id for experiment and unixid for distinguish different users
-- training session
-- loop start (8)
-- task
-- post-task questionnaire
-- loop end
-- post experiment questionnaire
+
+
 
 # Admin database page:
 http://127.0.0.1:8000/admin
@@ -34,9 +22,7 @@ Create user: `python manage.py createsuperuser`
 ![Admin](screen/admin.png)
 ## Waypoint data:
 Waypointsdata:
-`[{"stamp":0,"timestamp":1,"long":-80.5724,"lat":37.187},{"stamp":2,"timestamp":2,"long":-80.5725,"lat":37.187},{"stamp":3,"timestamp":3,"long":-80.5735,"lat":37.187},{"stamp":4,"timestamp":4,"long":-80.5745,"lat":37.157},{"stamp":5,"timestamp":5,"long":-80.5755,"lat":37.167},{"stamp":6,"timestamp":6,"long":-80.5765,"lat":37.177}]`
-
------------2021-------------
+ -------------------------------------------
 Windows setup
 - db: change __init__.py -> use pymysql
 
@@ -44,24 +30,14 @@ Linux setup
 - db: change __init__.py -> use mysqlclient
 
 # Main demo page:
-https://sar.caslab.ece.vt.edu/
+
 
 Reference
 [ESRI Javascript API](https://developers.arcgis.com/javascript/latest/api-reference/esri-views-View.html#width)
 
 URL
 http://127.0.0.1:8000/app3/
------------2019 07 09-------------
-Add two methods of generate heatmap
-- add coordinate to geojsonLayer
-- add a png file to viewdiv
-
-![geojsonLayer](screen/heatmap_esri.png)
-![watersheld](screen/watersheld.png)
-![watersheld2](screen/watersheld2.png)
-
------------2019 06 12-------------
-
+ -------------------------------------------
 If the migration sends errors, try:
 - delete all tables in the db.sqlite3
 - delete the migration folders
@@ -83,7 +59,7 @@ New:
 - Home page for sign up : http://127.0.0.1:8000
 - admin page for user management:  http://127.0.0.1:8000/admin
 
------------2019 05 17 ------------
+ -------------------------------------------
 1. Setup
 [Django REST framework](https://www.django-rest-framework.org/tutorial/quickstart/)
 
@@ -119,15 +95,3 @@ Open the link in chrome: http://127.0.0.1:8000/app3/gpsdatas/
 
 
 
-Updates Log
-
---------------Nov------------------
-1. Need to find the algorithm of generating convex polygon based on multi-points.
-2. Add function of marking
-
------------2019 02 18---------------
-esri javascript
-polygon
-sketchviewmodel
-
-Testing URL: http://127.0.0.1:8000/app3/sketch
