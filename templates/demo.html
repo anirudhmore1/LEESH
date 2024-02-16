@@ -67,7 +67,7 @@
       z-index: 10;
     }
     .quadrant-info {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     hr {
       border: 0;
@@ -422,24 +422,28 @@
 
       // Function to update the quadrant display with the current drones
       function updateQuadrantDisplay() {
-        // Get the current drone assignments from the form or another source
-        var quadrant1Drone = document.getElementById('quadrant1').value;
-        var quadrant2Drone = document.getElementById('quadrant2').value;
-        var quadrant3Drone = document.getElementById('quadrant3').value;
-        var quadrant4Drone = document.getElementById('quadrant4').value;
+          var display = document.getElementById('droneQuadrantDisplay');
+          display.innerHTML = ''; // Clear existing content
+          var heading = document.createElement('h2');
+          heading.textContent = 'Current Drone Assignment';
+          display.appendChild(heading);
+          var hr = document.createElement('hr');
+          display.appendChild(hr);
 
-        // Update the UI with the current drones
-        document.getElementById('quadrant1Info').textContent = 'Quadrant 1: ' + quadrant1Drone;
-        document.getElementById('quadrant2Info').textContent = 'Quadrant 2: ' + quadrant2Drone;
-        document.getElementById('quadrant3Info').textContent = 'Quadrant 3: ' + quadrant3Drone;
-        document.getElementById('quadrant4Info').textContent = 'Quadrant 4: ' + quadrant4Drone;
+          var quadrants = ['quadrant1', 'quadrant2', 'quadrant3', 'quadrant4'];
+          quadrants.forEach(function(quadrant, index) {
+              var droneId = document.getElementById(quadrant).value;
+              var div = document.createElement('div');
+              div.textContent = 'Quadrant ' + (index + 1) + ': ' + droneId;
+              display.appendChild(div);
+          });
       }
 
       // Object detection image and text // Text1: for obj type & Text2: for Foliage level
       var imagesAndTexts = [
         { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
         { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
-        { url: "{% static 'img/tracer_sample.png' %}", text1: "Obj type B - Tracer image", text2: "Foliage level" },
+        { url: "{% static 'img/tracer_sample.png' %}", text1: "Obj type C - Tracer image", text2: "Foliage level" },
         // ... add more images and texts as needed
       ];
 
@@ -639,6 +643,12 @@
         isAnimating = false;
       });
 
+      // Event listener for the Submit button (Initial assignment)
+      document.getElementById('submitBtn').addEventListener('click', function() {
+        // event.preventDefault();
+        updateQuadrantDisplay();
+    });
+
       // Event listener for the 'Yes' button
       document.getElementById('yesBtn').addEventListener('click', function() {
         document.getElementById('reassignToDroneSection').style.display = 'block';
@@ -731,6 +741,7 @@
 
        <form id="droneSelectionForm">
           <h2 class="main-heading">Initial Drone assignment</h2>
+             <hr>
           <div>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
@@ -772,10 +783,11 @@
 
        <div id="droneQuadrantDisplay">
          <h2 class="main-heading">Current Drone assignment</h2>
-         <div class="quadrant-info" id="quadrant1Info">Quadrant 1: Drone 1</div>
-         <div class="quadrant-info" id="quadrant2Info">Quadrant 2: Drone 2</div>
-         <div class="quadrant-info" id="quadrant3Info">Quadrant 3: Drone 3</div>
-         <div class="quadrant-info" id="quadrant4Info">Quadrant 4: Drone 4</div>
+            <hr>
+         <!-- <div class="quadrant-info" id="quadrant1Info">Quadrant 1: </div>
+         <div class="quadrant-info" id="quadrant2Info">Quadrant 2: </div>
+         <div class="quadrant-info" id="quadrant3Info">Quadrant 3: </div>
+         <div class="quadrant-info" id="quadrant4Info">Quadrant 4: </div> -->
        </div>
 
        <div id="droneControl" class="droneControl-container">
@@ -787,16 +799,6 @@
            <h4 class="foliage-density">Foligage density: </h3>
              <hr> -->
            <h3 class="drone-motion">Drone Control Tools</h3>
-           <!-- <div> -->
-             <!-- <label >Load a scene: </label>
-             <select id="sel_ic">
-               <option value="0">Scene 1</option>
-               <option value="1">Scene 2</option>
-               <option value="2">Scene 3</option>
-             </select>
-             <input type="button" id="label_ic" value="Load" style="display:none"/>
-           </div> -->
-
            <div>
              <label >Object Search: </label>
              <input type="button" class="start-button" value="Start Search" id="startsearchbutton">
@@ -804,12 +806,6 @@
            </div>
           <hr>
 
-           <!--div><input type="checkbox" name="voronoi" class="check" value="random"> Random Voronoi</input></div-->
-           <!--div><input type="checkbox" name="voronoi" class="check" value="triangle"> Triangle based on vertices</input></div-->
-           <!--div><input type="checkbox" name="voronoi" class="check" value="clear"> Freehand Polygon</input></div-->
-
-
-           <!-- <hr> -->
            <div>
            <h3 class="detection-info">Object detection</h3>
              <p id="current-drone">Current drone:</p>
