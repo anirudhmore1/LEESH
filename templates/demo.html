@@ -336,10 +336,10 @@
 
       // Global object to track drone paths and object detection points initialized with paths and object detection points
       var dronePathsTrack = {
-          drone1: { path: dronePaths.drone1, objectDetectionPoints: objectDetectionPoints.drone1 },
-          drone2: { path: dronePaths.drone2, objectDetectionPoints: objectDetectionPoints.drone2 },
-          drone3: { path: dronePaths.drone3, objectDetectionPoints: objectDetectionPoints.drone3 },
-          drone4: { path: dronePaths.drone4, objectDetectionPoints: objectDetectionPoints.drone4 }
+        drone1: { path: dronePaths.drone1, objectDetectionPoints: objectDetectionPoints.drone1, quadrant: 'quadrant1' },
+        drone2: { path: dronePaths.drone2, objectDetectionPoints: objectDetectionPoints.drone2, quadrant: 'quadrant2' },
+        drone3: { path: dronePaths.drone3, objectDetectionPoints: objectDetectionPoints.drone3, quadrant: 'quadrant3' },
+        drone4: { path: dronePaths.drone4, objectDetectionPoints: objectDetectionPoints.drone4, quadrant: 'quadrant4' }
       };
 
       // Print the object detection points for each drone
@@ -430,14 +430,32 @@
           var hr = document.createElement('hr');
           display.appendChild(hr);
 
-          var quadrants = ['quadrant1', 'quadrant2', 'quadrant3', 'quadrant4'];
-          quadrants.forEach(function(quadrant, index) {
-              var droneId = document.getElementById(quadrant).value;
+          // Define the order of quadrants explicitly
+          var quadrantsOrder = ['quadrant1', 'quadrant2', 'quadrant3', 'quadrant4'];
+
+          // Iterate over the quadrants in the defined order
+          quadrantsOrder.forEach(function(quadrant) {
+              // Assuming dronePathsTrack[droneId].quadrant holds the quadrant assignment
+              var droneId = Object.keys(dronePathsTrack).find(key => dronePathsTrack[key].quadrant === quadrant);
               var div = document.createElement('div');
-              div.textContent = 'Quadrant ' + (index + 1) + ': ' + droneId;
+              div.textContent = `${quadrant}: ${droneId}`;
               display.appendChild(div);
           });
       }
+
+      // const quadrant1Drone = document.getElementById('quadrant1').value;
+      // const quadrant2Drone = document.getElementById('quadrant2').value;
+      // const quadrant3Drone = document.getElementById('quadrant3').value;
+      // const quadrant4Drone = document.getElementById('quadrant4').value;
+      //
+      // const displayElement = document.getElementById('droneQuadrantDisplay');
+      // displayElement.innerHTML = `
+      //     <div>Quadrant 1: ${quadrant1Drone}</div>
+      //     <div>Quadrant 2: ${quadrant2Drone}</div>
+      //     <div>Quadrant 3: ${quadrant3Drone}</div>
+      //     <div>Quadrant 4: ${quadrant4Drone}</div>
+      //     `;
+      //   }
 
       // Object detection image and text // Text1: for obj type & Text2: for Foliage level
       var imagesAndTexts = [
@@ -581,7 +599,13 @@
 
    // Object detection task reassignment to another drone
    function reassignTaskToDrone(currentDroneId, newDroneId) {
-     // Swap paths and object detection points between drones
+     // Swap quadrant info of drones
+     // let temp = dronePathsTrack[currentDroneId]
+     // dronePathsTrack[currentDroneId] = dronePathsTrack[newDroneId];
+     // dronePathsTrack[newDroneId] = temp;
+     let tempQuadrant = dronePathsTrack[currentDroneId]. quadrant; // Temporarily store current drone's quadrant
+
+     // Swap paths, object detection points of drones
      let tempPath = dronePathsTrack[currentDroneId].path;
      let tempObjectDetectionPoints = dronePathsTrack[currentDroneId].objectDetectionPoints;
      let currentDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === currentDroneId).geometry;
@@ -589,9 +613,11 @@
 
      dronePathsTrack[currentDroneId].path = dronePathsTrack[newDroneId].path;
      dronePathsTrack[currentDroneId].objectDetectionPoints = dronePathsTrack[newDroneId].objectDetectionPoints;
+     dronePathsTrack[currentDroneId].quadrant = dronePathsTrack[newDroneId]. quadrant // Assign new drone's quadrant to current drone
 
      dronePathsTrack[newDroneId].path = tempPath;
      dronePathsTrack[newDroneId].objectDetectionPoints = tempObjectDetectionPoints;
+     dronePathsTrack[newDroneId].quadrant = tempQuadrant; // Assign temp (original current drone's) quadrant to new drone
 
      // Move the new drone to the current drone's previous location
      moveDroneToPoint(newDroneId, [currentDroneLocation.longitude, currentDroneLocation.latitude]);
