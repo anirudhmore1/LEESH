@@ -17,7 +17,7 @@ urlpatterns = [
     path('',TemplateView.as_view(template_name="demo_landingpage.html")), #landing page
     path('leeshwebinit', TaskGenerationView.as_view(),name='leeshwebinit'),
 
-    path('demoinit',TemplateView.as_view(template_name="demo.html"), name="demoinit"), #TCIN simulation
+    path('demoinit',TemplateView.as_view(template_name="demo_delayswapped.html"), name="demoinit"), #TCIN simulation
 
     path('sarweb3D', TaskGenerationView3D.as_view(),name='sarweb3D'),
     path('sarweb3DDemo', TaskGenerationView3DDemo.as_view(),name='sarweb3DDemo'),
