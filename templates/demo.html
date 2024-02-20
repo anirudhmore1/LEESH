@@ -336,10 +336,34 @@
 
       // Global object to track drone paths and object detection points initialized with paths and object detection points
       var dronePathsTrack = {
-        drone1: { path: dronePaths.drone1, objectDetectionPoints: objectDetectionPoints.drone1, quadrant: 'quadrant1' },
-        drone2: { path: dronePaths.drone2, objectDetectionPoints: objectDetectionPoints.drone2, quadrant: 'quadrant2' },
-        drone3: { path: dronePaths.drone3, objectDetectionPoints: objectDetectionPoints.drone3, quadrant: 'quadrant3' },
-        drone4: { path: dronePaths.drone4, objectDetectionPoints: objectDetectionPoints.drone4, quadrant: 'quadrant4' }
+        drone1: {
+          path: dronePaths.drone1,
+          objectDetectionPoints: objectDetectionPoints.drone1,
+          quadrant: 'quadrant1',
+          recentlyReassigned: false, // Initialize as false
+          reassignmentTime: 0 // Initialize with a default value
+        },
+        drone2: {
+            path: dronePaths.drone2,
+            objectDetectionPoints: objectDetectionPoints.drone2,
+            quadrant: 'quadrant2',
+            recentlyReassigned: false,
+            reassignmentTime: 0
+        },
+        drone3: {
+            path: dronePaths.drone3,
+            objectDetectionPoints: objectDetectionPoints.drone3,
+            quadrant: 'quadrant3',
+            recentlyReassigned: false,
+            reassignmentTime: 0
+        },
+        drone4: {
+            path: dronePaths.drone4,
+            objectDetectionPoints: objectDetectionPoints.drone4,
+            quadrant: 'quadrant4',
+            recentlyReassigned: false,
+            reassignmentTime: 0
+        }
       };
 
       // Print the object detection points for each drone
@@ -577,14 +601,29 @@
           return;
         }
 
+        // const delayInMilliseconds = 10000; // Set the desired delay
+
         pointGraphics.forEach(graphic => {
-          const droneId = graphic.attributes.id;
-          const dronePath = dronePathsTrack[droneId].path; // Use dronePathsTrack instead of dronePaths
-          if (dronePath) {
-            moveDrone(graphic, dronePath);
-          } else {
-            console.warn(`No path found for drone with id: ${droneId}`);
-          }
+            const droneId = graphic.attributes.id;
+            const droneInfo = dronePathsTrack[droneId];
+
+            if (droneInfo.recentlyReassigned) {
+                const timeSinceReassignment = Date.now() - droneInfo.reassignmentTime;
+                if (timeSinceReassignment < droneInfo.delay) {
+                    // Skip animation for this drone if the delay period has not yet passed
+                    return;
+                } else {
+                    // Reset the flag once the delay period has passed
+                    droneInfo.recentlyReassigned = false;
+                }
+            }
+
+            const dronePath = droneInfo.path;
+            if (droneInfo.path) {
+                moveDrone(graphic, droneInfo.path);
+            } else {
+                console.warn(`No path found for drone with id: ${droneId}`);
+            }
         });
 
         // Refresh the graphics on the view
@@ -603,7 +642,7 @@
      // let temp = dronePathsTrack[currentDroneId]
      // dronePathsTrack[currentDroneId] = dronePathsTrack[newDroneId];
      // dronePathsTrack[newDroneId] = temp;
-     let tempQuadrant = dronePathsTrack[currentDroneId]. quadrant; // Temporarily store current drone's quadrant
+     let tempQuadrant = dronePathsTrack[currentDroneId].quadrant; // Temporarily store current drone's quadrant
 
      // Swap paths, object detection points of drones
      let tempPath = dronePathsTrack[currentDroneId].path;
@@ -619,6 +658,22 @@
      dronePathsTrack[newDroneId].objectDetectionPoints = tempObjectDetectionPoints;
      dronePathsTrack[newDroneId].quadrant = tempQuadrant; // Assign temp (original current drone's) quadrant to new drone
 
+     // // Calculate the distance between the two drones
+     // let currentDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === currentDroneId).geometry;
+     // let newDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === newDroneId).geometry;
+     let distance = calculateDistance(currentDroneLocation, newDroneLocation);
+
+     // Set a proportional delay based on the distance
+     let delayInMilliseconds = distance * 1000; // 1000 ms /1 second per unit distance
+
+     // Set a reassignment flag and timestamp for both drones
+     dronePathsTrack[currentDroneId].recentlyReassigned = true;
+     dronePathsTrack[currentDroneId].reassignmentTime = Date.now();
+     dronePathsTrack[currentDroneId].delay = delayInMilliseconds;
+     dronePathsTrack[newDroneId].recentlyReassigned = true;
+     dronePathsTrack[newDroneId].reassignmentTime = Date.now();
+     dronePathsTrack[newDroneId].delay = delayInMilliseconds;
+
      // Move the new drone to the current drone's previous location
      moveDroneToPoint(newDroneId, [currentDroneLocation.longitude, currentDroneLocation.latitude]);
 
@@ -628,6 +683,14 @@
      // Update the map with the new positions
      updateMap();
      updateQuadrantDisplay();
+   }
+
+   function calculateDistance(location1, location2) {
+     // Distance calculation between two points, replace with actual distance calculation
+     // Euclidean distance calculation
+     let dx = location1.longitude - location2.longitude;
+     let dy = location1.latitude - location2.latitude;
+     return Math.sqrt(dx * dx + dy * dy);
    }
 
    function moveDroneToPoint(droneId, point) {
