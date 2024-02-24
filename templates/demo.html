@@ -366,6 +366,9 @@
         }
       };
 
+      // // Array to store the ratings
+      // let ratings = [];
+
       // Print the object detection points for each drone
       console.log("Q1 Object Detection Points:", objectDetectionPoints.drone1);
       console.log("Q2 Object Detection Points:", objectDetectionPoints.drone2);
@@ -470,7 +473,7 @@
         //     color: "red", // Change the color to indicate detection
         //     size: "20px", // Set the size of the detection symbol
         //     // Include any other properties that are relevant to your detection symbol
-        // };        
+        // };
 
         // Change the drone's symbol to the detection symbol
         droneGraphic.symbol = detectionSymbol;
@@ -828,6 +831,83 @@
          });
        }
 
+       // // Collect values from sliders,...
+       // function collectValues() {
+       //   const data = [];
+       //   // Assuming you have 4 drones based on the provided HTML structure
+       //   for (let i = 1; i <= 4; i++) {
+       //     const trustValue = document.getElementById(`trustValue${i}`).textContent;
+       //     const competenceValue = document.getElementById(`competenceValue${i}`).textContent;
+       //     data.push({ id: i, trustValue, competenceValue });
+       //   }
+       //   return data;
+       // }
+
+       // Convert data to CSV
+       function convertToCSV(data) {
+         const csvRows = ['id,trust,competence'];
+         data.forEach(row => {
+           csvRows.push(`${row.id},${row.trustValue},${row.competenceValue}`);
+         });
+         return csvRows.join('\n');
+       }
+
+       // document.getElementById('exportButton').addEventListener('click', function() {
+       //   const data = collectValues();
+       //   const csvData = convertToCSV(data);
+       //   downloadCSV(csvData);
+       // });
+
+       // Array to store the ratings
+       let ratings = [];
+
+       function saveRatings() {
+           // Retrieve the current ratings for each drone
+           let currentRatings = [];
+           for (let i = 1; i <= 4; i++) { // Assuming you have 4 drones
+               let trust = document.getElementById(`trustRange${i}`).value;
+               let competence = document.getElementById(`competenceRange${i}`).value;
+               currentRatings.push({drone: i, trust: trust, competence: competence});
+           }
+           // Save the current ratings to the array
+           ratings.push(currentRatings);
+           console.log('Ratings saved:', currentRatings); // For debugging
+       }
+
+       function exportToCSV() {
+           let csvContent = "data:text/csv;charset=utf-8,";
+           csvContent += "Drone,Trust,Competence\n"; // Header
+           ratings.forEach(session => {
+               session.forEach(rating => {
+                   csvContent += `${rating.drone},${rating.trust},${rating.competence}\n`;
+               });
+           });
+           var encodedUri = encodeURI(csvContent);
+           var link = document.createElement("a");
+           link.setAttribute("href", encodedUri);
+           link.setAttribute("download", "drone_ratings.csv");
+           document.body.appendChild(link); // Required for FF
+           link.click(); // This will download the file
+       }
+
+       // //
+       // function downloadCSV(csvData) {
+       //   const blob = new Blob([csvData], { type: 'text/csv' });
+       //   const url = window.URL.createObjectURL(blob);
+       //   const a = document.createElement('a');
+       //   a.setAttribute('hidden', '');
+       //   a.setAttribute('href', url);
+       //   a.setAttribute('download', 'drone_ratings.csv');
+       //   document.body.appendChild(a);
+       //   a.click();
+       //   document.body.removeChild(a);
+       // }
+
+       document.getElementById('confirmButton').addEventListener('click', saveRatings);
+
+       // Event listener for Exporting to CSV button
+       document.getElementById('exportButton').addEventListener('click', exportToCSV);
+
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
 
@@ -847,22 +927,6 @@
      view.ui.add("droneQuadrantDisplay", "top-right");
 
          });
-
-      // //storing drone competence and trust Ratings
-      // let droneRatings = {
-      //   drone1: {competence: 3, trust: 3},
-      //   drone2: {competence: 3, trust: 3},
-      //   drone3: {competence: 3, trust: 3},
-      //   drone4: {competence: 3, trust: 3},
-      // }
-      //
-      // //function to update drone droneRatings
-      // function updateDroneRating(droneNumber, type, value){
-      //   droneRatings[{droneNumber}][type] =
-      // }
-      //
-      // //function to send ratings to the server
-      //
 
   </script>
 
@@ -1049,6 +1113,11 @@
                <span id="trustValue4">3</span>
              </div>
          </div>
+
+       <button id="confirmButton">Confirm</button>
+
+       <button id="exportButton">Export to CSV</button>
+
        </div>
 
 </body>
