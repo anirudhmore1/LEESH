@@ -794,7 +794,6 @@
       // Event listener for the 'No' button
       document.getElementById('noBtn').addEventListener('click', function() {
         document.getElementById('reassignToDroneSection').style.display = 'none';
-        // Optionally, resume the current drone's task or take other actions
       });
 
       // Event listener for the 'Reassign' button
@@ -843,14 +842,14 @@
        //   return data;
        // }
 
-       // Convert data to CSV
-       function convertToCSV(data) {
-         const csvRows = ['id,trust,competence'];
-         data.forEach(row => {
-           csvRows.push(`${row.id},${row.trustValue},${row.competenceValue}`);
-         });
-         return csvRows.join('\n');
-       }
+       // // Convert data to CSV
+       // function convertToCSV(data) {
+       //   const csvRows = ['id,trust,competence'];
+       //   data.forEach(row => {
+       //     csvRows.push(`${row.id},${row.trustValue},${row.competenceValue}`);
+       //   });
+       //   return csvRows.join('\n');
+       // }
 
        // document.getElementById('exportButton').addEventListener('click', function() {
        //   const data = collectValues();
@@ -927,11 +926,12 @@
 
        // Event listener for user response for object recommendation
        document.getElementById('accept-recommendation').addEventListener('click', function() {
-           userResponse = 'Yes';
+           userResponse = 'Accept';
+           document.getElementById('recategorizeObject').style.display = 'block';
        });
 
        document.getElementById('reject-recommendation').addEventListener('click', function() {
-           userResponse = 'No';
+           userResponse = 'Reject';
        });
 
 
@@ -1038,9 +1038,9 @@
              <p id="object-detected">Object detected:</p>
            </div>
            <div>
-             <label >Accept recommendation:</label>
-             <input type="button" class="yes-button" value="Yes" id="accept-recommendation" />
-             <input type="button" class="no-button" value="No" id="reject-recommendation" />
+             <label >Object recommendation:</label>
+             <input type="button" class="yes-button" value="Accept" id="accept-recommendation" />
+             <input type="button" class="no-button" value="Reject" id="reject-recommendation" />
            </div>
 
            <!-- <div>
