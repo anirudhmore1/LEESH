@@ -543,6 +543,9 @@
         return imagesAndTexts[randomIndex];
       }
 
+      // Global variable to store the last detected object location
+      let lastObjectDetectionLocation = null;
+
       // Function to move drones along their paths
       function moveDrone(drone, dronePath) {
         const currentLocationIndex = dronePath.path.findIndex(point =>
@@ -569,6 +572,19 @@
         if (detected) {
           // If an object is detected, pause the drone movement
           isAnimating = false;
+
+          // If an object is detected, store the location and texts
+          const randomImageAndText = getRandomImageAndText(); // Assuming this function returns a random object from imagesAndTexts
+
+          // If an object is detected, store the location
+          lastDetectedObjectInfo = {
+              location: {
+                  longitude: nextPoint[0],
+                  latitude: nextPoint[1]
+              },
+              text1: randomImageAndText.text1,
+              text2: randomImageAndText.text2
+          };
 
           // And display the pop-up with the image of the detected object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id);
@@ -877,7 +893,12 @@
            let userReobject = document.getElementById('sel_obj').value;
 
            // Save the current ratings to the array
-           ratings.push({ratings: currentRatings, response: userResponse, userReobject: userReobject});
+           ratings.push({
+             ratings: currentRatings,
+             response: userResponse,
+             userReobject: userReobject,
+             detectedObjectInfo: lastDetectedObjectInfo
+             });
            console.log('Drone ratings saved:', currentRatings); // For debugging
            console.log('User response saved:', userResponse);
            console.log('User recategorization saved:', userReobject);
@@ -885,18 +906,24 @@
            // Reset user response after saving
            userResponse = '';
            document.getElementById('sel_obj').value = '';
+           lastDetectedObjectInfo = null;
        }
 
        function exportToCSV() {
            let csvContent = "data:text/csv;charset=utf-8,";
-           csvContent += "Drone,Trust,Competence,User Response to reco, Recategorized Object\n"; // Header
+           csvContent += "Obj detected location, Object detected, Foliage, User Response to recommendation, Re-categorized Object, Drone, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
                entry.ratings.forEach((rating, ratingIndex) => {
                    // Include the user response only on the first drone rating of each session
                    if (ratingIndex === 0) {
-                       csvContent += `${rating.drone},${rating.trust},${rating.competence},${entry.response},${entry.userReobject}\n`;
+                     const detectionInfo = entry.detectedObjectInfo || {};
+                     // Concatenate longitude and latitude into a single string
+                     const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
+                     const text1 = detectionInfo.text1 || '';
+                     const text2 = detectionInfo.text2 || '';
+                     csvContent += `"${locationString}","${text1}","${text2}",${entry.response},${entry.userReobject},${rating.drone},${rating.trust},${rating.competence}\n`;
                    } else {
-                       csvContent += `${rating.drone},${rating.trust},${rating.competence},\n`;
+                     csvContent += `,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
                    }
                });
                // Add a separator between sessions if needed
