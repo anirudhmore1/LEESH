@@ -770,6 +770,8 @@
         document.getElementById('reassignToDroneSection').style.display = 'none';
         // Show the quadrant display
         document.getElementById('droneQuadrantDisplay').style.display = 'block';
+        // Hide the recayegorization of drone recommendation
+        document.getElementById('recategorizeObject').style.display = 'none';
         // Update the display with the current drone assignments
         updateQuadrantDisplay();
 
@@ -786,12 +788,12 @@
         updateQuadrantDisplay();
     });
 
-      // Event listener for the 'Yes' button
+      // Event listener for the 'Yes' button in task assignment
       document.getElementById('yesBtn').addEventListener('click', function() {
         document.getElementById('reassignToDroneSection').style.display = 'block';
       });
 
-      // Event listener for the 'No' button
+      // Event listener for the 'No' button in task assignment
       document.getElementById('noBtn').addEventListener('click', function() {
         document.getElementById('reassignToDroneSection').style.display = 'none';
       });
@@ -871,23 +873,28 @@
                let competence = document.getElementById(`competenceRange${i}`).value;
                currentRatings.push({drone: i, trust: trust, competence: competence});
            }
+           // Retrieve the recategorized object from the select element
+           let userReobject = document.getElementById('sel_obj').value;
+
            // Save the current ratings to the array
-           ratings.push({ratings: currentRatings, response: userResponse});
-           console.log('Ratings saved:', currentRatings); // For debugging
+           ratings.push({ratings: currentRatings, response: userResponse, userReobject: userReobject});
+           console.log('Drone ratings saved:', currentRatings); // For debugging
            console.log('User response saved:', userResponse);
+           console.log('User recategorization saved:', userReobject);
 
            // Reset user response after saving
            userResponse = '';
+           document.getElementById('sel_obj').value = '';
        }
 
        function exportToCSV() {
            let csvContent = "data:text/csv;charset=utf-8,";
-           csvContent += "Drone,Trust,Competence,User Response to reco\n"; // Header
+           csvContent += "Drone,Trust,Competence,User Response to reco, Recategorized Object\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
                entry.ratings.forEach((rating, ratingIndex) => {
                    // Include the user response only on the first drone rating of each session
                    if (ratingIndex === 0) {
-                       csvContent += `${rating.drone},${rating.trust},${rating.competence},${entry.response}\n`;
+                       csvContent += `${rating.drone},${rating.trust},${rating.competence},${entry.response},${entry.userReobject}\n`;
                    } else {
                        csvContent += `${rating.drone},${rating.trust},${rating.competence},\n`;
                    }
@@ -924,14 +931,20 @@
        // Event listener for Exporting to CSV button
        document.getElementById('exportButton').addEventListener('click', exportToCSV);
 
-       // Event listener for user response for object recommendation
+       // Event listener for user response for recategorized object recommendation
        document.getElementById('accept-recommendation').addEventListener('click', function() {
            userResponse = 'Accept';
-           document.getElementById('recategorizeObject').style.display = 'block';
+           document.getElementById('recategorizeObject').style.display = 'none';
        });
 
        document.getElementById('reject-recommendation').addEventListener('click', function() {
            userResponse = 'Reject';
+           document.getElementById('recategorizeObject').style.display = 'block';
+       });
+
+       // Event listener for re-categorize object selection
+       document.getElementById('sel_obj').addEventListener('input', function() {
+           userReobject = '';
        });
 
 
@@ -1053,11 +1066,10 @@
              <select id="sel_obj">
                <option value="living target">Living target</option>
                <option value="non-living target">Non-living target</option>
-               <option value="living distractor" selected>Living distractor</option>
-               <option value="non-living distractor" selected>Non-living distractor</option>
-
+               <option value="living distractor">Living distractor</option>
+               <option value="non-living distractor">Non-living distractor</option>
              </select>
-             <input type="button" id="confirmObjCat" value="Confirm" style="display:none"/>
+             <!-- <input type="button" id="confirmObjCat" value="Confirm" /> -->
            </div>
              <hr>
 
