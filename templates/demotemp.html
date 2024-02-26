@@ -861,29 +861,25 @@
        // Array to store the ratings
        let ratings = [];
 
-       // Variable to store user response to recommendation
-       let userResponse = null;
-
        function saveRatings() {
            // Retrieve the current ratings for each drone
            let currentRatings = [];
            for (let i = 1; i <= 4; i++) { // Assuming you have 4 drones
                let trust = document.getElementById(`trustRange${i}`).value;
                let competence = document.getElementById(`competenceRange${i}`).value;
-               currentRatings.push({drone: i, trust: trust, competence: competence, response: userResponse});
+               currentRatings.push({drone: i, trust: trust, competence: competence});
            }
            // Save the current ratings to the array
            ratings.push(currentRatings);
            console.log('Ratings saved:', currentRatings); // For debugging
-           userResponse = null; // Reset user response after saving
        }
 
        function exportToCSV() {
            let csvContent = "data:text/csv;charset=utf-8,";
-           csvContent += "Drone,Trust,Competence,User Response to reco\n"; // Header
+           csvContent += "Drone,Trust,Competence\n"; // Header
            ratings.forEach(session => {
                session.forEach(rating => {
-                   csvContent += `${rating.drone},${rating.trust},${rating.competence}, ${rating.response}\n`;
+                   csvContent += `${rating.drone},${rating.trust},${rating.competence}\n`;
                });
            });
            var encodedUri = encodeURI(csvContent);
@@ -907,15 +903,10 @@
        //   document.body.removeChild(a);
        // }
 
-       // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', saveRatings);
 
        // Event listener for Exporting to CSV button
        document.getElementById('exportButton').addEventListener('click', exportToCSV);
-
-       // Event listener for user response for object recommendation
-       document.getElementById('accept-recommendation').addEventListener('click', () => userResponse = 'Yes');
-       document.getElementById('reject-recommendation').addEventListener('click', () => userResponse = 'No');
 
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");

@@ -861,25 +861,44 @@
        // Array to store the ratings
        let ratings = [];
 
+       // Variable to store user response to recommendation
+       let userResponse = null;
+       let objectDetected = false;
+
+       // Function to handle object detection event
+       function handleObjectDetection(response) {
+           userResponse = response;
+           objectDetected = true;
+       }
+
+       // Function to save ratings and user response
        function saveRatings() {
-           // Retrieve the current ratings for each drone
-           let currentRatings = [];
-           for (let i = 1; i <= 4; i++) { // Assuming you have 4 drones
-               let trust = document.getElementById(`trustRange${i}`).value;
-               let competence = document.getElementById(`competenceRange${i}`).value;
-               currentRatings.push({drone: i, trust: trust, competence: competence});
+           if (objectDetected) {
+               let currentRatings = [];
+               for (let i = 1; i <= 4; i++) {
+                   let trust = document.getElementById(`trustRange${i}`).value;
+                   let competence = document.getElementById(`competenceRange${i}`).value;
+                   currentRatings.push({drone: i, trust: trust, competence: competence});
+               }
+               // Save the user response with the current ratings
+               ratings.push({ratings: currentRatings, response: userResponse});
+               console.log('Ratings saved:', currentRatings);
+               console.log('User response saved:', userResponse);
+
+               // Reset user response and object detection flag after saving
+               userResponse = null;
+               objectDetected = false;
+           } else {
+               console.log('No object detected, no ratings saved.');
            }
-           // Save the current ratings to the array
-           ratings.push(currentRatings);
-           console.log('Ratings saved:', currentRatings); // For debugging
        }
 
        function exportToCSV() {
            let csvContent = "data:text/csv;charset=utf-8,";
-           csvContent += "Drone,Trust,Competence\n"; // Header
-           ratings.forEach(session => {
-               session.forEach(rating => {
-                   csvContent += `${rating.drone},${rating.trust},${rating.competence}\n`;
+           csvContent += "Drone,Trust,Competence,User Response\n"; // Updated header
+           ratings.forEach(entry => {
+               entry.ratings.forEach(rating => {
+                   csvContent += `${rating.drone},${rating.trust},${rating.competence},${entry.response}\n`;
                });
            });
            var encodedUri = encodeURI(csvContent);
@@ -903,10 +922,15 @@
        //   document.body.removeChild(a);
        // }
 
+       // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', saveRatings);
 
        // Event listener for Exporting to CSV button
        document.getElementById('exportButton').addEventListener('click', exportToCSV);
+
+       // Event listener for user response for object recommendation
+       document.getElementById('accept-recommendation').addEventListener('click', () => userResponse = 'Yes');
+       document.getElementById('reject-recommendation').addEventListener('click', () => userResponse = 'No');
 
      //places the logo div in the bottom right corner of the view
      view.ui.add("logoDiv", "bottom-right");
