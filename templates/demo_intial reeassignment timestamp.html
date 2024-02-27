@@ -247,6 +247,7 @@
       // };
 
       function assignDronesToQuadrants() {
+        timestamp: reassignmentTimestamp,
         const quadrant1Drone = document.getElementById('quadrant1').value;
         const quadrant2Drone = document.getElementById('quadrant2').value;
         const quadrant3Drone = document.getElementById('quadrant3').value;
@@ -260,7 +261,7 @@
       }
 
       // Function to assign drones to quadrants based on user input and update their positions immediately
-      function assignDronesToQuadrantsAndUpdatePositions() {
+      function assignDronesToQuadrantsAndUpdatePositions(reassignmentTimestamp) {
         assignDronesToQuadrants();
 
         // Immediately update drones' positions to the start of their paths before animation starts
@@ -287,15 +288,15 @@
         view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
       }
 
-      // Global variable to store the timestamp
-      let reassignmentTimestamp = null;
 
       document.getElementById('droneSelectionForm').addEventListener('submit', function(event) {
           event.preventDefault(); // Prevent the form from submitting normally
-          assignDronesToQuadrantsAndUpdatePositions();
-          // updateMap(); // Update the map after assigning drones to quadrants
 
-          reassignmentTimestamp = new Date().toISOString();
+          // Capture the timestamp when the "Submit" button is clicked
+          const reassignmentTimestamp = new Date().toISOString();
+
+          assignDronesToQuadrantsAndUpdatePositions(reassignmentTimestamp);
+          // updateMap(); // Update the map after assigning drones to quadrants
       });
 
       // Function to generate random object detection points within a quadrant
@@ -919,14 +920,14 @@
        function exportToCSV() {
            let csvContent = "data:text/csv;charset=utf-8,";
 
-           // Check if there is a reassignment timestamp to include
-           if (reassignmentTimestamp) {
-               // Add a separator and headers for the reassignment timestamp
-               csvContent += "Reassignment Timestamp\n";
-               // Add the reassignment timestamp as a separate row
-               csvContent += `${reassignmentTimestamp}\n\n`;
+           // Headers for reassignment info
+           csvContent += "\n Initial Assignment Timestamp,Quadrant 1 Drone,Quadrant 2 Drone,Quadrant 3 Drone,Quadrant 4 Drone\n";
+           // Add the reassignment timestamp and drone assignments as a separate row
+           if (droneReassignmentInfo) {
+               csvContent += `"${droneReassignmentInfo.timestamp}","${droneReassignmentInfo.quadrant1Drone}","${droneReassignmentInfo.quadrant2Drone}","${droneReassignmentInfo.quadrant3Drone}","${droneReassignmentInfo.quadrant4Drone}"\n`;
            }
 
+           // Headers for interactions after inital assignment
            csvContent += "Obj detected location, Timestamp, Object detected, Foliage, User Response to recommendation, Re-categorized Object, Drone, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
                entry.ratings.forEach((rating, ratingIndex) => {
@@ -948,7 +949,6 @@
                    csvContent += "\n";
                }
            });
-
            var encodedUri = encodeURI(csvContent);
            var link = document.createElement("a");
            link.setAttribute("href", encodedUri);
