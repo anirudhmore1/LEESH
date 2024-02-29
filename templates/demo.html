@@ -263,18 +263,22 @@
           dronePathsTrack[quadrant1Drone].quadrant = 'quadrant1';
           dronePathsTrack[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.75, 35.25);
           dronePathsTrack[quadrant1Drone].objectDetectionPoints = objectDetectionPoints['drone1']; // Object detection points are attached to each quadrant
+          console.log(quadrant1Drone);
 
           dronePathsTrack[quadrant2Drone].quadrant = 'quadrant2';
           dronePathsTrack[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.25, 35.25);
           dronePathsTrack[quadrant2Drone].objectDetectionPoints = objectDetectionPoints['drone2'];
+          console.log(quadrant2Drone);
 
           dronePathsTrack[quadrant3Drone].quadrant = 'quadrant3';
           dronePathsTrack[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.25, 34.75);
           dronePathsTrack[quadrant3Drone].objectDetectionPoints = objectDetectionPoints['drone3'];
+          console.log(quadrant3Drone);
 
           dronePathsTrack[quadrant4Drone].quadrant = 'quadrant4';
           dronePathsTrack[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.75, 34.75);
           dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
+          console.log(quadrant4Drone);
       }
 
 
@@ -413,7 +417,7 @@
             }
           }
         }
-        console.log("Drone 1 Path:", path);
+        console.log("Q1 Path:", path);
         return path;
       }
 
@@ -431,7 +435,7 @@
             }
           }
         }
-        console.log("Drone 2 Path:", path);
+        console.log("Q2 Path:", path);
         return path;
       }
 
@@ -449,7 +453,7 @@
             }
           }
         }
-        console.log("Drone 3 Path:", path);
+        console.log("Q3 Path:", path);
         return path;
       }
 
@@ -467,7 +471,7 @@
             }
           }
         }
-        console.log("Drone 4 Path:", path);
+        console.log("Q4 Path:", path);
         return path;
       }
 
@@ -597,12 +601,15 @@
           // If an object is detected, pause the drone movement
           isAnimating = false;
 
+          //drone that detected the objects
+          currentDroneId = drone.attributes.id;
+
           // If an object is detected, store the location and texts
           const randomImageAndText = getRandomImageAndText();
           // Capture the current timestamp
           const detectionTimestamp = new Date().toISOString();
 
-          // If an object is detected, store the location
+          // If an object is detected, store the location, timestamp
           lastDetectedObjectInfo = {
               location: {
                   longitude: nextPoint[0],
@@ -610,14 +617,12 @@
               },
               text1: randomImageAndText.text1,
               text2: randomImageAndText.text2,
-              timestamp: detectionTimestamp // Store the timestamp
+              timestamp: detectionTimestamp, // Store the timestamp
+              droneId: currentDroneId
           };
 
           // And display the pop-up with the image of the detected object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id);
-
-          //drone that detected the objects
-          currentDroneId = drone.attributes.id
 
           changeDroneColorOnDetection(drone);
         }
@@ -943,12 +948,12 @@
            // Check if there is a reassignment timestamp to include
            if (reassignmentTimestamp) {
                // Add a separator and headers for the reassignment timestamp
-               csvContent += "Initial assignment Timestamp\n";
+               csvContent += "Initial assignment\n";
                // Add the reassignment timestamp as a separate row
                csvContent += `${reassignmentTimestamp}\n\n`;
            }
 
-           csvContent += "Obj detected location, Timestamp, Object detected, Foliage, User Response to recommendation, Re-categorized Object, Drone, Trust, Competence\n"; // Header
+           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Foliage, User Response to recommendation, Re-categorized Object, Drone, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
                entry.ratings.forEach((rating, ratingIndex) => {
                    // Include the user response only on the first drone rating of each session
@@ -959,9 +964,10 @@
                      const text1 = detectionInfo.text1 || '';
                      const text2 = detectionInfo.text2 || '';
                      const timestamp = detectionInfo.timestamp || '';
-                     csvContent += `"${locationString}","${timestamp}","${text1}","${text2}",${entry.response},${entry.userReobject},${rating.drone},${rating.trust},${rating.competence}\n`;
+                     const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
+                     csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${entry.response},${entry.userReobject},${rating.drone},${rating.trust},${rating.competence}\n`;
                    } else {
-                     csvContent += `,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
+                     csvContent += `,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
                    }
                });
                // Add a separator between sessions if needed
