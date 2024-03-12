@@ -35,19 +35,22 @@
       height: auto;
       background: rgba(255,255,255, 0.9);
       width: 320px;
+      padding: 5px;
     }
     #droneRatings {
-    /* position: absolute; */
-    bottom: 0;
-    width: 100%;
-    background: rgba(255,255,255, 0.9);
+      /* position: absolute; */
+      bottom: 0;
+      width: 100%;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
     }
     #droneSelectionForm {
       top: 0;
-      width: 100%;
+      width: 220px;
       background: rgba(255,255,255, 0.9);
       display: flex;
       flex-direction: column; /* This will stack the fields vertically */
+      padding: 5px;
     }
     #droneSelectionForm > div {
       margin-bottom: 10px; /* Adds space between the form elements */
@@ -61,9 +64,9 @@
       position: absolute;
       top: 0;
       right: 0;
-      width: 260px;
+      width: 220px;
       background: rgba(255,255,255,0.9);
-      padding: 10px;
+      padding: 5px;
       z-index: 10;
     }
     .quadrant-info {
@@ -96,7 +99,7 @@
         center: [-85, 35],
         container: "viewDiv",
         map: map,
-        zoom: 7
+        zoom: 11
       });
 
       // Assuming gridSize is the size of your grid cells
@@ -522,7 +525,7 @@
       function updateQuadrantDisplay() {
           var display = document.getElementById('droneQuadrantDisplay');
           display.innerHTML = ''; // Clear existing content
-          var heading = document.createElement('h2');
+          var heading = document.createElement('h3');
           heading.textContent = 'Current Drone Assignment';
           display.appendChild(heading);
           var hr = document.createElement('hr');
@@ -1061,7 +1064,7 @@
        <div id="logoDiv" class="esri-widget">SCEL/VT</div>
 
        <form id="droneSelectionForm">
-          <h2 class="main-heading">Initial Drone assignment</h2>
+          <h3 class="main-heading">Initial Drone assignment</h3>
              <hr>
           <div>
          <label for="quadrant1">Quadrant 1:</label>
@@ -1103,7 +1106,7 @@
        </form>
 
        <div id="droneQuadrantDisplay">
-         <h2 class="main-heading">Current Drone assignment</h2>
+         <h3 class="main-heading">Current Drone assignment</h3>
             <hr>
          <!-- <div class="quadrant-info" id="quadrant1Info">Quadrant 1: </div>
          <div class="quadrant-info" id="quadrant2Info">Quadrant 2: </div>
@@ -1112,8 +1115,8 @@
        </div>
 
        <div id="droneControl" class="droneControl-container">
-         <h2 class="main-heading">Drone control and Object detection</h2>
-           <hr>
+         <!-- <h2 class="main-heading">Drone control and Object detection</h2> -->
+           <!-- <hr> -->
 
          <!-- <div>
            <h4 class="current-drone">Current drone: </h3>
@@ -1178,16 +1181,16 @@
 
        <!-- change label class for each drone type -->
        <div id="droneRatings" class="droneRatings-container">
-         <h2 class="list-heading">Drone competence and trust ratings</h2>
-         <div>
+         <h3 class="list-heading">Drone competence and trust ratings</h3>
+         <div class="droneRatings-container">
          <hr>
-         <label> Drone 1: </label>
-         <div>
+         <label><strong> Drone 1: </strong></label>
+         <div class="slider-group">
                <label for="competenceRange1">Competence(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange1">
                <span id="competenceValue1">3</span>
              </div>
-             <div>
+             <div class="slider-group">
                <label for="trustRange1">Trust(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange1">
                <span id="trustValue1">3</span>
@@ -1195,13 +1198,13 @@
          </div>
          <hr>
          <div>
-         <label> Drone 2: </label>
-         <div>
+         <label><strong> Drone 2: </strong></label>
+         <div class="slider-group">
                <label for="competenceRange2">Competence(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange2">
                <span id="competenceValue2">3</span>
              </div>
-             <div>
+             <div class="slider-group">
                <label for="trustRange2">Trust(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange2">
                <span id="trustValue2">3</span>
@@ -1209,13 +1212,13 @@
          </div>
          <hr>
          <div>
-         <label> Drone 3: </label>
-         <div>
+         <label><strong> Drone 3: </strong></label>
+         <div class="slider-group">
                <label for="competenceRange3">Competence(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange3">
                <span id="competenceValue3">3</span>
              </div>
-             <div>
+             <div class="slider-group">
                <label for="trustRange3">Trust(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange3">
                <span id="trustValue3">3</span>
@@ -1223,22 +1226,28 @@
          </div>
          <hr>
          <div>
-         <label> Drone 4: </label>
-         <div>
+         <label><strong> Drone 4: </strong></label>
+         <div class="slider-group">
                <label for="competenceRange4">Competence(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange4">
                <span id="competenceValue4">3</span>
              </div>
-             <div>
+             <div class="slider-group">
                <label for="trustRange4">Trust(1-5): </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange4">
                <span id="trustValue4">3</span>
              </div>
          </div>
-
-       <button id="confirmButton">Confirm</button>
-
-       <button id="exportButton">Export to CSV</button>
+         <hr>
+         <div>
+           <label for="confirmButton">Confirm Ratings </label>
+           <button id="confirmButton">Confirm</button>
+         </div>
+         <hr>
+         <div>
+           <label for="trustRange4">Export to CSV </label>
+           <button id="exportButton">Export to CSV</button>
+         </div>
 
        </div>
 
