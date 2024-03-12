@@ -14,46 +14,59 @@
     html,
     body,
     #viewDiv {
-      width: 100%;
+      width: 91%;
       height: 100%;
-      margin: 0;
+      top: 0;
+      margin-left: auto;
+      margin-right: auto;
       padding: 0;
       display: flex;
       justify-content: center;
+      /* align-items: center; */
     }
-    #logoDiv {
+    /* #logoDiv {
+      position: : fixed;
       padding: 12px;
       background-color: black;
+      bottom: 0;
+      right: 0;
       color: pink;
       text-align: center;
       width: 100px;
-    }
+      height: auto;
+    } */
     #droneControl {
       position: fixed;
       top: 30%;
       right: 0;
       height: auto;
       background: rgba(255,255,255, 0.9);
-      width: 320px;
-      padding: 5px;
+      width: 226px;
+      /* padding: 5px; */
     }
     #droneRatings {
       /* position: absolute; */
+      position: fixed;
       bottom: 0;
-      width: 100%;
+      left: 0;
+      width: 215px;
+      height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
     }
     #droneSelectionForm {
+      position: fixed;
       top: 0;
-      width: 220px;
+      right: 0;
+      width: 226px;
+      height: auto;
       background: rgba(255,255,255, 0.9);
-      display: flex;
-      flex-direction: column; /* This will stack the fields vertically */
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */ */
       padding: 5px;
     }
     #droneSelectionForm > div {
-      margin-bottom: 10px; /* Adds space between the form elements */
+      margin-bottom: 5px; /* Adds space between the form elements */
     }
     #submitBtn {
       width: 40%; /* Smaller width */
@@ -61,13 +74,13 @@
     }
     #droneQuadrantDisplay {
       display: none; /* Initially hidden */
-      position: absolute;
+      position: fixed;
       top: 0;
       right: 0;
-      width: 220px;
+      width: 226px;
       background: rgba(255,255,255,0.9);
-      padding: 5px;
-      z-index: 10;
+      padding: 2px;
+      /* z-index: 10; */
     }
     .quadrant-info {
       margin-bottom: 8px;
@@ -1035,7 +1048,7 @@
        });
 
      //places the logo div in the bottom right corner of the view
-     view.ui.add("logoDiv", "bottom-right");
+     // view.ui.add("logoDiv", "bottom-right");
 
      // // places the search widget in the top right corner of the view
      // view.ui.add(search, "top-right");
@@ -1061,9 +1074,10 @@
 <body>
        <div id="viewDiv"></div>
 
-       <div id="logoDiv" class="esri-widget">SCEL/VT</div>
+       <!-- <div id="logoDiv">SCEL/VT</div> -->
 
        <form id="droneSelectionForm">
+         <hr>
           <h3 class="main-heading">Initial Drone assignment</h3>
              <hr>
           <div>
@@ -1106,6 +1120,7 @@
        </form>
 
        <div id="droneQuadrantDisplay">
+         <hr>
          <h3 class="main-heading">Current Drone assignment</h3>
             <hr>
          <!-- <div class="quadrant-info" id="quadrant1Info">Quadrant 1: </div>
@@ -1122,11 +1137,12 @@
            <h4 class="current-drone">Current drone: </h3>
            <h4 class="foliage-density">Foligage density: </h3>
              <hr> -->
+             <hr>
            <h3 class="drone-motion">Drone Control Tools</h3>
            <div>
              <label >Object Search: </label>
-             <input type="button" class="start-button" value="Start Search" id="startsearchbutton">
-             <input type="button" class="stop-button" value="Stop Search" id="stopsearchbutton">
+             <input type="button" class="start-button" value="Start" id="startsearchbutton">
+             <input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
            </div>
           <hr>
 
@@ -1137,9 +1153,11 @@
              <p id="object-detected">Object detected:</p>
            </div>
            <div>
-             <label >Object recommendation:</label>
+             <label >Object Recommendation:</label>
+             <div>
              <input type="button" class="yes-button" value="Accept" id="accept-recommendation" />
              <input type="button" class="no-button" value="Reject" id="reject-recommendation" />
+           </div>
            </div>
 
            <!-- <div>
@@ -1181,6 +1199,7 @@
 
        <!-- change label class for each drone type -->
        <div id="droneRatings" class="droneRatings-container">
+         <hr>
          <h3 class="list-heading">Drone competence and trust ratings</h3>
          <div class="droneRatings-container">
          <hr>

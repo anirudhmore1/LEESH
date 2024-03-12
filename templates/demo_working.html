@@ -112,14 +112,14 @@
         center: [-85, 35],
         container: "viewDiv",
         map: map,
-        zoom: 11
+        zoom: 13
       });
 
       // Assuming gridSize is the size of your grid cells
-      const gridSize = 0.5; // Size of each grid cell in some unit
+      const gridSize = 0.005; // Size of each grid cell in some unit
 
       // Dynamic size of drones based on gridSize
-      const droneSymbolSize = `${gridSize * 100}px`; // Convert gridSize to pixels if necessary
+      const droneSymbolSize = `${0.25 * 100}px`; // Convert gridSize to pixels if necessary
 
      // Define the symbol for drawing the points
       const markerSymbol1 = {
@@ -143,22 +143,22 @@
       // Create multiple point graphics - Drones
       const pointGraphics = [
         new Graphic({
-          geometry: new Point({ longitude: -84.75, latitude: 35.25 }), // Quadrant 1
+          geometry: new Point({ longitude: -84.9975, latitude: 35.0025 }), // Quadrant 1
           symbol: markerSymbol1,
           attributes: { id: "drone1"}
         }),
         new Graphic({
-          geometry: new Point({ longitude: -85.25, latitude: 35.25 }), // Quadrant 2
+          geometry: new Point({ longitude: -85.0025, latitude: 35.0025 }), // Quadrant 2
           symbol: markerSymbol1,
           attributes: { id: "drone2"}
         }),
         new Graphic({
-          geometry: new Point({ longitude: -85.25, latitude: 34.75 }), // Quadrant 3
+          geometry: new Point({ longitude: -85.0025, latitude: 34.9975 }), // Quadrant 3
           symbol: markerSymbol2,
           attributes: { id: "drone3"}
         }),
         new Graphic({
-          geometry: new Point({ longitude: -84.75, latitude: 34.75 }), // Quadrant 4
+          geometry: new Point({ longitude: -84.9975, latitude: 34.9975 }), // Quadrant 4
           symbol: markerSymbol2,
           attributes: { id: "drone4"}
         })
@@ -167,13 +167,13 @@
       //Line 1 - Xaxis
       const Xaxis = {
            type: "polyline", // autocasts as new Polyline()
-           paths: [[-95, 35], [-75, 35]]
+           paths: [[-85.1, 35], [-84.9, 35]]
          };
 
       // Line 2 - Yaxis
       const Yaxis = {
            type: "polyline", // autocasts as new Polyline()
-           paths: [[-85, 30], [-85, 40]]
+           paths: [[-85, 34.95], [-85, 35.05]]
          };
 
       // Symbol for drawing the lines
@@ -234,10 +234,10 @@
 
       // Create grids for each quadrant
       // const gridSize = 0.5; // Size of each grid cell
-      const quadrant1 = createGrid(-85, 35, -75, 40, gridSize);
-      const quadrant2 = createGrid(-95, 35, -85, 40, gridSize);
-      const quadrant3 = createGrid(-95, 30, -85, 35, gridSize);
-      const quadrant4 = createGrid(-85, 30, -75, 35, gridSize);
+      const quadrant1 = createGrid(-85, 35, -84.9, 35.05, gridSize);
+      const quadrant2 = createGrid(-85.1, 35, -85, 35.05, gridSize);
+      const quadrant3 = createGrid(-85.1, 34.95, -85, 35, gridSize);
+      const quadrant4 = createGrid(-85, 34.95, -84.9, 35, gridSize);
 
       // Add the point graphics to the view's graphics layer
          view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
@@ -277,22 +277,22 @@
 
           // Update the dronePathsTrack object with the new assignments and paths
           dronePathsTrack[quadrant1Drone].quadrant = 'quadrant1';
-          dronePathsTrack[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.75, 35.25);
+          dronePathsTrack[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.9975, 35.0025);
           dronePathsTrack[quadrant1Drone].objectDetectionPoints = objectDetectionPoints['drone1']; // Object detection points are attached to each quadrant
           console.log(quadrant1Drone);
 
           dronePathsTrack[quadrant2Drone].quadrant = 'quadrant2';
-          dronePathsTrack[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.25, 35.25);
+          dronePathsTrack[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.0025, 35.0025);
           dronePathsTrack[quadrant2Drone].objectDetectionPoints = objectDetectionPoints['drone2'];
           console.log(quadrant2Drone);
 
           dronePathsTrack[quadrant3Drone].quadrant = 'quadrant3';
-          dronePathsTrack[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.25, 34.75);
+          dronePathsTrack[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.0025, 34.9975);
           dronePathsTrack[quadrant3Drone].objectDetectionPoints = objectDetectionPoints['drone3'];
           console.log(quadrant3Drone);
 
           dronePathsTrack[quadrant4Drone].quadrant = 'quadrant4';
-          dronePathsTrack[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.75, 34.75);
+          dronePathsTrack[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.9975, 34.9975);
           dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
           console.log(quadrant4Drone);
       }
@@ -352,28 +352,28 @@
 
       // Assign random object detection points to each drone
       const objectDetectionPoints = {
-          drone1: generateRandomObjectDetectionPoints(-85, 35, -75, 40, 5), // Quadrant 1
-          drone2: generateRandomObjectDetectionPoints(-95, 35, -85, 40, 5), // Quadrant 2
-          drone3: generateRandomObjectDetectionPoints(-95, 30, -85, 35, 5), // Quadrant 3
-          drone4: generateRandomObjectDetectionPoints(-85, 30, -75, 35, 5)  // Quadrant 4
+          drone1: generateRandomObjectDetectionPoints(-85, 35, -84.9, 35.05, 5), // Quadrant 1
+          drone2: generateRandomObjectDetectionPoints(-85.1, 35, -85, 35.05, 5), // Quadrant 2
+          drone3: generateRandomObjectDetectionPoints(-85.1, 34.95, -85, 35, 5), // Quadrant 3
+          drone4: generateRandomObjectDetectionPoints(-85, 34.95, -84.9, 35, 5)  // Quadrant 4
       };
 
       // Define paths for each drone to follow
       const dronePaths = {
         drone1: {
-          path: generateLawnmowerPatternQuadrant1(-84.75, 35.25),
+          path: generateLawnmowerPatternQuadrant1(-84.9975, 35.0025),
           objectDetectionPoints: objectDetectionPoints.drone1
         },
         drone2: {
-          path: generateLawnmowerPatternQuadrant2(-85.25, 35.25),
+          path: generateLawnmowerPatternQuadrant2(-85.0025, 35.0025),
           objectDetectionPoints: objectDetectionPoints.drone2
         },
         drone3: {
-          path: generateLawnmowerPatternQuadrant3(-85.25, 34.75),
+          path: generateLawnmowerPatternQuadrant3(-85.0025, 34.9975),
           objectDetectionPoints: objectDetectionPoints.drone3
         },
         drone4: {
-          path: generateLawnmowerPatternQuadrant4(-84.75, 34.75),
+          path: generateLawnmowerPatternQuadrant4(-84.9975, 34.9975),
           objectDetectionPoints: objectDetectionPoints.drone4
         },
       };
@@ -422,72 +422,81 @@
       // Function to generate lawnmower pattern for quadrant 1
       function generateLawnmowerPatternQuadrant1(startX, startY) {
         let path = [];
-        for (let y = startY; y <= 40; y += gridSize) {
-          if ((y - startY) / gridSize % 2 === 0) { // even row
-            for (let x = startX; x <= -75; x += gridSize) {
+        let moveRight = true; // Start by moving right
+        for (let y = startY; y <= 35.05; y += gridSize) {
+          if (moveRight) {
+            for (let x = startX; x <= -84.9; x += gridSize) {
               path.push([x, y]);
             }
-          } else { // odd row
-            for (let x = -75; x >= startX; x -= gridSize) {
+          } else {
+            for (let x = -84.9; x >= startX; x -= gridSize) {
               path.push([x, y]);
             }
           }
+          moveRight = !moveRight; // Toggle direction
         }
-        console.log("Q1 Path:", path);
+        console.log("Q1 Path:", path)
         return path;
       }
+
 
       // Function to generate lawnmower pattern for quadrant 2
       function generateLawnmowerPatternQuadrant2(startX, startY) {
         let path = [];
-        for (let y = startY; y <= 40; y += gridSize) {
-          if ((y - startY) / gridSize % 2 === 0) { // even row
-            for (let x = startX; x >= -95; x -= gridSize) {
+        let moveLeft = true; // Start by moving left
+        for (let y = startY; y <= 35.05; y += gridSize) {
+          if (moveLeft) {
+            for (let x = startX; x >= -85.1; x -= gridSize) {
               path.push([x, y]);
             }
-          } else { // odd row
-            for (let x = -95; x <= startX; x += gridSize) {
+          } else {
+            for (let x = -85.1; x <= startX; x += gridSize) {
               path.push([x, y]);
             }
           }
+          moveLeft = !moveLeft; // Toggle direction
         }
-        console.log("Q2 Path:", path);
+        console.log("Q2 Path:", path)
         return path;
       }
 
       // Function to generate lawnmower pattern for quadrant 3
       function generateLawnmowerPatternQuadrant3(startX, startY) {
         let path = [];
-        for (let y = startY; y >= 30; y -= gridSize) {
-          if ((startY - y) / gridSize % 2 === 0) { // even row
-            for (let x = startX; x >= -95; x -= gridSize) {
+        let moveLeft = true; // Start by moving left
+        for (let y = startY; y >= 34.95; y -= gridSize) {
+          if (moveLeft) {
+            for (let x = startX; x >= -85.1; x -= gridSize) {
               path.push([x, y]);
             }
-          } else { // odd row
-            for (let x = -95; x <= startX; x += gridSize) {
+          } else {
+            for (let x = -85.1; x <= startX; x += gridSize) {
               path.push([x, y]);
             }
           }
+          moveLeft = !moveLeft; // Toggle direction
         }
-        console.log("Q3 Path:", path);
+        console.log("Q3 Path:", path)
         return path;
       }
 
       // Function to generate lawnmower pattern for quadrant 4
       function generateLawnmowerPatternQuadrant4(startX, startY) {
         let path = [];
-        for (let y = startY; y >= 30; y -= gridSize) {
-          if ((startY - y) / gridSize % 2 === 0) { // even row
-            for (let x = startX; x <= -75; x += gridSize) {
+        let moveRight = true; // Start by moving right
+        for (let y = startY; y >= 34.95; y -= gridSize) {
+          if (moveRight) {
+            for (let x = startX; x <= -84.9; x += gridSize) {
               path.push([x, y]);
             }
-          } else { // odd row
-            for (let x = -75; x >= startX; x -= gridSize) {
+          } else {
+            for (let x = -84.9; x >= startX; x -= gridSize) {
               path.push([x, y]);
             }
           }
+          moveRight = !moveRight; // Toggle direction
         }
-        console.log("Q4 Path:", path);
+        console.log("Q4 Path:", path)
         return path;
       }
 
