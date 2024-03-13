@@ -167,7 +167,7 @@
       //Line 1 - Xaxis
       const Xaxis = {
            type: "polyline", // autocasts as new Polyline()
-           paths: [[-85.1, 35], [-84.9, 35]]
+           paths: [[-85.1, 35], [-84.8948, 35]]
          };
 
       // Line 2 - Yaxis
@@ -338,24 +338,43 @@
           reassignmentTimestamp = new Date().toISOString();
       });
 
-      // Function to generate random object detection points within a quadrant
-      function generateRandomObjectDetectionPoints(startX, startY, endX, endY, count) {
-          let points = [];
-          for (let i = 0; i < count; i++) {
-              // Generate random points and snap them to the nearest multiple of 0.25
-              const x = Math.round((startX + (Math.random() * (endX - startX))) / 0.25) * 0.25;
-              const y = Math.round((startY + (Math.random() * (endY - startY))) / 0.25) * 0.25;
-              points.push([x, y]);
+      // Function to select object detection points from a drone's path
+      function selectObjectDetectionPointsFromPath(dronePath, count) {
+          let selectedPoints = [];
+          let pathLength = dronePath.length;
+
+          // Ensure there are enough points in the path
+          if (count > pathLength) {
+              console.error("Requested more detection points than available in the path.");
+              return selectedPoints;
           }
-          return points;
+
+          // Randomly select 'count' unique indices from the drone path
+          let selectedIndices = new Set();
+          while (selectedIndices.size < count) {
+              let randomIndex = Math.floor(Math.random() * pathLength);
+              selectedIndices.add(randomIndex);
+          }
+
+          // Add the points at the selected indices to the selectedPoints array
+          selectedIndices.forEach(index => {
+              selectedPoints.push(dronePath[index]);
+          });
+
+          return selectedPoints;
       }
+
+      let drone1Path = generateLawnmowerPatternQuadrant1(-84.9975, 35.0025);
+      let drone2Path = generateLawnmowerPatternQuadrant2(-85.0025, 35.0025);
+      let drone3Path = generateLawnmowerPatternQuadrant3(-85.0025, 34.9975);
+      let drone4Path = generateLawnmowerPatternQuadrant4(-84.9975, 34.9975);
 
       // Assign random object detection points to each drone
       const objectDetectionPoints = {
-          drone1: generateRandomObjectDetectionPoints(-85, 35, -84.9, 35.05, 5), // Quadrant 1
-          drone2: generateRandomObjectDetectionPoints(-85.1, 35, -85, 35.05, 5), // Quadrant 2
-          drone3: generateRandomObjectDetectionPoints(-85.1, 34.95, -85, 35, 5), // Quadrant 3
-          drone4: generateRandomObjectDetectionPoints(-85, 34.95, -84.9, 35, 5)  // Quadrant 4
+          drone1: selectObjectDetectionPointsFromPath(drone1Path, 5), // Quadrant 1
+          drone2: selectObjectDetectionPointsFromPath(drone2Path, 5), // Quadrant 2
+          drone3: selectObjectDetectionPointsFromPath(drone3Path, 5), // Quadrant 3
+          drone4: selectObjectDetectionPointsFromPath(drone4Path, 5)  // Quadrant 4
       };
 
       // Define paths for each drone to follow
@@ -519,14 +538,6 @@
           height: droneSymbolSize
           // color: "red" // Change the color to red or any other color
         };
-
-        // // Create a new symbol with a different color or image to indicate detection
-        // const detectionSymbol = {
-        //     type: "simple-marker", // Change to the appropriate symbol type if needed
-        //     color: "red", // Change the color to indicate detection
-        //     size: "20px", // Set the size of the detection symbol
-        //     // Include any other properties that are relevant to your detection symbol
-        // };
 
         // Change the drone's symbol to the detection symbol
         droneGraphic.symbol = detectionSymbol;
