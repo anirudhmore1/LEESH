@@ -432,28 +432,32 @@
           objectDetectionPoints: objectDetectionPoints.drone1,
           quadrant: 'quadrant1',
           recentlyReassigned: false, // Initialize as false
-          reassignmentTime: 0 // Initialize with a default value
+          reassignmentTime: 0, // Initialize with a default value
+          imagingType: 'thermal'
         },
         drone2: {
             path: dronePaths.drone2,
             objectDetectionPoints: objectDetectionPoints.drone2,
             quadrant: 'quadrant2',
             recentlyReassigned: false,
-            reassignmentTime: 0
+            reassignmentTime: 0,
+            imagingType: 'thermal'
         },
         drone3: {
             path: dronePaths.drone3,
             objectDetectionPoints: objectDetectionPoints.drone3,
             quadrant: 'quadrant3',
             recentlyReassigned: false,
-            reassignmentTime: 0
+            reassignmentTime: 0,
+            imagingType: 'nswir',
         },
         drone4: {
             path: dronePaths.drone4,
             objectDetectionPoints: objectDetectionPoints.drone4,
             quadrant: 'quadrant4',
             recentlyReassigned: false,
-            reassignmentTime: 0
+            reassignmentTime: 0,
+            imagingType: 'nswir',
         }
       };
 
@@ -619,7 +623,8 @@
       //     `;
       //   }
 
-      // Object detection image and text // Text1: for obj type & Text2: for Foliage level
+      // Object detection image and text
+      // Text1: for obj type & Text2: for lighting/illumination
       var imagesAndTexts = [
         { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
         { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
@@ -627,7 +632,23 @@
         // ... add more images and texts as needed
       ];
 
-      // var clueImageUrl = "{% static 'img/targetsampleH.png' %}";
+      // // Object tracker for thermal imaging drones
+      // var thermalImagesAndTexts = [
+      //   { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
+      //   { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Lighting" },
+      //   { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
+      //   { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
+      //   // ... add more thermal images and texts as needed
+      // ];
+      //
+      // // Object tracker for N/SWIR imaging drones
+      // var nswirImagesAndTexts = [
+      //   { url: "{% static 'img/nswir/T_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
+      //   { url: "{% static 'img/nswir/T_LT.png' %}", text1: "Living target", text2: "Lighting" },
+      //   { url: "{% static 'img/nswir/T_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
+      //   { url: "{% static 'img/nswir/T_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
+      //   // ... add more N/SWIR images and texts as needed
+      // ];
 
       // Function to get a random image and text
       function getRandomImageAndText() {
