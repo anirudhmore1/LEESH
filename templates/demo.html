@@ -99,6 +99,25 @@
       outline: none; /* remove outline */
       border-radius: 50px; /* round corners */
     }
+    datalist {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      writing-mode: vertical-lr;
+      width: 200px;
+    }
+
+    option {
+      padding: 0;
+      /* writing-mode: vertical-rl;
+      text-orientation: upright;       */
+    }
+
+    input[type="range"] {
+      width: 200px;
+      margin: 0;
+    }
+
   </style>
   </style>
 
@@ -1237,10 +1256,10 @@
                <label for="competenceRange1">Drone1: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange1" list="tickmarks1">
                <datalist id="tickmarks1">
-                 <option value="1"></option>
-                 <option value="2"></option>
-                 <option value="3"></option>
-                 <option value="4"></option>
+                 <option value="1" label="1st"></option>
+                 <option value="2" label="2nd"></option>
+                 <option value="3" label="3rd"></option>
+                 <option value="4" label="4th"></option>
                </datalist>
                <!-- <span id="competenceValue1">3</span> -->
              </div>
@@ -1248,10 +1267,10 @@
                <label for="competenceRange2">Drone2: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange2" list="tickmarks2">
                <datalist id="tickmarks2">
-                 <option value="1"></option>
-                 <option value="2"></option>
-                 <option value="3"></option>
-                 <option value="4"></option>
+                 <option value="1" label="1st"></option>
+                 <option value="2" label="2nd"></option>
+                 <option value="3" label="3rd"></option>
+                 <option value="4" label="4th"></option>
                </datalist>
                <!-- <span id="competenceValue2">3</span> -->
              </div>
@@ -1259,10 +1278,10 @@
                <label for="competenceRange3">Drone3: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange3" list="tickmarks3">
                <datalist id="tickmarks3">
-                 <option value="1"></option>
-                 <option value="2"></option>
-                 <option value="3"></option>
-                 <option value="4"></option>
+                 <option value="1" label="1st"></option>
+                 <option value="2" label="2nd"></option>
+                 <option value="3" label="3rd"></option>
+                 <option value="4" label="4th"></option>
                </datalist>
                <!-- <span id="competenceValue3">3</span> -->
              </div>
@@ -1270,10 +1289,10 @@
                <label for="competenceRange4">Drone4: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange4" list="tickmarks4">
                <datalist id="tickmarks4">
-                 <option value="1"></option>
-                 <option value="2"></option>
-                 <option value="3"></option>
-                 <option value="4"></option>
+                 <option value="1" label="1st"></option>
+                 <option value="2" label="2nd"></option>
+                 <option value="3" label="3rd"></option>
+                 <option value="4" label="4th"></option>
                </datalist>
                <!-- <span id="competenceValue4">3</span> -->
              </div>
