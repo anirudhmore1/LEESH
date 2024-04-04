@@ -91,6 +91,15 @@
       background: #ccc; /* Light grey line */
       margin: 10px 0; /* Spacing above and below the line */
     }
+    .competence-slider {
+      /* appearance: none; /* removes browser-specific styling */ */
+      width: 200px; /* width of slider */
+      height: 00px; /* height of slider */
+      background: #000 10%;
+      outline: none; /* remove outline */
+      border-radius: 50px; /* round corners */
+    }
+  </style>
   </style>
 
   <script>
@@ -1080,7 +1089,7 @@
      view.ui.add("droneControl", "top-right");
 
      // places the drone-ratings widget in the bottom of the view
-     view.ui.add("droneRatings", "bottom-left");
+     view.ui.add("droneRatings", "top-left");
 
      // places the current drone-assignment widget in the top right corner of the view
      view.ui.add("droneQuadrantDisplay", "top-right");
@@ -1099,7 +1108,7 @@
        <form id="droneSelectionForm">
          <hr>
           <h3 class="main-heading">Initial Drone assignment</h3>
-             <hr>
+             <!-- <hr> -->
           <div>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
@@ -1220,59 +1229,76 @@
        <!-- change label class for each drone type -->
        <div id="droneRatings" class="droneRatings-container">
          <hr>
-         <h3 class="list-heading">Drone competence and trust ratings</h3>
+         <h3 class="list-heading">Drone competence ranking</h3>
          <div class="droneRatings-container">
-         <hr>
-         <label><strong> Drone 1: </strong></label>
+         <!-- <hr> -->
+         <!-- <label><strong> Drone 1: </strong></label> -->
          <div class="slider-group">
-               <label for="competenceRange1">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange1">
-               <span id="competenceValue1">3</span>
+               <label for="competenceRange1">Drone1: </label>
+               <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange1" list="tickmarks1">
+               <datalist id="tickmarks1">
+                 <option value="1"></option>
+                 <option value="2"></option>
+                 <option value="3"></option>
+                 <option value="4"></option>
+               </datalist>
+               <!-- <span id="competenceValue1">3</span> -->
              </div>
              <div class="slider-group">
-               <label for="trustRange1">Trust(1-5): </label>
+               <label for="competenceRange2">Drone2: </label>
+               <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange2" list="tickmarks2">
+               <datalist id="tickmarks2">
+                 <option value="1"></option>
+                 <option value="2"></option>
+                 <option value="3"></option>
+                 <option value="4"></option>
+               </datalist>
+               <!-- <span id="competenceValue2">3</span> -->
+             </div>
+             <div class="slider-group">
+               <label for="competenceRange3">Drone3: </label>
+               <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange3" list="tickmarks3">
+               <datalist id="tickmarks3">
+                 <option value="1"></option>
+                 <option value="2"></option>
+                 <option value="3"></option>
+                 <option value="4"></option>
+               </datalist>
+               <!-- <span id="competenceValue3">3</span> -->
+             </div>
+             <div class="slider-group">
+               <label for="competenceRange4">Drone4: </label>
+               <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange4" list="tickmarks4">
+               <datalist id="tickmarks4">
+                 <option value="1"></option>
+                 <option value="2"></option>
+                 <option value="3"></option>
+                 <option value="4"></option>
+               </datalist>
+               <!-- <span id="competenceValue4">3</span> -->
+             </div>
+         </div>
+         <hr>
+         <div>
+         <!-- <label><strong> Drone 2: </strong></label> -->
+         <h3 class="list-heading">Drone trust rating</h3>
+             <div class="slider-group">
+               <label for="trustRange1">Drone1: </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange1">
                <span id="trustValue1">3</span>
              </div>
-         </div>
-         <hr>
-         <div>
-         <label><strong> Drone 2: </strong></label>
-         <div class="slider-group">
-               <label for="competenceRange2">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange2">
-               <span id="competenceValue2">3</span>
-             </div>
              <div class="slider-group">
-               <label for="trustRange2">Trust(1-5): </label>
+               <label for="trustRange2">Drone2: </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange2">
                <span id="trustValue2">3</span>
              </div>
-         </div>
-         <hr>
-         <div>
-         <label><strong> Drone 3: </strong></label>
-         <div class="slider-group">
-               <label for="competenceRange3">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange3">
-               <span id="competenceValue3">3</span>
-             </div>
              <div class="slider-group">
-               <label for="trustRange3">Trust(1-5): </label>
+               <label for="trustRange3">Drone3: </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange3">
                <span id="trustValue3">3</span>
              </div>
-         </div>
-         <hr>
-         <div>
-         <label><strong> Drone 4: </strong></label>
-         <div class="slider-group">
-               <label for="competenceRange4">Competence(1-5): </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="competenceRange4">
-               <span id="competenceValue4">3</span>
-             </div>
              <div class="slider-group">
-               <label for="trustRange4">Trust(1-5): </label>
+               <label for="trustRange4">Drone4: </label>
                <input type="range" min="1" max="5" value="3" class="slider" id="trustRange4">
                <span id="trustValue4">3</span>
              </div>
