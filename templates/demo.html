@@ -625,36 +625,38 @@
 
       // Object detection image and text
       // Text1: for obj type & Text2: for lighting/illumination
-      var imagesAndTexts = [
-        { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
-        { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
-        { url: "{% static 'img/tracer_sample.png' %}", text1: "Obj type C - Tracer image", text2: "Foliage level" },
-        // ... add more images and texts as needed
+      // var imagesAndTexts = [
+      //   { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
+      //   { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
+      //   { url: "{% static 'img/tracer_sample.png' %}", text1: "Obj type C - Tracer image", text2: "Foliage level" },
+      //   // ... add more images and texts as needed
+      // ];
+
+      //  Object tracker for thermal imaging drones
+      // Text1: for obj type & Text2: for lighting/illumination
+      var thermalImagesAndTexts = [
+        { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
+        { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Lighting" },
+        { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
+        { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
+        // ... add more thermal images and texts as needed
       ];
 
-      // // Object tracker for thermal imaging drones
-      // var thermalImagesAndTexts = [
-      //   { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
-      //   { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Lighting" },
-      //   { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
-      //   { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
-      //   // ... add more thermal images and texts as needed
-      // ];
-      //
-      // // Object tracker for N/SWIR imaging drones
-      // var nswirImagesAndTexts = [
-      //   { url: "{% static 'img/nswir/T_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
-      //   { url: "{% static 'img/nswir/T_LT.png' %}", text1: "Living target", text2: "Lighting" },
-      //   { url: "{% static 'img/nswir/T_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
-      //   { url: "{% static 'img/nswir/T_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
-      //   // ... add more N/SWIR images and texts as needed
-      // ];
+      // Object tracker for N/SWIR imaging drones
+      var nswirImagesAndTexts = [
+        { url: "{% static 'img/nswir/NS_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
+        { url: "{% static 'img/nswir/NS_LT.png' %}", text1: "Living target", text2: "Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
+        // ... add more N/SWIR images and texts as needed
+      ];
 
       // Function to get a random image and text
-      function getRandomImageAndText() {
-        var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
-        return imagesAndTexts[randomIndex];
-      }
+      // function getRandomImageAndText() {
+      //   var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
+      //   return imagesAndTexts[randomIndex];
+      // }
+
 
       // Global variable to store the last detected object location
       let lastObjectDetectionLocation = null;
@@ -690,7 +692,16 @@
           currentDroneId = drone.attributes.id;
 
           // If an object is detected, store the location and texts
-          const randomImageAndText = getRandomImageAndText();
+          // const randomImageAndText = getRandomImageAndText();
+
+          // If an object is detected, store the location and texts
+          let randomImageAndText;
+          if (droneInfo.imagingType === 'thermal') {
+            randomImageAndText = getRandomImageAndText(thermalImagesAndTexts);
+          } else if (droneInfo.imagingType === 'nswir') {
+            randomImageAndText = getRandomImageAndText(nswirImagesAndTexts);
+          }
+
           // Capture the current timestamp
           const detectionTimestamp = new Date().toISOString();
 
@@ -707,10 +718,16 @@
           };
 
           // And display the pop-up with the image of the detected object
-          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id);
+          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, droneInfo.imagingType);
 
           changeDroneColorOnDetection(drone);
         }
+      }
+
+      // Function to get a random image and text
+      function getRandomImageAndText(imagesAndTexts) {
+        var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
+        return imagesAndTexts[randomIndex];
       }
 
       // Function to update the "drone control" UI
@@ -727,11 +744,16 @@
       }
 
       //Function for pop-up of object detected
-     function showObjectDetectedPopup(message, droneName) {
-       var randomImageAndText = getRandomImageAndText();
+     function showObjectDetectedPopup(message, droneName, imagingType) {
+       var randomImageAndText;
+       if (imagingType === 'thermal') {
+         randomImageAndText = getRandomImageAndText(thermalImagesAndTexts);
+       } else if (imagingType === 'nswir') {
+         randomImageAndText = getRandomImageAndText(nswirImagesAndTexts);
+       }
        var imageUrl = randomImageAndText.url;
        var imageText1 = randomImageAndText.text1;
-       var imageText2 = randomImageAndText.text2
+       var imageText2 = randomImageAndText.text2;
 
        const popup = document.createElement("div");
        const image = document.createElement("img");
