@@ -657,8 +657,6 @@
       //   return imagesAndTexts[randomIndex];
       // }
 
-      // Global variable to store the lobject detected type
-      let lastDetectedObjectType = '';
 
       // Global variable to store the last detected object location
       let lastObjectDetectionLocation = null;
@@ -710,18 +708,14 @@
           // If an object is detected, store the location, timestamp
           lastDetectedObjectInfo = {
               location: {
-                // let lastDetectedObjectType = '';
                   longitude: nextPoint[0],
                   latitude: nextPoint[1]
               },
-              text1: randomImageAndText.text1, // Store the detected object type
+              text1: randomImageAndText.text1,
               text2: randomImageAndText.text2,
               timestamp: detectionTimestamp, // Store the timestamp
               droneId: currentDroneId
           };
-
-          // Store the detected object type in the global variable
-          lastDetectedObjectType = randomImageAndText.text1;
 
           // And display the pop-up with the image of the detected object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, droneInfo.imagingType);
@@ -920,91 +914,11 @@
      }
    } // Update the UI or map to reflect the new positions and assignments
 
-   // Function to show pop-up for re-detected object by new/reassigned drone
-   function showRedetectedObjectPopup(droneName, imagingType) {
-     // Stop all drones before showing the pop-up
-     isAnimating = false;
-     cancelAnimationFrame(animationFrameId);
-
-     let selectedImagesAndTexts;
-
-     // Sensor type load for obj pop-up
-     // let imagingType = dronePathsTrack.imagingType;
-
-     // Assign array to selectedImagesAndTexts based on the imagingType
-     if (imagingType === 'thermal') {
-       selectedImagesAndTexts = thermalImagesAndTexts;
-     } else if (imagingType === 'nswir') {
-       selectedImagesAndTexts = nswirImagesAndTexts;
-     } else {
-       console.error('Invalid imaging type:', imagingType);
-       return;
-     }
-
-     // Find the image and text that match the last detected object type
-     const matchingImageAndText = selectedImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-     if (!matchingImageAndText) {
-       console.error('No matching image and text found for the last detected object type:', lastDetectedObjectType);
-       return;
-     }
-
-     const imageUrl = matchingImageAndText.url;
-     const imageText1 = matchingImageAndText.text1;
-     const imageText2 = matchingImageAndText.text2;
-
-     const popup = document.createElement("div");
-     const image = document.createElement("img");
-     image.src = imageUrl;
-     image.alt = "Detected Object";
-     image.style.width = "400px";
-     image.style.height = "400px";
-     image.style.display = "block";
-     image.style.marginBottom = "10px";
-
-     const message = "Re-detected object: ";
-     const textNode1 = document.createTextNode(message + " by " + droneName + ": " + imageText1);
-     const textNode2 = document.createTextNode(imageText2);
-     popup.appendChild(image);
-     popup.appendChild(textNode1);
-     popup.appendChild(document.createElement("br"));
-     popup.appendChild(textNode2);
-
-     popup.style.position = "absolute";
-     popup.style.left = "50%";
-     popup.style.top = "50%";
-     popup.style.transform = "translate(-50%, -50%)";
-     popup.style.backgroundColor = "white";
-     popup.style.padding = "10px";
-     popup.style.border = "1px solid black";
-     popup.style.zIndex = "1000";
-
-     document.body.appendChild(popup);
-
-     setTimeout(() => {
-       document.body.removeChild(popup);
-     }, 10000);
-
-     // Update the drone control UI with the name of the drone that detected the object
-     updateDroneControlUI(droneName, imageText1, imageText2);
-   }
-
       // Event listener for the Start Search button
       document.getElementById('startsearchbutton').addEventListener('click', function() {
         isAnimating = true;
         cancelAnimationFrame(animationFrameId);
         animate();
-
-        // Use the reassignedDroneId as the activeDroneId
-        let activeDroneId = reassignedDroneId; // This is set when the user reassigns a drone
-        if (activeDroneId) {
-          let activeDroneInfo = dronePathsTrack[activeDroneId];
-          let imagingType = activeDroneInfo.imagingType;
-
-          // Show the pop-up for the re-detected object with the correct imaging type
-          showRedetectedObjectPopup(activeDroneId, imagingType);
-        } else {
-          console.error('No drone has been reassigned yet.');
-        }
 
         // Hide the Initial drone assignment
         document.getElementById('droneSelectionForm').style.display = 'none';
