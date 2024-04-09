@@ -921,15 +921,12 @@
    } // Update the UI or map to reflect the new positions and assignments
 
    // Function to show pop-up for re-detected object by new/reassigned drone
-   function showRedetectedObjectPopup(droneName, imagingType) {
+   function showRedetectedObjectPopup(droneName, imagingType, callback) {
      // Stop all drones before showing the pop-up
      isAnimating = false;
      cancelAnimationFrame(animationFrameId);
 
      let selectedImagesAndTexts;
-
-     // Sensor type load for obj pop-up
-     // let imagingType = dronePathsTrack.imagingType;
 
      // Assign array to selectedImagesAndTexts based on the imagingType
      if (imagingType === 'thermal') {
@@ -982,6 +979,9 @@
 
      setTimeout(() => {
        document.body.removeChild(popup);
+       if (typeof callback === "function") {
+         callback(); // Call the callback function to reset reassignedDroneId
+       }
      }, 10000);
 
      // Update the drone control UI with the name of the drone that detected the object
@@ -1001,7 +1001,10 @@
           let imagingType = activeDroneInfo.imagingType;
 
           // Show the pop-up for the re-detected object with the correct imaging type
-          showRedetectedObjectPopup(activeDroneId, imagingType);
+          // Pass a callback function to reset reassignedDroneId after the pop-up is closed
+          showRedetectedObjectPopup(activeDroneId, imagingType, function() {
+            reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
+          });
         } else {
           console.error('No drone has been reassigned yet.');
         }
@@ -1141,7 +1144,7 @@
 
            // Reset user response after saving
            userResponse = '';
-           reassignedDroneId = '';
+           // reassignedDroneId = '';
            userReassignResponse = '';
            document.getElementById('sel_obj').value = '';
            lastDetectedObjectInfo = null;
