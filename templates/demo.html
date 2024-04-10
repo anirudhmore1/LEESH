@@ -962,6 +962,19 @@
      const imageText1 = matchingImageAndText.text1;
      const imageText2 = matchingImageAndText.text2;
 
+     // If an object is detected, store the location, timestamp, and texts
+     lastDetectedObjectInfo = {
+       // location: {
+       //   longitude: nextPoint[0],
+       //   latitude: nextPoint[1]
+       // },
+       text1: imageText1, // Store the detected object type
+       text2: imageText2,
+       // timestamp: detectionTimestamp, // Store the timestamp
+       droneId: droneName,
+       isRedetection: true // Indicate that this is a redetection event
+     };
+
      const popup = document.createElement("div");
      const image = document.createElement("img");
      image.src = imageUrl;
@@ -1141,15 +1154,30 @@
            // Retrieve the recategorized object from the select element
            let userReobject = document.getElementById('sel_obj').value;
 
-           // Save the current ratings to the array
-           ratings.push({
-             ratings: currentRatings,
-             response: userResponse,
-             reassignResponse: userReassignResponse,
-             userReobject: userReobject,
-             detectedObjectInfo: lastDetectedObjectInfo,
-             reassignedDroneId: reassignedDroneId
+           // Check if this is a redetection event and if so, include text1 and text2
+           if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
+               // Save the text1 and text2 values for the redetection
+               ratings.push({
+                 ratings: currentRatings,
+                 response: userResponse,
+                 reassignResponse: userReassignResponse,
+                 userReobject: userReobject,
+                 detectedObjectInfo: lastDetectedObjectInfo,
+                 reassignedDroneId: reassignedDroneId,
+                 redetectionText1: lastDetectedObjectInfo.text1,
+                 redetectionText2: lastDetectedObjectInfo.text2
              });
+         } else {
+             ratings.push({
+               ratings: currentRatings,
+               response: userResponse,
+               reassignResponse: userReassignResponse,
+               userReobject: userReobject,
+               detectedObjectInfo: lastDetectedObjectInfo,
+               reassignedDroneId: reassignedDroneId,
+             });
+         }
+             // });
            console.log('Drone ratings saved:', currentRatings); // For debugging
            console.log('User response saved:', userResponse);
            console.log('User recategorization saved:', userReobject);
@@ -1174,21 +1202,26 @@
                csvContent += `${reassignmentTimestamp}\n\n`;
            }
 
-           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Foliage, User Response to recommendation, Re-categorized Object, Task Reassigned, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
+           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Lighting, User Response to recommendation, Re-categorized Object, Task Reassigned, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
                entry.ratings.forEach((rating, ratingIndex) => {
                    // Include the user response to object detection and reassigment only on the first drone rating of each session
                    if (ratingIndex === 0) {
-                     const detectionInfo = entry.detectedObjectInfo || {};
-                     // Concatenate longitude and latitude into a single string
-                     const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
-                     const text1 = detectionInfo.text1 || '';
-                     const text2 = detectionInfo.text2 || '';
-                     const timestamp = detectionInfo.timestamp || '';
-                     const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
-                     csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       const detectionInfo = entry.detectedObjectInfo || {};
+                       // Concatenate longitude and latitude into a single string
+                       const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
+                       const text1 = detectionInfo.text1 || '';
+                       const text2 = detectionInfo.text2 || '';
+                       const timestamp = detectionInfo.timestamp || '';
+                       const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
+                       // Check if this is a redetection event and include text1 and text2 for redetection
+                       if (entry.redetectionText1 && entry.redetectionText2) {
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${entry.redetectionText1}","${entry.redetectionText2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       } else {
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       }
                    } else {
-                     csvContent += `,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
+                       csvContent += `,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
                    }
                });
                // Add a separator between sessions if needed
@@ -1204,19 +1237,6 @@
            document.body.appendChild(link); // Required for FF
            link.click(); // This will download the file
        }
-
-       // //
-       // function downloadCSV(csvData) {
-       //   const blob = new Blob([csvData], { type: 'text/csv' });
-       //   const url = window.URL.createObjectURL(blob);
-       //   const a = document.createElement('a');
-       //   a.setAttribute('hidden', '');
-       //   a.setAttribute('href', url);
-       //   a.setAttribute('download', 'drone_ratings.csv');
-       //   document.body.appendChild(a);
-       //   a.click();
-       //   document.body.removeChild(a);
-       // }
 
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', saveRatings);
