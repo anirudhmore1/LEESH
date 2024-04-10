@@ -47,9 +47,9 @@
     #droneRatings {
       /* position: absolute; */
       position: fixed;
-      bottom: 0;
+      top: 100px;
       left: 0;
-      width: 215px;
+      width: 220px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -62,7 +62,7 @@
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
-      /* flex-direction: column; /* This will stack the fields vertically */ */
+      /* flex-direction: column; /* This will stack the fields vertically */
       padding: 5px;
     }
     #droneSelectionForm > div {
@@ -81,6 +81,17 @@
       background: rgba(255,255,255,0.9);
       padding: 2px;
       /* z-index: 10; */
+    }
+    #saveAndExport{
+      position: fixed;
+      bottom: 10px;
+      right: 0;
+      width: 226px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */ */
+      padding: 5px;
     }
     .quadrant-info {
       margin-bottom: 8px;
@@ -743,12 +754,12 @@
         // Select the paragraph elements for the "Current drone:", "Object detected:", and "Foliage density:"
         const currentDroneElement = document.querySelector('#current-drone');
         const objectDetectedElement = document.querySelector('#object-detected');
-        const foliageDensityElement = document.querySelector('#foliage-density');
+        const lightingIlluminationElement = document.querySelector('#lighting-illumination');
 
         // Update their text content with the name of the drone and the image texts
         currentDroneElement.textContent = `Current drone: ${droneName}`;
         objectDetectedElement.textContent = `Object detected: ${imageText1}`;
-        foliageDensityElement.textContent = `Foliage density: ${imageText2}`;
+        lightingIlluminationElement.textContent = `Lighting/Illumination: ${imageText2}`;
       }
 
       //Function for pop-up of object detected
@@ -1278,6 +1289,9 @@
      // places the current drone-assignment widget in the top right corner of the view
      view.ui.add("droneQuadrantDisplay", "top-right");
 
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("saveAndExport", "top-right");
+
          });
 
   </script>
@@ -1362,7 +1376,7 @@
            <div>
            <h3 class="detection-info">Object detection</h3>
              <p id="current-drone">Current drone:</p>
-             <p id="foliage-density">Foliage density:</p>
+             <p id="lighting-illumination">Lighting/Illumination:</p>
              <p id="object-detected">Object detected:</p>
            </div>
            <div>
@@ -1408,6 +1422,19 @@
                  <option value="drone4">Drone 4</option>
                </select>
                <input type="button" id="reassignBtn" value="Reassign/Swap" />
+             </div>
+             <!-- <hr> -->
+
+             <div id="saveAndExport" class="saveExport-container">
+             <h3 class="Save-and-export-ratings">Confirm selections/Ratings</h3>
+             <div>
+               <label for="confirmButton">Confirm Ratings </label>
+               <button id="confirmButton">Confirm</button>
+             </div>
+             <hr>
+             <div>
+               <label for="trustRange4">Export to CSV and end trial</label>
+               <button id="exportButton">Export</button>
              </div>
 
        <!-- change label class for each drone type -->
@@ -1468,36 +1495,26 @@
          <h3 class="list-heading">Drone trust rating</h3>
              <div class="slider-group">
                <label for="trustRange1">Drone1: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange1">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange1">
                <span id="trustValue1">3</span>
              </div>
              <div class="slider-group">
                <label for="trustRange2">Drone2: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange2">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange2">
                <span id="trustValue2">3</span>
              </div>
              <div class="slider-group">
                <label for="trustRange3">Drone3: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange3">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange3">
                <span id="trustValue3">3</span>
              </div>
              <div class="slider-group">
                <label for="trustRange4">Drone4: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange4">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange4">
                <span id="trustValue4">3</span>
              </div>
          </div>
-         <hr>
-         <div>
-           <label for="confirmButton">Confirm Ratings </label>
-           <button id="confirmButton">Confirm</button>
-         </div>
-         <hr>
-         <div>
-           <label for="trustRange4">Export to CSV </label>
-           <button id="exportButton">Export to CSV</button>
-         </div>
-
+         <!-- <hr> -->
        </div>
 
 </body>
