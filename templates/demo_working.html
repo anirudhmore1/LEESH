@@ -24,20 +24,9 @@
       justify-content: center;
       /* align-items: center; */
     }
-    /* #logoDiv {
-      position: : fixed;
-      padding: 12px;
-      background-color: black;
-      bottom: 0;
-      right: 0;
-      color: pink;
-      text-align: center;
-      width: 100px;
-      height: auto;
-    } */
     #droneControl {
       position: fixed;
-      top: 30%;
+      top: 230px;
       right: 0;
       height: auto;
       background: rgba(255,255,255, 0.9);
@@ -58,7 +47,7 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 226px;
+      width: 220px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -77,7 +66,7 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 226px;
+      width: 220px;
       background: rgba(255,255,255,0.9);
       padding: 2px;
       /* z-index: 10; */
@@ -117,19 +106,15 @@
       writing-mode: vertical-lr;
       width: 200px;
     }
-
     option {
       padding: 0;
       /* writing-mode: vertical-rl;
       text-orientation: upright;       */
     }
-
     input[type="range"] {
       width: 200px;
       margin: 0;
     }
-
-  </style>
   </style>
 
   <script>
@@ -279,27 +264,7 @@
       const quadrant4 = createGrid(-85, 34.95, -84.9, 35, gridSize);
 
       // Add the point graphics to the view's graphics layer
-         view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
-
-      // //Create detection points for drones
-      // const objectDetectionPoints = {
-      //   drone1: [
-      //     { longitude: -84.5, latitude: 35.5 },
-      //     { longitude: -84.25, latitude: 39.5 }
-      //   ],
-      //   drone2: [
-      //     { longitude: -85.5, latitude: 35.5 },
-      //     { longitude: -85.75, latitude: 39.5 }
-      //   ],
-      //   drone3: [
-      //     { longitude: -85.5, latitude: 34.5 },
-      //     { longitude: -85.75, latitude: 30.5 }
-      //   ],
-      //   drone4: [
-      //     { longitude: -84.5, latitude: 34.5 },
-      //     { longitude: -84.25, latitude: 30.5 }
-      //   ]
-      // };
+      view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
 
       function assignDronesToQuadrants() {
           const quadrant1Drone = document.getElementById('quadrant1').value;
@@ -335,8 +300,6 @@
           dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
           console.log(quadrant4Drone);
       }
-
-
 
       // Function to assign drones to quadrants based on user input and update their positions immediately
       function assignDronesToQuadrantsAndUpdatePositions() {
@@ -619,21 +582,6 @@
               display.appendChild(div);
           });
       }
-
-      // const quadrant1Drone = document.getElementById('quadrant1').value;
-      // const quadrant2Drone = document.getElementById('quadrant2').value;
-      // const quadrant3Drone = document.getElementById('quadrant3').value;
-      // const quadrant4Drone = document.getElementById('quadrant4').value;
-      //
-      // const displayElement = document.getElementById('droneQuadrantDisplay');
-      // displayElement.innerHTML = `
-      //     <div>Quadrant 1: ${quadrant1Drone}</div>
-      //     <div>Quadrant 2: ${quadrant2Drone}</div>
-      //     <div>Quadrant 3: ${quadrant3Drone}</div>
-      //     <div>Quadrant 4: ${quadrant4Drone}</div>
-      //     `;
-      //   }
-
       // Object detection image and text
       // Text1: for obj type & Text2: for lighting/illumination
       // var imagesAndTexts = [
@@ -661,12 +609,6 @@
         { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
         // ... add more N/SWIR images and texts as needed
       ];
-
-      // Function to get a random image and text
-      // function getRandomImageAndText() {
-      //   var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
-      //   return imagesAndTexts[randomIndex];
-      // }
 
       // Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
@@ -703,9 +645,6 @@
 
           //drone that detected the objects
           currentDroneId = drone.attributes.id;
-
-          // If an object is detected, store the location and texts
-          // const randomImageAndText = getRandomImageAndText();
 
           // If an object is detected, store the location and texts
           let randomImageAndText;
@@ -819,11 +758,7 @@
        updateDroneControlUI(droneName, imageText1, imageText2);
      }
 
-      // //Start-stop search
-      // const startButton = document.getElementById('startsearchbutton');
-      // const stopButton = document.getElementById('stopsearchbutton');
-
-         // Animation function to update point positions
+      // Animation function to update point positions
       let animationFrameId;
       let isAnimating = false;
 
@@ -949,7 +884,6 @@
      cancelAnimationFrame(animationFrameId);
 
      let selectedImagesAndTexts;
-     // let selectedImagesAndTexts = imagingType === 'thermal' ? thermalImagesAndTexts : nswirImagesAndTexts;
 
      // Assign array to selectedImagesAndTexts based on the imagingType
      if (imagingType === 'thermal') {
@@ -1304,7 +1238,7 @@
        <!-- <div id="logoDiv">SCEL/VT</div> -->
 
        <form id="droneSelectionForm">
-         <hr>
+         <!-- <hr> -->
           <h3 class="main-heading">Initial Drone assignment</h3>
              <!-- <hr> -->
           <div>
