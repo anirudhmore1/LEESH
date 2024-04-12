@@ -464,7 +464,6 @@
         return path;
       }
 
-
       // Function to generate lawnmower pattern for quadrant 2
       function generateLawnmowerPatternQuadrant2(startX, startY) {
         let path = [];
@@ -582,14 +581,6 @@
               display.appendChild(div);
           });
       }
-      // Object detection image and text
-      // Text1: for obj type & Text2: for lighting/illumination
-      // var imagesAndTexts = [
-      //   { url: "{% static 'img/opticonly_sample.png' %}", text1: "Obj type A - Optic sensor", text2: "Foliage level" },
-      //   { url: "{% static 'img/thermal_sample.png' %}", text1: "Obj type B - Thermal image", text2: "Foliage level" },
-      //   { url: "{% static 'img/tracer_sample.png' %}", text1: "Obj type C - Tracer image", text2: "Foliage level" },
-      //   // ... add more images and texts as needed
-      // ];
 
       //  Object tracker for thermal imaging drones
       // Text1: for obj type & Text2: for lighting/illumination
@@ -1024,11 +1015,6 @@
         updateQuadrantDisplay();
       });
 
-    // //Search funtion
-    //  const search = new Search({
-    //          view: view
-    //        });
-
      // Function to update the displayed value of the competence rating
      function updateCompetenceValue(value, droneNumber) {
       document.getElementById('competenceValue' + droneNumber).textContent = value;
@@ -1050,33 +1036,6 @@
            updateTrustValue(this.value, i);
          });
        }
-
-       // // Collect values from sliders,...
-       // function collectValues() {
-       //   const data = [];
-       //   // Assuming you have 4 drones based on the provided HTML structure
-       //   for (let i = 1; i <= 4; i++) {
-       //     const trustValue = document.getElementById(`trustValue${i}`).textContent;
-       //     const competenceValue = document.getElementById(`competenceValue${i}`).textContent;
-       //     data.push({ id: i, trustValue, competenceValue });
-       //   }
-       //   return data;
-       // }
-
-       // // Convert data to CSV
-       // function convertToCSV(data) {
-       //   const csvRows = ['id,trust,competence'];
-       //   data.forEach(row => {
-       //     csvRows.push(`${row.id},${row.trustValue},${row.competenceValue}`);
-       //   });
-       //   return csvRows.join('\n');
-       // }
-
-       // document.getElementById('exportButton').addEventListener('click', function() {
-       //   const data = collectValues();
-       //   const csvData = convertToCSV(data);
-       //   downloadCSV(csvData);
-       // });
 
        // Array to store the ratings
        let ratings = [];
@@ -1205,12 +1164,6 @@
            userReobject = '';
        });
 
-     //places the logo div in the bottom right corner of the view
-     // view.ui.add("logoDiv", "bottom-right");
-
-     // // places the search widget in the top right corner of the view
-     // view.ui.add(search, "top-right");
-
      // places the initial drone-assignment widget in the top right corner of the view
      view.ui.add("droneSelectionForm", "top-right");
 
@@ -1284,21 +1237,9 @@
          <hr>
          <h3 class="main-heading">Current Drone assignment</h3>
             <hr>
-         <!-- <div class="quadrant-info" id="quadrant1Info">Quadrant 1: </div>
-         <div class="quadrant-info" id="quadrant2Info">Quadrant 2: </div>
-         <div class="quadrant-info" id="quadrant3Info">Quadrant 3: </div>
-         <div class="quadrant-info" id="quadrant4Info">Quadrant 4: </div> -->
        </div>
 
        <div id="droneControl" class="droneControl-container">
-         <!-- <h2 class="main-heading">Drone control and Object detection</h2> -->
-           <!-- <hr> -->
-
-         <!-- <div>
-           <h4 class="current-drone">Current drone: </h3>
-           <h4 class="foliage-density">Foligage density: </h3>
-             <hr> -->
-             <!-- <hr> -->
            <h3 class="drone-motion">Drone Control Tools</h3>
            <div>
              <label >Object Search: </label>
@@ -1320,11 +1261,6 @@
              <input type="button" class="no-button" value="Reject" id="reject-recommendation" />
            </div>
            </div>
-
-           <!-- <div>
-             <input type="text" class="bt_save_edit" id="tasknotes" value="Task_name"/>
-             <input type="button" class="bt_save" value="Save Task" id="savetasks"/>
-           </div> -->
 
            <div id="recategorizeObject" style="display:none">
              <label >Re-categorize object: </label>

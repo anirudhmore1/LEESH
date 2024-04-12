@@ -24,20 +24,9 @@
       justify-content: center;
       /* align-items: center; */
     }
-    /* #logoDiv {
-      position: : fixed;
-      padding: 12px;
-      background-color: black;
-      bottom: 0;
-      right: 0;
-      color: pink;
-      text-align: center;
-      width: 100px;
-      height: auto;
-    } */
     #droneControl {
       position: fixed;
-      top: 30%;
+      top: 230px;
       right: 0;
       height: auto;
       background: rgba(255,255,255, 0.9);
@@ -47,9 +36,9 @@
     #droneRatings {
       /* position: absolute; */
       position: fixed;
-      bottom: 0;
+      top: 100px;
       left: 0;
-      width: 215px;
+      width: 220px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -58,11 +47,11 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 226px;
+      width: 220px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
-      /* flex-direction: column; /* This will stack the fields vertically */ */
+      /* flex-direction: column; /* This will stack the fields vertically */
       padding: 5px;
     }
     #droneSelectionForm > div {
@@ -77,10 +66,21 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 226px;
+      width: 220px;
       background: rgba(255,255,255,0.9);
       padding: 2px;
       /* z-index: 10; */
+    }
+    #saveAndExport{
+      position: fixed;
+      bottom: 10px;
+      right: 0;
+      width: 226px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */ */
+      padding: 5px;
     }
     .quadrant-info {
       margin-bottom: 8px;
@@ -106,19 +106,15 @@
       writing-mode: vertical-lr;
       width: 200px;
     }
-
     option {
       padding: 0;
       /* writing-mode: vertical-rl;
       text-orientation: upright;       */
     }
-
     input[type="range"] {
       width: 200px;
       margin: 0;
     }
-
-  </style>
   </style>
 
   <script>
@@ -268,27 +264,7 @@
       const quadrant4 = createGrid(-85, 34.95, -84.9, 35, gridSize);
 
       // Add the point graphics to the view's graphics layer
-         view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
-
-      // //Create detection points for drones
-      // const objectDetectionPoints = {
-      //   drone1: [
-      //     { longitude: -84.5, latitude: 35.5 },
-      //     { longitude: -84.25, latitude: 39.5 }
-      //   ],
-      //   drone2: [
-      //     { longitude: -85.5, latitude: 35.5 },
-      //     { longitude: -85.75, latitude: 39.5 }
-      //   ],
-      //   drone3: [
-      //     { longitude: -85.5, latitude: 34.5 },
-      //     { longitude: -85.75, latitude: 30.5 }
-      //   ],
-      //   drone4: [
-      //     { longitude: -84.5, latitude: 34.5 },
-      //     { longitude: -84.25, latitude: 30.5 }
-      //   ]
-      // };
+      view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
 
       function assignDronesToQuadrants() {
           const quadrant1Drone = document.getElementById('quadrant1').value;
@@ -324,8 +300,6 @@
           dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
           console.log(quadrant4Drone);
       }
-
-
 
       // Function to assign drones to quadrants based on user input and update their positions immediately
       function assignDronesToQuadrantsAndUpdatePositions() {
@@ -608,21 +582,6 @@
               display.appendChild(div);
           });
       }
-
-      // const quadrant1Drone = document.getElementById('quadrant1').value;
-      // const quadrant2Drone = document.getElementById('quadrant2').value;
-      // const quadrant3Drone = document.getElementById('quadrant3').value;
-      // const quadrant4Drone = document.getElementById('quadrant4').value;
-      //
-      // const displayElement = document.getElementById('droneQuadrantDisplay');
-      // displayElement.innerHTML = `
-      //     <div>Quadrant 1: ${quadrant1Drone}</div>
-      //     <div>Quadrant 2: ${quadrant2Drone}</div>
-      //     <div>Quadrant 3: ${quadrant3Drone}</div>
-      //     <div>Quadrant 4: ${quadrant4Drone}</div>
-      //     `;
-      //   }
-
       // Object detection image and text
       // Text1: for obj type & Text2: for lighting/illumination
       // var imagesAndTexts = [
@@ -650,12 +609,6 @@
         { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
         // ... add more N/SWIR images and texts as needed
       ];
-
-      // Function to get a random image and text
-      // function getRandomImageAndText() {
-      //   var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
-      //   return imagesAndTexts[randomIndex];
-      // }
 
       // Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
@@ -692,9 +645,6 @@
 
           //drone that detected the objects
           currentDroneId = drone.attributes.id;
-
-          // If an object is detected, store the location and texts
-          // const randomImageAndText = getRandomImageAndText();
 
           // If an object is detected, store the location and texts
           let randomImageAndText;
@@ -743,12 +693,12 @@
         // Select the paragraph elements for the "Current drone:", "Object detected:", and "Foliage density:"
         const currentDroneElement = document.querySelector('#current-drone');
         const objectDetectedElement = document.querySelector('#object-detected');
-        const foliageDensityElement = document.querySelector('#foliage-density');
+        const lightingIlluminationElement = document.querySelector('#lighting-illumination');
 
         // Update their text content with the name of the drone and the image texts
         currentDroneElement.textContent = `Current drone: ${droneName}`;
         objectDetectedElement.textContent = `Object detected: ${imageText1}`;
-        foliageDensityElement.textContent = `Foliage density: ${imageText2}`;
+        lightingIlluminationElement.textContent = `Lighting/Illumination: ${imageText2}`;
       }
 
       //Function for pop-up of object detected
@@ -808,11 +758,7 @@
        updateDroneControlUI(droneName, imageText1, imageText2);
      }
 
-      // //Start-stop search
-      // const startButton = document.getElementById('startsearchbutton');
-      // const stopButton = document.getElementById('stopsearchbutton');
-
-         // Animation function to update point positions
+      // Animation function to update point positions
       let animationFrameId;
       let isAnimating = false;
 
@@ -938,7 +884,6 @@
      cancelAnimationFrame(animationFrameId);
 
      let selectedImagesAndTexts;
-     // let selectedImagesAndTexts = imagingType === 'thermal' ? thermalImagesAndTexts : nswirImagesAndTexts;
 
      // Assign array to selectedImagesAndTexts based on the imagingType
      if (imagingType === 'thermal') {
@@ -961,6 +906,19 @@
      const imageUrl = matchingImageAndText.url;
      const imageText1 = matchingImageAndText.text1;
      const imageText2 = matchingImageAndText.text2;
+
+     // If an object is detected, store the location, timestamp, and texts
+     lastDetectedObjectInfo = {
+       // location: {
+       //   longitude: nextPoint[0],
+       //   latitude: nextPoint[1]
+       // },
+       text1: imageText1, // Store the detected object type
+       text2: imageText2,
+       // timestamp: detectionTimestamp, // Store the timestamp
+       droneId: droneName,
+       isRedetection: true // Indicate that this is a redetection event
+     };
 
      const popup = document.createElement("div");
      const image = document.createElement("img");
@@ -1141,15 +1099,30 @@
            // Retrieve the recategorized object from the select element
            let userReobject = document.getElementById('sel_obj').value;
 
-           // Save the current ratings to the array
-           ratings.push({
-             ratings: currentRatings,
-             response: userResponse,
-             reassignResponse: userReassignResponse,
-             userReobject: userReobject,
-             detectedObjectInfo: lastDetectedObjectInfo,
-             reassignedDroneId: reassignedDroneId
+           // Check if this is a redetection event and if so, include text1 and text2
+           if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
+               // Save the text1 and text2 values for the redetection
+               ratings.push({
+                 ratings: currentRatings,
+                 response: userResponse,
+                 reassignResponse: userReassignResponse,
+                 userReobject: userReobject,
+                 detectedObjectInfo: lastDetectedObjectInfo,
+                 reassignedDroneId: reassignedDroneId,
+                 redetectionText1: lastDetectedObjectInfo.text1,
+                 redetectionText2: lastDetectedObjectInfo.text2
              });
+         } else {
+             ratings.push({
+               ratings: currentRatings,
+               response: userResponse,
+               reassignResponse: userReassignResponse,
+               userReobject: userReobject,
+               detectedObjectInfo: lastDetectedObjectInfo,
+               reassignedDroneId: reassignedDroneId,
+             });
+         }
+             // });
            console.log('Drone ratings saved:', currentRatings); // For debugging
            console.log('User response saved:', userResponse);
            console.log('User recategorization saved:', userReobject);
@@ -1179,16 +1152,21 @@
                entry.ratings.forEach((rating, ratingIndex) => {
                    // Include the user response to object detection and reassigment only on the first drone rating of each session
                    if (ratingIndex === 0) {
-                     const detectionInfo = entry.detectedObjectInfo || {};
-                     // Concatenate longitude and latitude into a single string
-                     const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
-                     const text1 = detectionInfo.text1 || '';
-                     const text2 = detectionInfo.text2 || '';
-                     const timestamp = detectionInfo.timestamp || '';
-                     const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
-                     csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       const detectionInfo = entry.detectedObjectInfo || {};
+                       // Concatenate longitude and latitude into a single string
+                       const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
+                       const text1 = detectionInfo.text1 || '';
+                       const text2 = detectionInfo.text2 || '';
+                       const timestamp = detectionInfo.timestamp || '';
+                       const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
+                       // Check if this is a redetection event and include text1 and text2 for redetection
+                       if (entry.redetectionText1 && entry.redetectionText2) {
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${entry.redetectionText1}","${entry.redetectionText2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       } else {
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       }
                    } else {
-                     csvContent += `,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
+                       csvContent += `,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
                    }
                });
                // Add a separator between sessions if needed
@@ -1204,19 +1182,6 @@
            document.body.appendChild(link); // Required for FF
            link.click(); // This will download the file
        }
-
-       // //
-       // function downloadCSV(csvData) {
-       //   const blob = new Blob([csvData], { type: 'text/csv' });
-       //   const url = window.URL.createObjectURL(blob);
-       //   const a = document.createElement('a');
-       //   a.setAttribute('hidden', '');
-       //   a.setAttribute('href', url);
-       //   a.setAttribute('download', 'drone_ratings.csv');
-       //   document.body.appendChild(a);
-       //   a.click();
-       //   document.body.removeChild(a);
-       // }
 
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', saveRatings);
@@ -1258,6 +1223,9 @@
      // places the current drone-assignment widget in the top right corner of the view
      view.ui.add("droneQuadrantDisplay", "top-right");
 
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("saveAndExport", "top-right");
+
          });
 
   </script>
@@ -1270,7 +1238,7 @@
        <!-- <div id="logoDiv">SCEL/VT</div> -->
 
        <form id="droneSelectionForm">
-         <hr>
+         <!-- <hr> -->
           <h3 class="main-heading">Initial Drone assignment</h3>
              <!-- <hr> -->
           <div>
@@ -1342,7 +1310,7 @@
            <div>
            <h3 class="detection-info">Object detection</h3>
              <p id="current-drone">Current drone:</p>
-             <p id="foliage-density">Foliage density:</p>
+             <p id="lighting-illumination">Lighting/Illumination:</p>
              <p id="object-detected">Object detected:</p>
            </div>
            <div>
@@ -1388,6 +1356,19 @@
                  <option value="drone4">Drone 4</option>
                </select>
                <input type="button" id="reassignBtn" value="Reassign/Swap" />
+             </div>
+             <!-- <hr> -->
+
+             <div id="saveAndExport" class="saveExport-container">
+             <h3 class="Save-and-export-ratings">Confirm selections/Ratings</h3>
+             <div>
+               <label for="confirmButton">Confirm Ratings </label>
+               <button id="confirmButton">Confirm</button>
+             </div>
+             <hr>
+             <div>
+               <label for="trustRange4">Export to CSV and end trial</label>
+               <button id="exportButton">Export</button>
              </div>
 
        <!-- change label class for each drone type -->
@@ -1448,36 +1429,26 @@
          <h3 class="list-heading">Drone trust rating</h3>
              <div class="slider-group">
                <label for="trustRange1">Drone1: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange1">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange1">
                <span id="trustValue1">3</span>
              </div>
              <div class="slider-group">
                <label for="trustRange2">Drone2: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange2">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange2">
                <span id="trustValue2">3</span>
              </div>
              <div class="slider-group">
                <label for="trustRange3">Drone3: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange3">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange3">
                <span id="trustValue3">3</span>
              </div>
              <div class="slider-group">
                <label for="trustRange4">Drone4: </label>
-               <input type="range" min="1" max="5" value="3" class="slider" id="trustRange4">
+               <input type="range" min="1" max="10" value="3" class="slider" id="trustRange4">
                <span id="trustValue4">3</span>
              </div>
          </div>
-         <hr>
-         <div>
-           <label for="confirmButton">Confirm Ratings </label>
-           <button id="confirmButton">Confirm</button>
-         </div>
-         <hr>
-         <div>
-           <label for="trustRange4">Export to CSV </label>
-           <button id="exportButton">Export to CSV</button>
-         </div>
-
+         <!-- <hr> -->
        </div>
 
 </body>
