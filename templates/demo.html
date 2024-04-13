@@ -980,6 +980,12 @@
        return;
      }
 
+     // Calculate the reliability percentage for the redetected object
+     const reliabilityPercentage = calculateReliabilityPercentage(droneName, {
+       text1: matchingImageAndText.text1,
+       text2: matchingImageAndText.text2
+     });
+
       // Generate the pop-up using the matching image and text
      const imageUrl = matchingImageAndText.url;
      const imageText1 = matchingImageAndText.text1;
@@ -1010,10 +1016,14 @@
      const message = "Re-detected object: ";
      const textNode1 = document.createTextNode(message + " by " + droneName + ": " + imageText1);
      const textNode2 = document.createTextNode(imageText2);
+     const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
+
      popup.appendChild(image);
      popup.appendChild(textNode1);
      popup.appendChild(document.createElement("br"));
      popup.appendChild(textNode2);
+     popup.appendChild(document.createElement("br"));
+     popup.appendChild(reliabilityTextNode);
 
      popup.style.position = "absolute";
      popup.style.left = "50%";
