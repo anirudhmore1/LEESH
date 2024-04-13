@@ -407,7 +407,8 @@
           quadrant: 'quadrant1',
           recentlyReassigned: false, // Initialize as false
           reassignmentTime: 0, // Initialize with a default value
-          imagingType: 'thermal'
+          imagingType: 'thermal',
+          reliability: 'high'
         },
         drone2: {
             path: dronePaths.drone2,
@@ -415,7 +416,8 @@
             quadrant: 'quadrant2',
             recentlyReassigned: false,
             reassignmentTime: 0,
-            imagingType: 'thermal'
+            imagingType: 'thermal',
+            reliability: 'low'
         },
         drone3: {
             path: dronePaths.drone3,
@@ -424,6 +426,7 @@
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'nswir',
+            reliability: 'high'
         },
         drone4: {
             path: dronePaths.drone4,
@@ -432,6 +435,7 @@
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'nswir',
+            reliability: 'low'
         }
       };
 
@@ -585,21 +589,100 @@
       //  Object tracker for thermal imaging drones
       // Text1: for obj type & Text2: for lighting/illumination
       var thermalImagesAndTexts = [
-        { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
-        { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Lighting" },
-        { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
-        { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
+        { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "High Lighting" },
         // ... add more thermal images and texts as needed
       ];
 
       // Object tracker for N/SWIR imaging drones
       var nswirImagesAndTexts = [
-        { url: "{% static 'img/nswir/NS_LD.png' %}", text1: "Living distractor", text2: "Lighting" },
-        { url: "{% static 'img/nswir/NS_LT.png' %}", text1: "Living target", text2: "Lighting" },
-        { url: "{% static 'img/nswir/NS_NLD.png' %}", text1: "Non-living distractor", text2: "Lighting" },
-        { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Lighting" },
+        { url: "{% static 'img/nswir/NS_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         // ... add more N/SWIR images and texts as needed
       ];
+
+      // % reliability of detection for drones
+      const reliabilityData = {
+        thermal: {
+          high: {
+            'Living target': { 'High lighting': 90, 'Medium lighting': 80, 'Low lighting': 70 },
+            'Non-living target': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            // Add more object types and lighting conditions as needed
+          },
+          low: {
+            'Living target': { 'High lighting': 70, 'Medium lighting': 80, 'Low lighting': 50 },
+            'Non-living target': { 'High lighting': 60, 'Medium lighting': 80, 'Low lighting': 40 },
+            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            // Add more object types and lighting conditions as needed
+          }
+        },
+        nswir: {
+          high: {
+            'Living target': { 'High lighting': 85, 'Medium lighting': 80,'Low lighting': 65 },
+            'Non-living target': { 'High lighting': 75, 'Medium lighting': 80, 'Low lighting': 55 },
+            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            // Add more object types and lighting conditions as needed
+          },
+          low: {
+            'Living target': { 'High lighting': 65, 'Medium lighting': 80, 'Low lighting': 45 },
+            'Non-living target': { 'High lighting': 55, 'Medium lighting': 80, 'Low lighting': 35 },
+            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            // Add more object types and lighting conditions as needed
+          }
+        }
+      };
+
+      function calculateReliabilityPercentage(droneId, objectDetected) {
+        // Retrieve drone information from the global tracker
+        const droneInfo = dronePathsTrack[droneId];
+        if (!droneInfo) {
+          console.error('Drone information not found for droneId:', droneId);
+          return;
+        }
+
+        // Retrieve the reliability data for the drone's imaging type and reliability level
+        const imagingTypeData = reliabilityData[droneInfo.imagingType];
+        if (!imagingTypeData) {
+          console.error('Reliability data not found for imaging type:', droneInfo.imagingType);
+          return;
+        }
+
+        const reliabilityLevelData = imagingTypeData[droneInfo.reliability];
+        if (!reliabilityLevelData) {
+          console.error('Reliability data not found for reliability level:', droneInfo.reliability);
+          return;
+        }
+
+        // Normalize the object type and lighting condition to match the keys in the reliabilityData object
+        const objectType = objectDetected.text1;
+        // Correctly format the lighting condition to match the keys in the reliabilityData object
+        const lightingCondition = objectDetected.text2.charAt(0).toUpperCase() + objectDetected.text2.slice(1).toLowerCase();
+
+        // Retrieve the reliability percentage based on the object type and lighting condition
+        const objectTypeData = reliabilityLevelData[objectType];
+        if (!objectTypeData) {
+          console.error('Reliability data not found for object type:', objectType);
+          return;
+        }
+
+        const reliabilityPercentage = objectTypeData[lightingCondition];
+        if (reliabilityPercentage === undefined) {
+          console.error('Reliability data not found for lighting condition:', lightingCondition);
+          return;
+        }
+
+        // Return the calculated reliability percentage
+        return reliabilityPercentage;
+      }
 
       // Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
@@ -666,8 +749,14 @@
           lastDetectedObjectType = randomImageAndText.text1;
           console.log("previous type of object detected", lastDetectedObjectType);
 
-          // And display the pop-up with the image of the detected object
-          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, droneInfo.imagingType);
+          // Calculation of reliability percentage
+          let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
+            text1: randomImageAndText.text1,
+            text2: randomImageAndText.text2
+          });
+
+          // Display the pop-up with the image of the detected object
+          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, droneInfo.imagingType, reliabilityPercentage);
 
           changeDroneColorOnDetection(drone);
         }
@@ -693,61 +782,60 @@
       }
 
       //Function for pop-up of object detected
-     function showObjectDetectedPopup(message, droneName, imagingType) {
-       let imageAndText;
-       if (imagingType === 'thermal') {
-         imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-       } else if (imagingType === 'nswir') {
-         imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-       }
+      function showObjectDetectedPopup(message, droneName, imagingType, reliabilityPercentage) {
+        let imageAndText;
+        if (imagingType === 'thermal') {
+          imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+        } else if (imagingType === 'nswir') {
+          imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+        }
 
-       // If no matching object type is found, log an error and return
-       if (!imageAndText) {
-         console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
-         return;
-       }
+        if (!imageAndText) {
+          console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
+          return;
+        }
 
-       var imageUrl = imageAndText.url;
-       var imageText1 = imageAndText.text1; // This should match lastDetectedObjectType
-       var imageText2 = imageAndText.text2;
+        var imageUrl = imageAndText.url;
+        var imageText1 = imageAndText.text1;
+        var imageText2 = imageAndText.text2;
 
-       console.log("previous type of object detected saved in pop-up OG", imageText1);
+        const popup = document.createElement("div");
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "Detected Object";
+        image.style.width = "400px";
+        image.style.height = "400px";
+        image.style.display = "block";
+        image.style.marginBottom = "10px";
 
-       const popup = document.createElement("div");
-       const image = document.createElement("img");
-       image.src = imageUrl;
-       image.alt = "Detected Object";
-       image.style.width = "400px"; // Set the width of the image
-       image.style.height = "400px"; // Set the height of the image
-       image.style.display = "block"; // Display the image as a block element
-       image.style.marginBottom = "10px"; // Margin below the image
+        const textNode1 = document.createTextNode(`${message} by ${droneName}. Detected object: ${imageText1}`);
+        const textNode2 = document.createTextNode(`Lighting condition: ${imageText2}`);
+        const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
 
-       const textNode1 = document.createTextNode(message + " by " + droneName + imageText1); //Message appearing when object detected
-       const textNode2 = document.createTextNode(imageText2);
-       popup.appendChild(image); // Append the image to the popup
-       popup.appendChild(textNode1); // Append the text message to the popup - from image text1
-       popup.appendChild(document.createElement("br")); // Line break between texts
-       popup.appendChild(textNode2); // Append the text message to the popup - from image text2
+        popup.appendChild(image);
+        popup.appendChild(textNode1);
+        popup.appendChild(document.createElement("br"));
+        popup.appendChild(textNode2);
+        popup.appendChild(document.createElement("br"));
+        popup.appendChild(reliabilityTextNode);
 
-       popup.style.position = "absolute";
-       popup.style.left = "50%";
-       popup.style.top = "50%";
-       popup.style.transform = "translate(-50%, -50%)";
-       popup.style.backgroundColor = "white";
-       popup.style.padding = "10px";
-       popup.style.border = "1px solid black";
-       popup.style.zIndex = "1000"; // Ensure the popup is above other elements
+        popup.style.position = "absolute";
+        popup.style.left = "50%";
+        popup.style.top = "50%";
+        popup.style.transform = "translate(-50%, -50%)";
+        popup.style.backgroundColor = "white";
+        popup.style.padding = "10px";
+        popup.style.border = "1px solid black";
+        popup.style.zIndex = "1000";
 
-       document.body.appendChild(popup);
+        document.body.appendChild(popup);
 
-       // Automatically close the popup after 10 seconds
-       setTimeout(() => {
-         document.body.removeChild(popup);
-       }, 10000);
+        setTimeout(() => {
+          document.body.removeChild(popup);
+        }, 10000); //10 seconds
 
-       // Update the drone control UI with the name of the drone that detected the object
-       updateDroneControlUI(droneName, imageText1, imageText2);
-     }
+        updateDroneControlUI(droneName, imageText1, imageText2);
+      }
 
       // Animation function to update point positions
       let animationFrameId;
@@ -844,8 +932,7 @@
    }
 
    function calculateDistance(location1, location2) {
-     // Distance calculation between two points, replace with actual distance calculation
-     // Euclidean distance calculation
+     // Distance calculation between two points, Euclidean distance calculation
      let dx = location1.longitude - location2.longitude;
      let dy = location1.latitude - location2.latitude;
      return Math.sqrt(dx * dx + dy * dy);
@@ -1188,12 +1275,8 @@
 <body>
        <div id="viewDiv"></div>
 
-       <!-- <div id="logoDiv">SCEL/VT</div> -->
-
        <form id="droneSelectionForm">
-         <!-- <hr> -->
           <h3 class="main-heading">Initial Drone assignment</h3>
-             <!-- <hr> -->
           <div>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
@@ -1270,13 +1353,11 @@
                <option value="living distractor">Living distractor</option>
                <option value="non-living distractor">Non-living distractor</option>
              </select>
-             <!-- <input type="button" id="confirmObjCat" value="Confirm" /> -->
            </div>
              <hr>
 
              <div>
              <h3 class="detection-info">Task assignment</h3>
-               <!-- <p id="current-drone">Current drone:</p> -->
              </div>
              <div id="resassignTaskSection">
                <label >Re-assign task:</label>
@@ -1293,7 +1374,6 @@
                </select>
                <input type="button" id="reassignBtn" value="Reassign/Swap" />
              </div>
-             <!-- <hr> -->
 
              <div id="saveAndExport" class="saveExport-container">
              <h3 class="Save-and-export-ratings">Confirm selections/Ratings</h3>
