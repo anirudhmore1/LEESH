@@ -14,7 +14,7 @@
     html,
     body,
     #viewDiv {
-      width: 91%;
+      width: 90%;
       height: 100%;
       top: 0;
       margin-left: auto;
@@ -26,12 +26,12 @@
     }
     #droneControl {
       position: fixed;
-      top: 230px;
+      top: 216px;
       right: 0;
       height: auto;
       background: rgba(255,255,255, 0.9);
-      width: 226px;
-      /* padding: 5px; */
+      width: 230px;
+      padding: 1px;
     }
     #droneRatings {
       /* position: absolute; */
@@ -47,12 +47,12 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 220px;
+      width: 230px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
       /* flex-direction: column; /* This will stack the fields vertically */
-      padding: 5px;
+      padding: 1px;
     }
     #droneSelectionForm > div {
       margin-bottom: 5px; /* Adds space between the form elements */
@@ -66,7 +66,7 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 220px;
+      width: 230px;
       background: rgba(255,255,255,0.9);
       padding: 2px;
       /* z-index: 10; */
@@ -75,7 +75,7 @@
       position: fixed;
       bottom: 10px;
       right: 0;
-      width: 226px;
+      width: 230px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -748,12 +748,17 @@
           // Store the detected object type in the global variable
           lastDetectedObjectType = randomImageAndText.text1;
           console.log("previous type of object detected", lastDetectedObjectType);
+          lastDetectedLight = randomImageAndText.text2;
+          console.log("previous lighting condition", lastDetectedLight);
 
           // Calculation of reliability percentage
           let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
             text1: randomImageAndText.text1,
             text2: randomImageAndText.text2
           });
+
+          // Capture reliability % at detection
+          lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
 
           // Display the pop-up with the image of the detected object
           showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, droneInfo.imagingType, reliabilityPercentage);
@@ -974,11 +979,17 @@
      }
 
      // Find the image and text that match the last detected object type
-     const matchingImageAndText = selectedImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+     const matchingImageAndText = selectedImagesAndTexts.find(item => item.text1 === lastDetectedObjectType && item.text2 === lastDetectedLight);
      if (!matchingImageAndText) {
        console.error('No matching image and text found for the last detected object type:', lastDetectedObjectType);
        return;
      }
+
+     // Calculate the reliability percentage for the redetected object
+     const reliabilityPercentage = calculateReliabilityPercentage(droneName, {
+       text1: matchingImageAndText.text1,
+       text2: matchingImageAndText.text2
+     });
 
       // Generate the pop-up using the matching image and text
      const imageUrl = matchingImageAndText.url;
@@ -998,6 +1009,9 @@
        isRedetection: true // Indicate that this is a redetection event
      };
 
+     //Capture %reliability of re-detection
+     lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
+
      const popup = document.createElement("div");
      const image = document.createElement("img");
      image.src = imageUrl;
@@ -1010,10 +1024,14 @@
      const message = "Re-detected object: ";
      const textNode1 = document.createTextNode(message + " by " + droneName + ": " + imageText1);
      const textNode2 = document.createTextNode(imageText2);
+     const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
+
      popup.appendChild(image);
      popup.appendChild(textNode1);
      popup.appendChild(document.createElement("br"));
      popup.appendChild(textNode2);
+     popup.appendChild(document.createElement("br"));
+     popup.appendChild(reliabilityTextNode);
 
      popup.style.position = "absolute";
      popup.style.left = "50%";
@@ -1142,8 +1160,12 @@
                let competence = document.getElementById(`competenceRange${i}`).value;
                currentRatings.push({drone: i, trust: trust, competence: competence});
            }
+
            // Retrieve the recategorized object from the select element
            let userReobject = document.getElementById('sel_obj').value;
+
+           // Retrieve the reliability percentage for the detected object
+           const reliabilityPercentage = lastDetectedObjectInfo.reliabilityPercentage;
 
            // Check if this is a redetection event and if so, include text1 and text2
            if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
@@ -1156,7 +1178,8 @@
                  detectedObjectInfo: lastDetectedObjectInfo,
                  reassignedDroneId: reassignedDroneId,
                  redetectionText1: lastDetectedObjectInfo.text1,
-                 redetectionText2: lastDetectedObjectInfo.text2
+                 redetectionText2: lastDetectedObjectInfo.text2,
+                 reliabilityPercentage: reliabilityPercentage
              });
          } else {
              ratings.push({
@@ -1166,6 +1189,7 @@
                userReobject: userReobject,
                detectedObjectInfo: lastDetectedObjectInfo,
                reassignedDroneId: reassignedDroneId,
+               reliabilityPercentage: reliabilityPercentage
              });
          }
              // });
@@ -1193,7 +1217,7 @@
                csvContent += `${reassignmentTimestamp}\n\n`;
            }
 
-           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Lighting, User Response to recommendation, Re-categorized Object, Task Reassigned, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
+           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Lighting, Reliability %, User Response to recommendation, Re-categorized Object, Task Reassigned, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
                entry.ratings.forEach((rating, ratingIndex) => {
                    // Include the user response to object detection and reassigment only on the first drone rating of each session
@@ -1205,14 +1229,16 @@
                        const text2 = detectionInfo.text2 || '';
                        const timestamp = detectionInfo.timestamp || '';
                        const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
+                       const reliabilityPercentage = entry.reliabilityPercentage || '';
+
                        // Check if this is a redetection event and include text1 and text2 for redetection
                        if (entry.redetectionText1 && entry.redetectionText2) {
-                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${entry.redetectionText1}","${entry.redetectionText2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${entry.redetectionText1}","${entry.redetectionText2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
                        } else {
-                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
                        }
                    } else {
-                       csvContent += `,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
+                       csvContent += `,,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
                    }
                });
                // Add a separator between sessions if needed

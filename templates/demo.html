@@ -14,7 +14,7 @@
     html,
     body,
     #viewDiv {
-      width: 91%;
+      width: 90%;
       height: 100%;
       top: 0;
       margin-left: auto;
@@ -26,12 +26,12 @@
     }
     #droneControl {
       position: fixed;
-      top: 218px;
+      top: 216px;
       right: 0;
       height: auto;
       background: rgba(255,255,255, 0.9);
-      width: 226px;
-      /* padding: 5px; */
+      width: 230px;
+      padding: 1px;
     }
     #droneRatings {
       /* position: absolute; */
@@ -47,12 +47,12 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 220px;
+      width: 230px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
       /* flex-direction: column; /* This will stack the fields vertically */
-      padding: 3px;
+      padding: 1px;
     }
     #droneSelectionForm > div {
       margin-bottom: 5px; /* Adds space between the form elements */
@@ -66,7 +66,7 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 220px;
+      width: 230px;
       background: rgba(255,255,255,0.9);
       padding: 2px;
       /* z-index: 10; */
@@ -75,7 +75,7 @@
       position: fixed;
       bottom: 10px;
       right: 0;
-      width: 226px;
+      width: 230px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -748,6 +748,8 @@
           // Store the detected object type in the global variable
           lastDetectedObjectType = randomImageAndText.text1;
           console.log("previous type of object detected", lastDetectedObjectType);
+          lastDetectedLight = randomImageAndText.text2;
+          console.log("previous lighting condition", lastDetectedLight);
 
           // Calculation of reliability percentage
           let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
@@ -977,7 +979,7 @@
      }
 
      // Find the image and text that match the last detected object type
-     const matchingImageAndText = selectedImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+     const matchingImageAndText = selectedImagesAndTexts.find(item => item.text1 === lastDetectedObjectType && item.text2 === lastDetectedLight);
      if (!matchingImageAndText) {
        console.error('No matching image and text found for the last detected object type:', lastDetectedObjectType);
        return;
@@ -1236,7 +1238,7 @@
                            csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
                        }
                    } else {
-                       csvContent += `,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
+                       csvContent += `,,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
                    }
                });
                // Add a separator between sessions if needed
