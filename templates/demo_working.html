@@ -589,19 +589,45 @@
       //  Object tracker for thermal imaging drones
       // Text1: for obj type & Text2: for lighting/illumination
       var thermalImagesAndTexts = [
-        { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        // { url: "{% static 'img/thermal/T_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        // { url: "{% static 'img/thermal/T_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        // { url: "{% static 'img/thermal/T_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        // { url: "{% static 'img/thermal/T_NLT.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_animal1_LD.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_animal2_LD.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_animal3_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_campnofire_NLT.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_campnofire2_NLT.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_campnofire3_NLT.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_Human_LT.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_Human2_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_human3_LT.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_human4_LT.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_Vehicle1_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_Vehicle2_NLD.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_Vehicle3_NLD.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         // ... add more thermal images and texts as needed
       ];
 
       // Object tracker for N/SWIR imaging drones
       var nswirImagesAndTexts = [
-        { url: "{% static 'img/nswir/NS_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        // { url: "{% static 'img/nswir/NS_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        // { url: "{% static 'img/nswir/NS_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        // { url: "{% static 'img/nswir/NS_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        // { url: "{% static 'img/nswir/NS_NLT.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_animal1_LD.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_animal2_LD.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_animal3_LD.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_animal4_LD.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_camp1_NLT.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_camp2_NLT.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_camp3_NLT.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_car_NLD.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_car2_NLD.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_car3_NLD.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_human_LT.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_human2_LT.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_humans3_LT.png' %}", text1: "Living target", text2: "High Lighting" },
         // ... add more N/SWIR images and texts as needed
       ];
 

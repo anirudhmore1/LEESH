@@ -36,9 +36,9 @@
     #droneRatings {
       /* position: absolute; */
       position: fixed;
-      top: 100px;
+      top: 30px;
       left: 0;
-      width: 220px;
+      width: 230px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -1442,7 +1442,10 @@
        <!-- change label class for each drone type -->
        <div id="droneRatings" class="droneRatings-container">
          <!-- <hr> -->
+         <h2> For this object detection event:</h2>
+         <hr>
          <h3 class="list-heading">Drone competence ranking</h3>
+         <p>Please rank the UAVs in the order of their competence:</p>
          <div class="droneRatings-container">
          <!-- <hr> -->
          <!-- <label><strong> Drone 1: </strong></label> -->
@@ -1495,6 +1498,7 @@
          <div>
          <!-- <label><strong> Drone 2: </strong></label> -->
          <h3 class="list-heading">Drone trust rating</h3>
+         <p>How much would you trust the recommendation UAV?</p>
              <div class="slider-group">
                <label for="trustRange1">Drone1: </label>
                <input type="range" min="1" max="10" value="3" class="slider" id="trustRange1">
