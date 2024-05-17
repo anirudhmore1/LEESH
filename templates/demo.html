@@ -560,7 +560,7 @@
             droneGraphic.symbol = originalSymbol;
             view.graphics.remove(droneGraphic);
             view.graphics.add(droneGraphic);
-        }, 10000);
+        }, 60000); //60000 ms = 60 s
       }
 
       // Function to update the quadrant display with the current drones
@@ -1800,16 +1800,32 @@
         image.style.display = "block";
         image.style.marginBottom = "10px";
 
-        const textNode1 = document.createTextNode(`${message} by ${droneName}. Detected object: ${imageText1}`);
-        const textNode2 = document.createTextNode(`Lighting condition: ${imageText2}`);
-        const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
+        // const textNode1 = document.createTextNode(`${message} by ${droneName}.<br> Detected object: ${imageText1}`);
+        // const textNode2 = document.createTextNode(`Lighting condition: ${imageText2}`);
+        // const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
+        //
+        // popup.appendChild(image);
+        // popup.appendChild(textNode1);
+        // popup.appendChild(document.createElement("br"));
+        // popup.appendChild(textNode2);
+        // popup.appendChild(document.createElement("br"));
+        // popup.appendChild(reliabilityTextNode);
 
-        popup.appendChild(image);
-        popup.appendChild(textNode1);
-        popup.appendChild(document.createElement("br"));
-        popup.appendChild(textNode2);
-        popup.appendChild(document.createElement("br"));
-        popup.appendChild(reliabilityTextNode);
+        // Create a div element for the text content
+        const textContentDiv = document.createElement("div");
+        // Use innerHTML to include a line break between the two parts of the text
+        textContentDiv.innerHTML = `${message} by ${droneName}.<br>Object: ${imageText1}`;
+
+        const textNode2 = document.createElement("div");
+        textNode2.textContent = `Lighting condition: ${imageText2}`;
+
+        const reliabilityTextNode = document.createElement("div");
+        reliabilityTextNode.textContent = `Reliability: ${reliabilityPercentage}%`;
+
+        popup.appendChild(image); // Append the image to the popup
+        popup.appendChild(textContentDiv); // Append the text content div to the popup
+        popup.appendChild(textNode2); // Append the second text node to the popup
+        popup.appendChild(reliabilityTextNode); // Append the reliability text node to the popup
 
         popup.style.position = "absolute";
         popup.style.left = "50%";
@@ -1824,7 +1840,7 @@
 
         setTimeout(() => {
           document.body.removeChild(popup);
-        }, 10000); //10 seconds
+        }, 60000); //60 seconds
 
         updateDroneControlUI(droneName, imageText1, imageText2);
       }
@@ -2036,7 +2052,7 @@
        if (typeof callback === "function") {
          callback(); // Call the callback function to reset reassignedDroneId
        }
-     }, 10000);
+     }, 60000); //60000 ms = 60 s
 
      // Update the drone control UI with the name of the drone that detected the object
      updateDroneControlUI(droneName, imageText1, imageText2);
