@@ -555,12 +555,28 @@
         view.graphics.remove(droneGraphic);
         view.graphics.add(droneGraphic);
 
-        // Revert back to the original symbol after 10 seconds
-        setTimeout(() => {
-            droneGraphic.symbol = originalSymbol;
-            view.graphics.remove(droneGraphic);
-            view.graphics.add(droneGraphic);
-        }, 60000); //60000 ms = 60 s
+        // // Revert back to the original symbol after 10 seconds
+        // setTimeout(() => {
+        //     droneGraphic.symbol = originalSymbol;
+        //     view.graphics.remove(droneGraphic);
+        //     view.graphics.add(droneGraphic);
+        // }, 60000); //60000 ms = 60 s
+
+        // Function to revert the drone's symbol back to the original
+        function revertDroneSymbol() {
+          droneGraphic.symbol = originalSymbol;
+          view.graphics.remove(droneGraphic);
+          view.graphics.add(droneGraphic);
+        }
+
+        // // Revert back to the original symbol after 60 seconds
+        // const revertTimeout = setTimeout(revertDroneSymbol, 60000); // 60000 ms = 60 s
+
+        // Revert the drone symbol when the confirm button is clicked
+        document.getElementById('confirmButton').addEventListener('click', function() {
+          // clearTimeout(revertTimeout); // Clear the timeout to prevent automatic reversion
+          revertDroneSymbol(); // Revert the drone symbol immediately
+        });
       }
 
       // Function to update the quadrant display with the current drones
@@ -1827,10 +1843,14 @@
 
         document.body.appendChild(popup);
 
-        setTimeout(() => {
-          document.body.removeChild(popup);
-        }, 60000); //60 seconds
+        // setTimeout(() => {
+        //   document.body.removeChild(popup);
+        // }, 60000); //60 seconds
 
+        // Remove the popup when the confirm button is clicked
+        document.getElementById('confirmButton').addEventListener('click', function() {
+          document.body.removeChild(popup);
+        });
         updateDroneControlUI(droneName, imageText1, imageText2);
       }
 
@@ -2013,17 +2033,33 @@
      image.style.display = "block";
      image.style.marginBottom = "10px";
 
-     const message = "Re-detected object: ";
-     const textNode1 = document.createTextNode(message + " by " + droneName + ": " + imageText1);
-     const textNode2 = document.createTextNode(imageText2);
-     const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
+     // const message = "Re-detected object ";
+     // const textNode1 = document.createTextNode(message + " by " + droneName + ": " + imageText1);
+     // const textNode2 = document.createTextNode(imageText2);
+     // const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
+     //
+     // popup.appendChild(image);
+     // popup.appendChild(textNode1);
+     // popup.appendChild(document.createElement("br"));
+     // popup.appendChild(textNode2);
+     // popup.appendChild(document.createElement("br"));
+     // popup.appendChild(reliabilityTextNode);
 
-     popup.appendChild(image);
-     popup.appendChild(textNode1);
-     popup.appendChild(document.createElement("br"));
-     popup.appendChild(textNode2);
-     popup.appendChild(document.createElement("br"));
-     popup.appendChild(reliabilityTextNode);
+     // Create a div element for the text content
+     const textContentDiv = document.createElement("div");
+     // Use innerHTML to include a line break between the two parts of the text
+     textContentDiv.innerHTML = `Re-detected object by ${droneName} <br> Object: ${imageText1}`;
+
+     const textNode2 = document.createElement("div");
+     textNode2.textContent = `Lighting condition: ${imageText2}`;
+
+     const reliabilityTextNode = document.createElement("div");
+     reliabilityTextNode.textContent = `Reliability: ${reliabilityPercentage}%`;
+
+     popup.appendChild(image); // Append the image to the popup
+     popup.appendChild(textContentDiv); // Append the text content div to the popup
+     popup.appendChild(textNode2); // Append the second text node to the popup
+     popup.appendChild(reliabilityTextNode); // Append the reliability text node to the popup
 
      popup.style.position = "absolute";
      popup.style.left = "50%";
@@ -2036,12 +2072,20 @@
 
      document.body.appendChild(popup);
 
-     setTimeout(() => {
+     // setTimeout(() => {
+     //   document.body.removeChild(popup);
+     //   if (typeof callback === "function") {
+     //     callback(); // Call the callback function to reset reassignedDroneId
+     //   }
+     // }, 60000); //60000 ms = 60 s
+
+     // Remove the popup when the confirm button is clicked
+     document.getElementById('confirmButton').addEventListener('click', function() {
        document.body.removeChild(popup);
        if (typeof callback === "function") {
          callback(); // Call the callback function to reset reassignedDroneId
        }
-     }, 60000); //60000 ms = 60 s
+     });
 
      // Update the drone control UI with the name of the drone that detected the object
      updateDroneControlUI(droneName, imageText1, imageText2);
