@@ -1748,7 +1748,7 @@
           lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
 
           // Display the pop-up with the image of the detected object
-          showObjectDetectedPopup("Object detected at " + nextPoint.join(", "), drone.attributes.id, droneInfo.imagingType, reliabilityPercentage);
+          showObjectDetectedPopup("Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "), drone.attributes.id, droneInfo.imagingType, reliabilityPercentage);
 
           changeDroneColorOnDetection(drone);
         }
@@ -1799,17 +1799,6 @@
         image.style.height = "400px";
         image.style.display = "block";
         image.style.marginBottom = "10px";
-
-        // const textNode1 = document.createTextNode(`${message} by ${droneName}.<br> Detected object: ${imageText1}`);
-        // const textNode2 = document.createTextNode(`Lighting condition: ${imageText2}`);
-        // const reliabilityTextNode = document.createTextNode(`Reliability: ${reliabilityPercentage}%`);
-        //
-        // popup.appendChild(image);
-        // popup.appendChild(textNode1);
-        // popup.appendChild(document.createElement("br"));
-        // popup.appendChild(textNode2);
-        // popup.appendChild(document.createElement("br"));
-        // popup.appendChild(reliabilityTextNode);
 
         // Create a div element for the text content
         const textContentDiv = document.createElement("div");
