@@ -1595,7 +1595,6 @@
         // // ... add more N/SWIR images and texts as needed
       ];
 
-
       // % reliability of detection for drones
       const reliabilityData = {
         thermal: {
@@ -1681,6 +1680,9 @@
       // Global variable to store the last detected object location
       let lastObjectDetectionLocation = null;
 
+      // Global object to store detected points and their corresponding images and texts
+      let detectedPointsMap = {};
+
       // Function to move drones along their paths
       function moveDrone(drone, droneInfo) {
         const currentLocationIndex = droneInfo.path.findIndex(point =>
@@ -1711,12 +1713,13 @@
           //drone that detected the objects
           currentDroneId = drone.attributes.id;
 
-          // If an object is detected, store the location and texts
-          let randomImageAndText;
+          // Check if the point has been detected before
+          let imageAndText;
+          // Select a random image and text for the first detection
           if (droneInfo.imagingType === 'thermal') {
-            randomImageAndText = getRandomImageAndText(thermalImagesAndTexts);
+            imageAndText = getRandomImageAndText(thermalImagesAndTexts);
           } else if (droneInfo.imagingType === 'nswir') {
-            randomImageAndText = getRandomImageAndText(nswirImagesAndTexts);
+            imageAndText = getRandomImageAndText(nswirImagesAndTexts);
           }
 
           // Capture the current timestamp
@@ -1729,23 +1732,23 @@
                   longitude: nextPoint[0],
                   latitude: nextPoint[1]
               },
-              text1: randomImageAndText.text1, // Store the detected object type
-              text2: randomImageAndText.text2,
+              text1: imageAndText.text1, // Store the detected object type
+              text2: imageAndText.text2,
               timestamp: detectionTimestamp, // Store the timestamp
               droneId: currentDroneId
           };
           console.log("previous type of object detected as stored in text1 in the tracker before global var", lastDetectedObjectInfo.text1);
 
           // Store the detected object type in the global variable
-          lastDetectedObjectType = randomImageAndText.text1;
+          lastDetectedObjectType = imageAndText.text1;
           console.log("previous type of object detected", lastDetectedObjectType);
-          lastDetectedLight = randomImageAndText.text2;
+          lastDetectedLight = imageAndText.text2;
           console.log("previous lighting condition", lastDetectedLight);
 
           // Calculation of reliability percentage
           let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
-            text1: randomImageAndText.text1,
-            text2: randomImageAndText.text2
+            text1: imageAndText.text1,
+            text2: imageAndText.text2
           });
 
           // Capture reliability % at detection
@@ -1779,11 +1782,17 @@
 
       //Function for pop-up of object detected
       function showObjectDetectedPopup(message, droneName, imagingType, reliabilityPercentage) {
+        // let imageAndText;
+        // if (imagingType === 'thermal') {
+        //   imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+        // } else if (imagingType === 'nswir') {
+        //   imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+        // }
         let imageAndText;
         if (imagingType === 'thermal') {
-          imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+          imageAndText = getRandomImageAndText(thermalImagesAndTexts);
         } else if (imagingType === 'nswir') {
-          imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+          imageAndText = getRandomImageAndText(nswirImagesAndTexts);
         }
 
         if (!imageAndText) {
@@ -1848,8 +1857,6 @@
         if (!isAnimating) {
           return;
         }
-
-        // const delayInMilliseconds = 10000; // Set the desired delay
 
         pointGraphics.forEach(graphic => {
             const droneId = graphic.attributes.id;
