@@ -1680,6 +1680,9 @@
       // Global variable to store the last detected object location
       let lastObjectDetectionLocation = null;
 
+      // Global object to store detected points and their corresponding images and texts
+      let detectedPointsMap = {};
+
       // Function to move drones along their paths
       function moveDrone(drone, droneInfo) {
         const currentLocationIndex = droneInfo.path.findIndex(point =>
@@ -1710,12 +1713,13 @@
           //drone that detected the objects
           currentDroneId = drone.attributes.id;
 
-          // If an object is detected, store the location and texts
-          let randomImageAndText;
+          // Check if the point has been detected before
+          let imageAndText;
+          // Select a random image and text for the first detection
           if (droneInfo.imagingType === 'thermal') {
-            randomImageAndText = getRandomImageAndText(thermalImagesAndTexts);
+            imageAndText = getRandomImageAndText(thermalImagesAndTexts);
           } else if (droneInfo.imagingType === 'nswir') {
-            randomImageAndText = getRandomImageAndText(nswirImagesAndTexts);
+            imageAndText = getRandomImageAndText(nswirImagesAndTexts);
           }
 
           // Capture the current timestamp
@@ -1728,30 +1732,38 @@
                   longitude: nextPoint[0],
                   latitude: nextPoint[1]
               },
-              text1: randomImageAndText.text1, // Store the detected object type
-              text2: randomImageAndText.text2,
+              text1: imageAndText.text1, // Store the detected object type
+              text2: imageAndText.text2,
               timestamp: detectionTimestamp, // Store the timestamp
               droneId: currentDroneId
           };
           console.log("previous type of object detected as stored in text1 in the tracker before global var", lastDetectedObjectInfo.text1);
 
           // Store the detected object type in the global variable
-          lastDetectedObjectType = randomImageAndText.text1;
+          lastDetectedObjectType = imageAndText.text1;
           console.log("previous type of object detected", lastDetectedObjectType);
-          lastDetectedLight = randomImageAndText.text2;
+          lastDetectedLight = imageAndText.text2;
           console.log("previous lighting condition", lastDetectedLight);
 
           // Calculation of reliability percentage
           let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
-            text1: randomImageAndText.text1,
-            text2: randomImageAndText.text2
+            text1: imageAndText.text1,
+            text2: imageAndText.text2
           });
 
           // Capture reliability % at detection
           lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
 
           // Display the pop-up with the image of the detected object
-          showObjectDetectedPopup("Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "), drone.attributes.id, droneInfo.imagingType, reliabilityPercentage);
+          showObjectDetectedPopup(
+            "Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "),
+            drone.attributes.id,
+            droneInfo.imagingType,
+            imageAndText.url,
+            imageAndText.text1,
+            imageAndText.text2,
+            reliabilityPercentage
+          );
 
           changeDroneColorOnDetection(drone);
         }
@@ -1777,13 +1789,14 @@
       }
 
       //Function for pop-up of object detected
-      function showObjectDetectedPopup(message, droneName, imagingType, reliabilityPercentage) {
-        let imageAndText;
-        if (imagingType === 'thermal') {
-          imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-        } else if (imagingType === 'nswir') {
-          imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-        }
+      function showObjectDetectedPopup(message, droneName, imagingType, imageUrl, text1, text2, reliabilityPercentage) {
+        // let imageAndText;
+        // if (imagingType === 'thermal') {
+        //   imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+        // } else if (imagingType === 'nswir') {
+        //   imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
+        // }
+
         // let imageAndText;
         // if (imagingType === 'thermal') {
         //   imageAndText = getRandomImageAndText(thermalImagesAndTexts);
@@ -1791,15 +1804,14 @@
         //   imageAndText = getRandomImageAndText(nswirImagesAndTexts);
         // }
         //
-
-        if (!imageAndText) {
-          console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
-          return;
-        }
-
-        var imageUrl = imageAndText.url;
-        var imageText1 = imageAndText.text1;
-        var imageText2 = imageAndText.text2;
+        // if (!imageAndText) {
+        //   console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
+        //   return;
+        // }
+        //
+        // var imageUrl = imageAndText.url;
+        // var imageText1 = imageAndText.text1;
+        // var imageText2 = imageAndText.text2;
 
         const popup = document.createElement("div");
         popup.className = "object-detected-popup";
@@ -1812,11 +1824,10 @@
         image.style.marginBottom = "10px";
 
         const textNode1 = document.createElement("div");
-        // Use innerHTML to include a line break between the two parts of the text
-        textNode1.innerHTML = `${message} by ${droneName}.<br>Object: ${imageText1}`;
+        textNode1.innerHTML = `${message} by ${droneName}.<br>Object: ${text1}`;
 
         const textNode2 = document.createElement("div");
-        textNode2.textContent = `Lighting condition: ${imageText2}`;
+        textNode2.textContent = `Lighting condition: ${text2}`;
 
         const reliabilityTextNode = document.createElement("div");
         reliabilityTextNode.textContent = `Reliability: ${reliabilityPercentage}%`;
@@ -1843,7 +1854,7 @@
         //   document.body.removeChild(popup);
         // }, 10000); //10 seconds
 
-        updateDroneControlUI(droneName, imageText1, imageText2);
+        updateDroneControlUI(droneName, text1, text2);
       }
 
       // Animation function to update point positions
@@ -1854,8 +1865,6 @@
         if (!isAnimating) {
           return;
         }
-
-        // const delayInMilliseconds = 10000; // Set the desired delay
 
         pointGraphics.forEach(graphic => {
             const droneId = graphic.attributes.id;

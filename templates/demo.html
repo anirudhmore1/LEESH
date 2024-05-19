@@ -1755,7 +1755,15 @@
           lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
 
           // Display the pop-up with the image of the detected object
-          showObjectDetectedPopup("Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "), drone.attributes.id, droneInfo.imagingType, reliabilityPercentage);
+          showObjectDetectedPopup(
+            "Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "),
+            drone.attributes.id,
+            droneInfo.imagingType,
+            imageAndText.url,
+            imageAndText.text1,
+            imageAndText.text2,
+            reliabilityPercentage
+          );
 
           changeDroneColorOnDetection(drone);
         }
@@ -1781,28 +1789,29 @@
       }
 
       //Function for pop-up of object detected
-      function showObjectDetectedPopup(message, droneName, imagingType, reliabilityPercentage) {
+      function showObjectDetectedPopup(message, droneName, imagingType, imageUrl, text1, text2, reliabilityPercentage) {
         // let imageAndText;
         // if (imagingType === 'thermal') {
         //   imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
         // } else if (imagingType === 'nswir') {
         //   imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
         // }
-        let imageAndText;
-        if (imagingType === 'thermal') {
-          imageAndText = getRandomImageAndText(thermalImagesAndTexts);
-        } else if (imagingType === 'nswir') {
-          imageAndText = getRandomImageAndText(nswirImagesAndTexts);
-        }
 
-        if (!imageAndText) {
-          console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
-          return;
-        }
-
-        var imageUrl = imageAndText.url;
-        var imageText1 = imageAndText.text1;
-        var imageText2 = imageAndText.text2;
+        // let imageAndText;
+        // if (imagingType === 'thermal') {
+        //   imageAndText = getRandomImageAndText(thermalImagesAndTexts);
+        // } else if (imagingType === 'nswir') {
+        //   imageAndText = getRandomImageAndText(nswirImagesAndTexts);
+        // }
+        //
+        // if (!imageAndText) {
+        //   console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
+        //   return;
+        // }
+        //
+        // var imageUrl = imageAndText.url;
+        // var imageText1 = imageAndText.text1;
+        // var imageText2 = imageAndText.text2;
 
         const popup = document.createElement("div");
         popup.className = "object-detected-popup";
@@ -1815,11 +1824,10 @@
         image.style.marginBottom = "10px";
 
         const textNode1 = document.createElement("div");
-        // Use innerHTML to include a line break between the two parts of the text
-        textNode1.innerHTML = `${message} by ${droneName}.<br>Object: ${imageText1}`;
+        textNode1.innerHTML = `${message} by ${droneName}.<br>Object: ${text1}`;
 
         const textNode2 = document.createElement("div");
-        textNode2.textContent = `Lighting condition: ${imageText2}`;
+        textNode2.textContent = `Lighting condition: ${text2}`;
 
         const reliabilityTextNode = document.createElement("div");
         reliabilityTextNode.textContent = `Reliability: ${reliabilityPercentage}%`;
@@ -1846,7 +1854,7 @@
         //   document.body.removeChild(popup);
         // }, 10000); //10 seconds
 
-        updateDroneControlUI(droneName, imageText1, imageText2);
+        updateDroneControlUI(droneName, text1, text2);
       }
 
       // Animation function to update point positions
