@@ -14,7 +14,7 @@
     html,
     body,
     #viewDiv {
-      width: 90%;
+      width: 88%;
       height: 100%;
       top: 0;
       margin-left: auto;
@@ -33,12 +33,21 @@
       width: 230px;
       padding: 1px;
     }
+    #objectRecommendation {
+      position: fixed;
+      top: 550px;
+      left: 0;
+      height: auto;
+      background: rgba(255, 255, 255, 0.9);
+      width: 280px;
+      padding: 5px;
+    }
     #droneRatings {
       /* position: absolute; */
       position: fixed;
-      top: 100px;
+      top: 00px;
       left: 0;
-      width: 220px;
+      width: 280px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -71,11 +80,22 @@
       padding: 2px;
       /* z-index: 10; */
     }
-    #saveAndExport{
+    #endTrial{
       position: fixed;
       bottom: 10px;
       right: 0;
       width: 230px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */ */
+      padding: 5px;
+    }
+    #saveAndExport{
+      position: fixed;
+      bottom: 118px;
+      left: 0;
+      width: 290px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -98,16 +118,26 @@
       background: #000 10%;
       outline: none; /* remove outline */
       border-radius: 50px; /* round corners */
+      margin-bottom: 10px;
+    }
+    .competence-slider-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     datalist {
       display: flex;
-      flex-direction: column;
+      /* flex-direction: column; */
       justify-content: space-between;
-      writing-mode: vertical-lr;
+      /* writing-mode: vertical-lr; */
       width: 200px;
+      margin-left: 28px;
+      margin-bottom: 3px;
     }
     option {
       padding: 0;
+      font-size: 12px;
+      text-align: center;
       /* writing-mode: vertical-rl;
       text-orientation: upright;       */
     }
@@ -115,6 +145,41 @@
       width: 200px;
       margin: 0;
     }
+    #legendDiv {
+      position: absolute;
+      top: 0px;
+      left: 40px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 1px;
+      z-index: 1;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-right: 20px;
+    }
+    .legend-item img {
+      width: 30px;
+      height: 30px;
+      margin-right: 5px;
+    }
+    .legend-item span {
+      white-space: nowrap;
+    }
+    .object-detected-popup {
+      position: absolute;
+      background-color: white;
+      border: 1px solid black;
+      padding: 10px;
+      z-index: 1000;
+      cursor: move;
+    }
+
+
   </style>
 
   <script>
@@ -300,6 +365,33 @@
           dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
           console.log(quadrant4Drone);
       }
+
+      // Create the legend div
+      const legendDiv = document.createElement("div");
+      legendDiv.id = "legendDiv";
+
+      // Create legend items for each drone
+      const droneData = [
+        { name: "drone1:", thumbnail: "{% static 'img/thermal-drone.png' %}", sensorType: "Thermal" },
+        { name: "drone2:", thumbnail: "{% static 'img/thermal-drone.png' %}", sensorType: "Thermal" },
+        { name: "drone3:", thumbnail: "{% static 'img/sniffer-drone.png' %}", sensorType: "N/SWIR" },
+        { name: "drone4:", thumbnail: "{% static 'img/sniffer-drone.png' %}", sensorType: "N/SWIR" }
+      ];
+
+      droneData.forEach(drone => {
+        const legendItem = document.createElement("div");
+        legendItem.className = "legend-item";
+
+        const thumbnailImg = document.createElement("img");
+        thumbnailImg.src = drone.thumbnail;
+        legendItem.appendChild(thumbnailImg);
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `${drone.name} ${drone.sensorType}`;
+        legendItem.appendChild(nameSpan);
+
+        legendDiv.appendChild(legendItem);
+      });
 
       // Function to assign drones to quadrants based on user input and update their positions immediately
       function assignDronesToQuadrantsAndUpdatePositions() {
@@ -592,7 +684,8 @@
       //  Object tracker for thermal imaging drones
       // Text1: for obj type & Text2: for lighting/illumination
       var thermalImagesAndTexts = [
-        //LT
+        //NLT
+        //Trial 1
         { url: "{% static 'img/thermal/T_camp2_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_camp2_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_camp2_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -635,6 +728,7 @@
         { url: "{% static 'img/thermal/T_camp12_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_camp12_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_camp12_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //Trial 2
         { url: "{% static 'img/thermal/T_camp13_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_camp13_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_camp13_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -677,6 +771,7 @@
         { url: "{% static 'img/thermal/T_camp22_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_camp22_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_camp22_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/thermal/T_camp23_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_camp23_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_camp23_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -719,13 +814,8 @@
         { url: "{% static 'img/thermal/T_camp34_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_camp34_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_camp34_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_camp35_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_camp35_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_camp35_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_camp36_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_camp36_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_camp36_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        //NLD
+        //LT
+        //Trial 1
         { url: "{% static 'img/thermal/T_human1-1_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human1-1_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human1-1_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -770,6 +860,7 @@
         { url: "{% static 'img/thermal/T_human10-1_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_human11_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human11_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        //Trial 2
         { url: "{% static 'img/thermal/T_human11_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_human12_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human12_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
@@ -792,18 +883,12 @@
         { url: "{% static 'img/thermal/T_human17_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human17_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human17_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_human18_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_human18_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_human18_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_human18-1_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human18-1_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human18-1_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_human19_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human19_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human19_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_human20_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_human20_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_human20_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_human20-1_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human20-1_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human20-1_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -819,6 +904,7 @@
         { url: "{% static 'img/thermal/T_human23-2_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human23-2_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human23-2_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/thermal/T_human24_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_human24_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human24_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -865,9 +951,7 @@
         { url: "{% static 'img/thermal/T_human33_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_human33_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         // LD
-        { url: "{% static 'img/thermal/T_animal2_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_animal2_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_animal2_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //Trial 1
         { url: "{% static 'img/thermal/T_animal1_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal1_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal1_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -913,6 +997,7 @@
         { url: "{% static 'img/thermal/T_animal13_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal13_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal13_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //Trial 2
         { url: "{% static 'img/thermal/T_animal14-1_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal14-1_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal14-1_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -928,9 +1013,6 @@
         { url: "{% static 'img/thermal/T_animal17-1_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal17-1_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal17-1_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_animal17-2_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_animal17-2_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_animal17-2_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_animal18_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal18_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal18_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -961,6 +1043,7 @@
         { url: "{% static 'img/thermal/T_animal23_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal23_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal23_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/thermal/T_animal23-1_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_animal23-1_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal23-1_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1007,6 +1090,7 @@
         { url: "{% static 'img/thermal/T_animal32_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_animal32_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         //NLD
+        //Trial 1
         { url: "{% static 'img/thermal/T_machine1-1_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine1-1_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine1-1_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1040,6 +1124,7 @@
         { url: "{% static 'img/thermal/T_machine7_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine7_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine7_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        // Trial 2
         { url: "{% static 'img/thermal/T_machine7-1_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine7-1_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine7-1_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1070,6 +1155,7 @@
         { url: "{% static 'img/thermal/T_machine16_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine16_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine16_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/thermal/T_machine17_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine17_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine17_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1082,9 +1168,6 @@
         { url: "{% static 'img/thermal/T_machine19-1_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine19-1_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine19-1_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_machine20_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_machine20_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_machine20_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/thermal/T_machine20-1_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine20-1_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine20-1_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1103,26 +1186,24 @@
         { url: "{% static 'img/thermal/T_machine24_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/thermal/T_machine24_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/thermal/T_machine24_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/thermal/T_machine25_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/thermal/T_machine25_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/thermal/T_machine25_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         // ... add more thermal images and texts as needed
       ];
 
       // Object tracker for N/SWIR imaging drones
       var nswirImagesAndTexts = [
         //LT
+        //Trial 1
         { url: "{% static 'img/nswir/NS_human2_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human2_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human2_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human1_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human1_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human1_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human3_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human3_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human3_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human4_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human4_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_human15_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_human15_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_human15_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human4_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human5_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human5_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
@@ -1130,9 +1211,6 @@
         { url: "{% static 'img/nswir/NS_human6_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human6_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human6_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human7_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human7_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human7_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human8_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human8_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human8_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -1145,36 +1223,19 @@
         { url: "{% static 'img/nswir/NS_human11_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human11_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human11_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human12_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human12_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human12_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human13_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human13_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human13_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
+        //Trial 2
         { url: "{% static 'img/nswir/NS_human14_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human14_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human14_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human15_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human15_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human15_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human16_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human16_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human16_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human17_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human17_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human17_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human18_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human18_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human18_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human19_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human19_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human19_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human20_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human20_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human20_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human21_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human21_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human21_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human22_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human22_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human22_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -1190,9 +1251,13 @@
         { url: "{% static 'img/nswir/NS_human26_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human26_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human26_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_human12_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_human12_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_human12_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human27_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human27_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human27_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/nswir/NS_human28_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human28_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human28_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -1202,18 +1267,15 @@
         { url: "{% static 'img/nswir/NS_human30_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human30_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human30_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human31_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human31_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human31_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human32_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human32_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human32_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human33_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human33_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human33_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human34_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human34_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human34_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_human19_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_human19_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_human19_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_human35_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human35_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human35_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
@@ -1229,13 +1291,8 @@
         { url: "{% static 'img/nswir/NS_human39_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_human39_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_human39_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_human40_LT_Low.png' %}", text1: "Living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_human40_LT_Med.png' %}", text1: "Living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_human40_LT_High.png' %}", text1: "Living target", text2: "High Lighting" },
         //NLT
-        { url: "{% static 'img/nswir/NS_camp2_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp2_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp2_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //Trial 1
         { url: "{% static 'img/nswir/NS_camp1_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp1_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp1_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -1254,12 +1311,6 @@
         { url: "{% static 'img/nswir/NS_camp7_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp7_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp7_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_camp8_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp8_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp8_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_camp9_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp9_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp9_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp10_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp10_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp10_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -1272,30 +1323,22 @@
         { url: "{% static 'img/nswir/NS_camp13_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp13_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp13_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_camp14_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp14_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp14_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp15_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp15_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp15_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //Trial 2
         { url: "{% static 'img/nswir/NS_camp16_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp16_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp16_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp17_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp17_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp17_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_camp18_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp18_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp18_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp19_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp19_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp19_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp20_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp20_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp20_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_camp21_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp21_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp21_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp22_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp22_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp22_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -1311,12 +1354,10 @@
         { url: "{% static 'img/nswir/NS_camp26_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp26_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp26_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_camp27_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_camp27_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_camp27_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_camp28_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp28_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp28_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/nswir/NS_camp29_NLT_Low.png' %}", text1: "Non-living target", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_camp29_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp29_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
@@ -1351,6 +1392,7 @@
         { url: "{% static 'img/nswir/NS_camp39_NLT_Med.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_camp39_NLT_High.png' %}", text1: "Non-living target", text2: "High Lighting" },
         //LD
+        //Trial 1
         { url: "{% static 'img/nswir/NS_animal2_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal2_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal2_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1369,9 +1411,6 @@
         { url: "{% static 'img/nswir/NS_animal6_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal6_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal6_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal7_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal7_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal7_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal8_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal8_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal8_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1384,9 +1423,7 @@
         { url: "{% static 'img/nswir/NS_animal11_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal11_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal11_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal12_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal12_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal12_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //Trial 2
         { url: "{% static 'img/nswir/NS_animal13_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal13_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal13_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1399,9 +1436,6 @@
         { url: "{% static 'img/nswir/NS_animal16_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal16_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal16_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal17_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal17_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal17_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal18_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal18_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal18_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1420,18 +1454,13 @@
         { url: "{% static 'img/nswir/NS_animal23_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal23_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal23_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal24_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal24_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal24_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal25_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal25_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal25_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/nswir/NS_animal26_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal26_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal26_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal27_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal27_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal27_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal28_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal28_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal28_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1444,24 +1473,12 @@
         { url: "{% static 'img/nswir/NS_animal31_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal31_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal31_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal32_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal32_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal32_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal33_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal33_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal33_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal34_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal34_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal34_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal35_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal35_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal35_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal36_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal36_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal36_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_animal37_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_animal37_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_animal37_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_animal38_LD_Low.png' %}", text1: "Living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_animal38_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal38_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
@@ -1472,15 +1489,13 @@
         { url: "{% static 'img/nswir/NS_animal40_LD_Med.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_animal40_LD_High.png' %}", text1: "Living distractor", text2: "High Lighting" },
         //NLD
+        //Trial 1
         { url: "{% static 'img/nswir/NS_mach2_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach2_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach2_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach1_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach1_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach1_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_mach3_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_mach3_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_mach3_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach4_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach4_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach4_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1490,24 +1505,15 @@
         { url: "{% static 'img/nswir/NS_mach6_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach6_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach6_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_mach7_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_mach7_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_mach7_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach8_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach8_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach8_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach9_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach9_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach9_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_mach10_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_mach10_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_mach10_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach11_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach11_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach11_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_mach12_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_mach12_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_mach12_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach13_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach13_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach13_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1517,12 +1523,10 @@
         { url: "{% static 'img/nswir/NS_mach15_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach15_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach15_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        //Trial 2
         { url: "{% static 'img/nswir/NS_mach16_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach16_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach16_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_mach17_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_mach17_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_mach17_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach18_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach18_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach18_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1553,6 +1557,7 @@
         { url: "{% static 'img/nswir/NS_mach27_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach27_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach27_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        //Trial 3
         { url: "{% static 'img/nswir/NS_mach28_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach28_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach28_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1571,9 +1576,6 @@
         { url: "{% static 'img/nswir/NS_mach33_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach33_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach33_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
-        { url: "{% static 'img/nswir/NS_mach34_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
-        { url: "{% static 'img/nswir/NS_mach34_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
-        { url: "{% static 'img/nswir/NS_mach34_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
         { url: "{% static 'img/nswir/NS_mach35_NLD_Low.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
         { url: "{% static 'img/nswir/NS_mach35_NLD_Med.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
         { url: "{% static 'img/nswir/NS_mach35_NLD_High.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
@@ -1599,33 +1601,33 @@
       const reliabilityData = {
         thermal: {
           high: {
-            'Living target': { 'High lighting': 90, 'Medium lighting': 80, 'Low lighting': 70 },
-            'Non-living target': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
-            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
-            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Living target': { 'High lighting': 80, 'Medium lighting': 85, 'Low lighting': 100 },
+            'Non-living target': { 'High lighting': 60, 'Medium lighting': 70, 'Low lighting': 70 },
+            'Living distractor': { 'High lighting': 80, 'Medium lighting': 85, 'Low lighting': 100 },
+            'Non-living distractor': { 'High lighting': 60, 'Medium lighting': 70, 'Low lighting': 70 },
             // Add more object types and lighting conditions as needed
           },
           low: {
-            'Living target': { 'High lighting': 70, 'Medium lighting': 80, 'Low lighting': 50 },
-            'Non-living target': { 'High lighting': 60, 'Medium lighting': 80, 'Low lighting': 40 },
-            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
-            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Living target': { 'High lighting': 60, 'Medium lighting': 75, 'Low lighting': 90 },
+            'Non-living target': { 'High lighting': 50, 'Medium lighting': 60, 'Low lighting': 60 },
+            'Living distractor': { 'High lighting': 60, 'Medium lighting': 75, 'Low lighting': 90 },
+            'Non-living distractor': { 'High lighting': 50, 'Medium lighting': 60, 'Low lighting': 60 },
             // Add more object types and lighting conditions as needed
           }
         },
         nswir: {
           high: {
-            'Living target': { 'High lighting': 85, 'Medium lighting': 80,'Low lighting': 65 },
-            'Non-living target': { 'High lighting': 75, 'Medium lighting': 80, 'Low lighting': 55 },
-            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
-            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Living target': { 'High lighting': 70, 'Medium lighting': 70, 'Low lighting': 60 },
+            'Non-living target': { 'High lighting': 100, 'Medium lighting': 85, 'Low lighting': 70 },
+            'Living distractor': { 'High lighting': 70, 'Medium lighting': 70, 'Low lighting': 60 },
+            'Non-living distractor': { 'High lighting': 100, 'Medium lighting': 85, 'Low lighting': 70 },
             // Add more object types and lighting conditions as needed
           },
           low: {
-            'Living target': { 'High lighting': 65, 'Medium lighting': 80, 'Low lighting': 45 },
-            'Non-living target': { 'High lighting': 55, 'Medium lighting': 80, 'Low lighting': 35 },
-            'Living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
-            'Non-living distractor': { 'High lighting': 80, 'Medium lighting': 80, 'Low lighting': 60 },
+            'Living target': { 'High lighting': 60, 'Medium lighting': 60, 'Low lighting': 50 },
+            'Non-living target': { 'High lighting': 90, 'Medium lighting': 75, 'Low lighting': 80 },
+            'Living distractor': { 'High lighting': 60, 'Medium lighting': 60, 'Low lighting': 50 },
+            'Non-living distractor': { 'High lighting': 90, 'Medium lighting': 75, 'Low lighting': 60 },
             // Add more object types and lighting conditions as needed
           }
         }
@@ -1674,7 +1676,55 @@
         return reliabilityPercentage;
       }
 
-      // Global variable to store the lobject detected type
+      let isDragging = false;
+      let currentX;
+      let currentY;
+      let initialX;
+      let initialY;
+      let xOffset = 0;
+      let yOffset = 0;
+
+      //Function to drag pop-up with mouse click
+      function dragElement(elmnt) {
+        const dragElement = elmnt.querySelector(".object-detected-popup");
+
+        dragElement.addEventListener("mousedown", dragMouseDown);
+
+        function dragMouseDown(e) {
+          e = e || window.event;
+          e.preventDefault();
+          isDragging = true;
+          currentX = e.clientX;
+          currentY = e.clientY;
+          initialX = dragElement.offsetLeft;
+          initialY = dragElement.offsetTop;
+          xOffset = currentX - initialX;
+          yOffset = currentY - initialY;
+        }
+
+        document.addEventListener("mouseup", closeDragElement);
+        document.addEventListener("mousemove", elementDrag);
+
+        function elementDrag(e) {
+          e = e || window.event;
+          e.preventDefault();
+
+          if (isDragging) {
+            currentX = e.clientX;
+            currentY = e.clientY;
+            dragElement.style.left = currentX - xOffset + "px";
+            dragElement.style.top = currentY - yOffset + "px";
+          }
+        }
+
+        function closeDragElement() {
+          isDragging = false;
+          document.removeEventListener("mouseup", closeDragElement);
+          document.removeEventListener("mousemove", elementDrag);
+        }
+      }
+
+// Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
 
       // Global variable to store the last detected object location
@@ -1775,18 +1825,18 @@
         return imagesAndTexts[randomIndex];
       }
 
-      // Function to update the "drone control" UI
-      function updateDroneControlUI(droneName, imageText1, imageText2) {
-        // Select the paragraph elements for the "Current drone:", "Object detected:", and "Foliage density:"
-        const currentDroneElement = document.querySelector('#current-drone');
-        const objectDetectedElement = document.querySelector('#object-detected');
-        const lightingIlluminationElement = document.querySelector('#lighting-illumination');
-
-        // Update their text content with the name of the drone and the image texts
-        currentDroneElement.textContent = `Current drone: ${droneName}`;
-        objectDetectedElement.textContent = `Object detected: ${imageText1}`;
-        lightingIlluminationElement.textContent = `Lighting/Illumination: ${imageText2}`;
-      }
+      // // Function to update the "drone control" UI
+      // function updateDroneControlUI(droneName, imageText1, imageText2) {
+      //   // Select the paragraph elements for the "Current drone:", "Object detected:", and "Foliage density:"
+      //   const currentDroneElement = document.querySelector('#current-drone');
+      //   const objectDetectedElement = document.querySelector('#object-detected');
+      //   const lightingIlluminationElement = document.querySelector('#lighting-illumination');
+      //
+      //   // Update their text content with the name of the drone and the image texts
+      //   currentDroneElement.textContent = `Current drone: ${droneName}`;
+      //   objectDetectedElement.textContent = `Object detected: ${imageText1}`;
+      //   lightingIlluminationElement.textContent = `Lighting/Illumination: ${imageText2}`;
+      // }
 
       //Function for pop-up of object detected
       function showObjectDetectedPopup(message, droneName, imagingType, imageUrl, text1, text2, reliabilityPercentage) {
@@ -1830,14 +1880,14 @@
         textNode2.textContent = `Lighting condition: ${text2}`;
 
         const reliabilityTextNode = document.createElement("div");
-        reliabilityTextNode.textContent = `Reliability: ${reliabilityPercentage}%`;
+        reliabilityTextNode.textContent = `Object Detection Reliability: ${reliabilityPercentage}%`;
 
         popup.appendChild(image);
         popup.appendChild(textNode1);
         // popup.appendChild(document.createElement("br"));
-        popup.appendChild(textNode2);
-        // popup.appendChild(document.createElement("br"));
         popup.appendChild(reliabilityTextNode);
+        // popup.appendChild(document.createElement("br"));
+        popup.appendChild(textNode2);
 
         popup.style.position = "absolute";
         popup.style.left = "50%";
@@ -1850,11 +1900,13 @@
 
         document.body.appendChild(popup);
 
+        dragElement(document.body);
+
         // setTimeout(() => {
         //   document.body.removeChild(popup);
         // }, 10000); //10 seconds
 
-        updateDroneControlUI(droneName, text1, text2);
+        // updateDroneControlUI(droneName, text1, text2);
       }
 
       // Animation function to update point positions
@@ -2044,14 +2096,15 @@
      textNode2.textContent = `Lighting condition: ${imageText2}`;
 
      const reliabilityTextNode = document.createElement("div");
-     reliabilityTextNode.textContent = `Reliability: ${reliabilityPercentage}%`;
+     reliabilityTextNode.textContent = `Object Detection Reliability: ${reliabilityPercentage}%`;
 
      popup.appendChild(image);
      popup.appendChild(textNode1);
      // popup.appendChild(document.createElement("br"));
-     popup.appendChild(textNode2);
-     // popup.appendChild(document.createElement("br"));
      popup.appendChild(reliabilityTextNode);
+     // popup.appendChild(document.createElement("br"));
+     popup.appendChild(textNode2);
+
 
      popup.style.position = "absolute";
      popup.style.left = "50%";
@@ -2071,8 +2124,8 @@
      //   }
      // }, 10000);
 
-     // Update the drone control UI with the name of the drone that detected the object
-     updateDroneControlUI(droneName, imageText1, imageText2);
+     // // Update the drone control UI with the name of the drone that detected the object
+     // updateDroneControlUI(droneName, imageText1, imageText2);
 
      // Store the callback to be called later
      popup.callback = callback;
@@ -2330,6 +2383,9 @@
      // places the drone-control widget in the top right corner of the view
      view.ui.add("droneControl", "top-right");
 
+     // places the drone-control widget in the top right corner of the view
+     view.ui.add("objectRecommendation", "top-right");
+
      // places the drone-ratings widget in the bottom of the view
      view.ui.add("droneRatings", "top-left");
 
@@ -2337,7 +2393,13 @@
      view.ui.add("droneQuadrantDisplay", "top-right");
 
      // places the save and export buttons in the bottom right corner of the view
-     view.ui.add("saveAndExport", "top-right");
+     view.ui.add("saveAndExport", "bottom-left");
+
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("endTrial", "bottom-right");
+
+     // Add the legend div to the viewDiv
+     view.ui.add(legendDiv, "top-left");
 
          });
 
@@ -2396,27 +2458,27 @@
        </div>
 
        <div id="droneControl" class="droneControl-container">
-           <h3 class="drone-motion">Drone Control Tools</h3>
-           <div>
-             <label >Object Search: </label>
+           <!-- <h3 class="drone-motion">Drone Control Tools</h3> -->
+           <!-- <div> -->
+             <h3 >Object Search: </h3>
              <input type="button" class="start-button" value="Start" id="startsearchbutton">
              <input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
            </div>
-          <hr>
+          <!-- <hr> -->
 
-           <div>
+           <!-- <div>
            <h3 class="detection-info">Object detection</h3>
              <p id="current-drone">Current drone:</p>
              <p id="lighting-illumination">Lighting/Illumination:</p>
              <p id="object-detected">Object detected:</p>
-           </div>
-           <div>
-             <label >Object Recommendation:</label>
-             <div>
+           </div> -->
+       <div id="objectRecommendation" class="objectRecommendation-container">
+             <h3>Object Recommendation:</h3>
+             <!-- <div> -->
              <input type="button" class="yes-button" value="Accept" id="accept-recommendation" />
              <input type="button" class="no-button" value="Reject" id="reject-recommendation" />
-           </div>
-           </div>
+           <!-- </div>
+           </div> -->
 
            <div id="recategorizeObject" style="display:none">
              <label >Re-categorize object: </label>
@@ -2429,9 +2491,9 @@
            </div>
              <hr>
 
-             <div>
+             <!-- <div>
              <h3 class="detection-info">Task assignment</h3>
-             </div>
+             </div> -->
              <div id="resassignTaskSection">
                <label >Re-assign task:</label>
                <input type="button" class="yes-button" value="Yes" id="yesBtn" />
@@ -2447,29 +2509,32 @@
                </select>
                <input type="button" id="reassignBtn" value="Reassign/Swap" />
              </div>
+           </div>
 
              <div id="saveAndExport" class="saveExport-container">
-             <h3 class="Save-and-export-ratings">Confirm selections/Ratings</h3>
+             <!-- <h3 class="Save-and-export-ratings">Confirm selections/Ratings</h3> -->
              <div>
-               <label for="confirmButton">Confirm Ratings </label>
+               <!-- <label for="confirmButton">Confirm Ratings </label> -->
+               <label >Confirm selections and ratings </label>
                <button id="confirmButton">Confirm</button>
              </div>
-             <hr>
-             <div>
-               <label for="trustRange4">Export to CSV and end trial</label>
-               <button id="exportButton">Export</button>
+             <!-- <hr> -->
+             <div id="endTrial" class="endTrial-container">
+               <!-- <label for="trustRange4">Export to CSV and end trial</label> -->
+               <button id="exportButton">End Trial</button>
              </div>
 
        <!-- change label class for each drone type -->
        <div id="droneRatings" class="droneRatings-container">
          <!-- <hr> -->
-         <h3 class="list-heading">Drone competence ranking</h3>
+         <h3 class="list-heading">Rank the drones in the order of their competence in detecting the current object</h3>
          <div class="droneRatings-container">
          <!-- <hr> -->
          <!-- <label><strong> Drone 1: </strong></label> -->
          <div class="slider-group">
                <label for="competenceRange1">Drone1: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange1" list="tickmarks1">
+               <div class="competence-slider-container">
                <datalist id="tickmarks1">
                  <option value="1" label="1st"></option>
                  <option value="2" label="2nd"></option>
@@ -2481,6 +2546,7 @@
              <div class="slider-group">
                <label for="competenceRange2">Drone2: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange2" list="tickmarks2">
+               <div class="competence-slider-container">
                <datalist id="tickmarks2">
                  <option value="1" label="1st"></option>
                  <option value="2" label="2nd"></option>
@@ -2492,6 +2558,7 @@
              <div class="slider-group">
                <label for="competenceRange3">Drone3: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange3" list="tickmarks3">
+               <div class="competence-slider-container">
                <datalist id="tickmarks3">
                  <option value="1" label="1st"></option>
                  <option value="2" label="2nd"></option>
@@ -2503,6 +2570,7 @@
              <div class="slider-group">
                <label for="competenceRange4">Drone4: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange4" list="tickmarks4">
+               <div class="competence-slider-container">
                <datalist id="tickmarks4">
                  <option value="1" label="1st"></option>
                  <option value="2" label="2nd"></option>
@@ -2515,7 +2583,7 @@
          <hr>
          <div>
          <!-- <label><strong> Drone 2: </strong></label> -->
-         <h3 class="list-heading">Drone trust rating</h3>
+         <h3 class="list-heading">How much do you trust the drone's object detection recommendation?</h3>
              <div class="slider-group">
                <label for="trustRange1">Drone1: </label>
                <input type="range" min="1" max="10" value="3" class="slider" id="trustRange1">

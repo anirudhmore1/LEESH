@@ -170,7 +170,22 @@
     .legend-item span {
       white-space: nowrap;
     }
-
+    .object-detected-popup {
+      position: absolute;
+      background-color: white;
+      border: 1px solid black;
+      padding: 10px;
+      z-index: 1000;
+      cursor: move;
+    }
+    .redetected-object-popup {
+      position: absolute;
+      background-color: white;
+      border: 1px solid black;
+      padding: 10px;
+      z-index: 1000;
+      cursor: move;
+    }
   </style>
 
   <script>
@@ -1667,7 +1682,67 @@
         return reliabilityPercentage;
       }
 
-      // Global variable to store the lobject detected type
+      //Function to drag pop-up with mouse click
+      function dragElement(elmnt) {
+        const dragElement = elmnt.querySelector(".object-detected-popup, .redetected-object-popup");
+
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        dragElement.addEventListener("mousedown", dragMouseDown);
+
+        function dragMouseDown(e) {
+          e = e || window.event;
+          e.preventDefault();
+
+          // Check if the cursor is over the pop-up element
+          const isOverPopup = e.target.closest(".object-detected-popup, .redetected-object-popup");
+          if (!isOverPopup) return;
+
+          isDragging = true;
+          currentX = e.clientX;
+          currentY = e.clientY;
+          initialX = dragElement.offsetLeft;
+          initialY = dragElement.offsetTop;
+          xOffset = currentX - initialX;
+          yOffset = currentY - initialY;
+        }
+
+        document.addEventListener("mouseup", closeDragElement);
+        document.addEventListener("mousemove", elementDrag);
+
+        function elementDrag(e) {
+          e = e || window.event;
+          e.preventDefault();
+
+          if (isDragging) {
+            currentX = e.clientX;
+            currentY = e.clientY;
+            dragElement.style.left = currentX - xOffset + "px";
+            dragElement.style.top = currentY - yOffset + "px";
+          }
+        }
+
+        function closeDragElement() {
+          isDragging = false;
+          document.removeEventListener("mouseup", closeDragElement);
+          document.removeEventListener("mousemove", elementDrag);
+
+          // Reset the dragging state and re-attach event listeners
+          setTimeout(() => {
+            dragElement.addEventListener("mousedown", dragMouseDown);
+            document.addEventListener("mouseup", closeDragElement);
+            document.addEventListener("mousemove", elementDrag);
+          }, 0);
+        }
+      }
+
+// Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
 
       // Global variable to store the last detected object location
@@ -1842,6 +1917,8 @@
         popup.style.zIndex = "1000";
 
         document.body.appendChild(popup);
+
+        dragElement(document.body);
 
         // setTimeout(() => {
         //   document.body.removeChild(popup);
@@ -2057,6 +2134,8 @@
      popup.style.zIndex = "1000";
 
      document.body.appendChild(popup);
+
+     dragElement(document.body);
 
      // setTimeout(() => {
      //   document.body.removeChild(popup);
