@@ -147,8 +147,8 @@
     }
     #legendDiv {
       position: absolute;
-      top: 0px;
-      left: 40px;
+      top: -10px;
+      left: 280px;
       background-color: rgba(255, 255, 255, 0.9);
       padding: 10px;
       border-radius: 1px;
@@ -185,6 +185,14 @@
       padding: 10px;
       z-index: 1000;
       cursor: move;
+    }
+    .popup-table {
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+    .popup-table td {
+      padding: 5px;
+      border: 1px solid #ccc;
     }
   </style>
 
@@ -397,6 +405,58 @@
         legendItem.appendChild(nameSpan);
 
         legendDiv.appendChild(legendItem);
+      });
+
+      //Quadrant quadrantLabels
+      function createQuadrantLabels() {
+        const quadrantLabels = [];
+
+        // Quadrant 1 label
+        const quadrant1Label = document.createElement("div");
+        quadrant1Label.textContent = "Quadrant 1";
+        quadrant1Label.style.position = "absolute";
+        quadrant1Label.style.top = "80px";
+        quadrant1Label.style.right = "30px";
+        quadrant1Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant1Label.style.padding = "5px";
+        quadrantLabels.push(quadrant1Label);
+
+        // Quadrant 2 label
+        const quadrant2Label = document.createElement("div");
+        quadrant2Label.textContent = "Quadrant 2";
+        quadrant2Label.style.position = "absolute";
+        quadrant2Label.style.top = "80px";
+        quadrant2Label.style.left = "50px";
+        quadrant2Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant2Label.style.padding = "5px";
+        quadrantLabels.push(quadrant2Label);
+
+        // Quadrant 3 label
+        const quadrant3Label = document.createElement("div");
+        quadrant3Label.textContent = "Quadrant 3";
+        quadrant3Label.style.position = "absolute";
+        quadrant3Label.style.bottom = "80px";
+        quadrant3Label.style.left = "50px";
+        quadrant3Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant3Label.style.padding = "5px";
+        quadrantLabels.push(quadrant3Label);
+
+        // Quadrant 4 label
+        const quadrant4Label = document.createElement("div");
+        quadrant4Label.textContent = "Quadrant 4";
+        quadrant4Label.style.position = "absolute";
+        quadrant4Label.style.bottom = "80px";
+        quadrant4Label.style.right = "30px";
+        quadrant4Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant4Label.style.padding = "5px";
+        quadrantLabels.push(quadrant4Label);
+
+        return quadrantLabels;
+      }
+
+      const quadrantLabels = createQuadrantLabels();
+      quadrantLabels.forEach(label => {
+        view.ui.add(label);
       });
 
       // Function to assign drones to quadrants based on user input and update their positions immediately
@@ -640,7 +700,7 @@
         // Define a new symbol with a different color or image to indicate detection
         const detectionSymbol = {
           type: "picture-marker",
-          url: "{% static 'img/target.png' %}",
+          url: "{% static 'img/target1.png' %}",
           width: droneSymbolSize,
           height: droneSymbolSize
           // color: "red" // Change the color to red or any other color
@@ -1742,7 +1802,7 @@
         }
       }
 
-// Global variable to store the lobject detected type
+      // Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
 
       // Global variable to store the last detected object location
@@ -1858,31 +1918,9 @@
 
       //Function for pop-up of object detected
       function showObjectDetectedPopup(message, droneName, imagingType, imageUrl, text1, text2, reliabilityPercentage) {
-        // let imageAndText;
-        // if (imagingType === 'thermal') {
-        //   imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-        // } else if (imagingType === 'nswir') {
-        //   imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-        // }
-
-        // let imageAndText;
-        // if (imagingType === 'thermal') {
-        //   imageAndText = getRandomImageAndText(thermalImagesAndTexts);
-        // } else if (imagingType === 'nswir') {
-        //   imageAndText = getRandomImageAndText(nswirImagesAndTexts);
-        // }
-        //
-        // if (!imageAndText) {
-        //   console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
-        //   return;
-        // }
-        //
-        // var imageUrl = imageAndText.url;
-        // var imageText1 = imageAndText.text1;
-        // var imageText2 = imageAndText.text2;
-
         const popup = document.createElement("div");
         popup.className = "object-detected-popup";
+
         const image = document.createElement("img");
         image.src = imageUrl;
         image.alt = "Detected Object";
@@ -1892,20 +1930,38 @@
         image.style.marginBottom = "10px";
 
         const textNode1 = document.createElement("div");
-        textNode1.innerHTML = `${message} by ${droneName}.<br>Object: ${text1}`;
+        textNode1.innerHTML = message;
 
-        const textNode2 = document.createElement("div");
-        textNode2.textContent = `Lighting condition: ${text2}`;
+        const table = document.createElement("table");
+        table.classList.add("popup-table");
 
-        const reliabilityTextNode = document.createElement("div");
-        reliabilityTextNode.textContent = `Object Detection Reliability: ${reliabilityPercentage}%`;
+        const headerRow = table.insertRow();
+        const headerCell1 = headerRow.insertCell();
+        const headerCell2 = headerRow.insertCell();
+        headerCell1.textContent = "Detecting drone";
+        headerCell2.textContent = droneName;
+
+        const row1 = table.insertRow();
+        const cell11 = row1.insertCell();
+        const cell12 = row1.insertCell();
+        cell11.textContent = "Object";
+        cell12.textContent = text1;
+
+        const row2 = table.insertRow();
+        const cell21 = row2.insertCell();
+        const cell22 = row2.insertCell();
+        cell21.textContent = "Lighting condition";
+        cell22.textContent = text2;
+
+        const row3 = table.insertRow();
+        const cell31 = row3.insertCell();
+        const cell32 = row3.insertCell();
+        cell31.textContent = "Object Detection Reliability";
+        cell32.textContent = `${reliabilityPercentage}%`;
 
         popup.appendChild(image);
         popup.appendChild(textNode1);
-        // popup.appendChild(document.createElement("br"));
-        popup.appendChild(reliabilityTextNode);
-        // popup.appendChild(document.createElement("br"));
-        popup.appendChild(textNode2);
+        popup.appendChild(table);
 
         popup.style.position = "absolute";
         popup.style.left = "50%";
@@ -1919,13 +1975,8 @@
         document.body.appendChild(popup);
 
         dragElement(document.body);
-
-        // setTimeout(() => {
-        //   document.body.removeChild(popup);
-        // }, 10000); //10 seconds
-
-        // updateDroneControlUI(droneName, text1, text2);
       }
+
 
       // Animation function to update point positions
       let animationFrameId;
@@ -2097,6 +2148,7 @@
 
      const popup = document.createElement("div");
      popup.className = "object-detected-popup";
+
      const image = document.createElement("img");
      image.src = imageUrl;
      image.alt = "Detected Object";
@@ -2105,24 +2157,41 @@
      image.style.display = "block";
      image.style.marginBottom = "10px";
 
-     // const message = "Re-detected object: ";
+     //Message for redetection: droneName
      const textNode1 = document.createElement("div");
      // Use innerHTML to include a line break between the two parts of the text
-     textNode1.innerHTML = `Re-detected object by ${droneName} <br> Object: ${imageText1}`;
+     textNode1.innerHTML = `Re-detected object`;
 
-     const textNode2 = document.createElement("div");
-     textNode2.textContent = `Lighting condition: ${imageText2}`;
+     const table = document.createElement("table");
+     table.classList.add("popup-table");
 
-     const reliabilityTextNode = document.createElement("div");
-     reliabilityTextNode.textContent = `Object Detection Reliability: ${reliabilityPercentage}%`;
+     const headerRow = table.insertRow();
+     const headerCell1 = headerRow.insertCell();
+     const headerCell2 = headerRow.insertCell();
+     headerCell1.textContent = "Re-detecing drone";
+     headerCell2.textContent = droneName;
+
+     const row1 = table.insertRow();
+     const cell11 = row1.insertCell();
+     const cell12 = row1.insertCell();
+     cell11.textContent = "Object:";
+     cell12.textContent = imageText1;
+
+     const row2 = table.insertRow();
+     const cell21 = row2.insertCell();
+     const cell22 = row2.insertCell();
+     cell21.textContent = "Lighting condition:";
+     cell22.textContent = imageText2;
+
+     const row3 = table.insertRow();
+     const cell31 = row3.insertCell();
+     const cell32 = row3.insertCell();
+     cell31.textContent = "Object Detection Reliability:";
+     cell32.textContent = `${reliabilityPercentage}%`;
 
      popup.appendChild(image);
      popup.appendChild(textNode1);
-     // popup.appendChild(document.createElement("br"));
-     popup.appendChild(reliabilityTextNode);
-     // popup.appendChild(document.createElement("br"));
-     popup.appendChild(textNode2);
-
+     popup.appendChild(table);
 
      popup.style.position = "absolute";
      popup.style.left = "50%";

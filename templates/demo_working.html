@@ -178,8 +178,22 @@
       z-index: 1000;
       cursor: move;
     }
-
-
+    .redetected-object-popup {
+      position: absolute;
+      background-color: white;
+      border: 1px solid black;
+      padding: 10px;
+      z-index: 1000;
+      cursor: move;
+    }
+    .popup-table {
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+    .popup-table td {
+      padding: 5px;
+      border: 1px solid #ccc;
+    }
   </style>
 
   <script>
@@ -1676,23 +1690,28 @@
         return reliabilityPercentage;
       }
 
-      let isDragging = false;
-      let currentX;
-      let currentY;
-      let initialX;
-      let initialY;
-      let xOffset = 0;
-      let yOffset = 0;
-
       //Function to drag pop-up with mouse click
       function dragElement(elmnt) {
-        const dragElement = elmnt.querySelector(".object-detected-popup");
+        const dragElement = elmnt.querySelector(".object-detected-popup, .redetected-object-popup");
+
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
 
         dragElement.addEventListener("mousedown", dragMouseDown);
 
         function dragMouseDown(e) {
           e = e || window.event;
           e.preventDefault();
+
+          // Check if the cursor is over the pop-up element
+          const isOverPopup = e.target.closest(".object-detected-popup, .redetected-object-popup");
+          if (!isOverPopup) return;
+
           isDragging = true;
           currentX = e.clientX;
           currentY = e.clientY;
@@ -1721,10 +1740,17 @@
           isDragging = false;
           document.removeEventListener("mouseup", closeDragElement);
           document.removeEventListener("mousemove", elementDrag);
+
+          // Reset the dragging state and re-attach event listeners
+          setTimeout(() => {
+            dragElement.addEventListener("mousedown", dragMouseDown);
+            document.addEventListener("mouseup", closeDragElement);
+            document.addEventListener("mousemove", elementDrag);
+          }, 0);
         }
       }
 
-// Global variable to store the lobject detected type
+      // Global variable to store the lobject detected type
       let lastDetectedObjectType = '';
 
       // Global variable to store the last detected object location
@@ -1840,31 +1866,9 @@
 
       //Function for pop-up of object detected
       function showObjectDetectedPopup(message, droneName, imagingType, imageUrl, text1, text2, reliabilityPercentage) {
-        // let imageAndText;
-        // if (imagingType === 'thermal') {
-        //   imageAndText = thermalImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-        // } else if (imagingType === 'nswir') {
-        //   imageAndText = nswirImagesAndTexts.find(item => item.text1 === lastDetectedObjectType);
-        // }
-
-        // let imageAndText;
-        // if (imagingType === 'thermal') {
-        //   imageAndText = getRandomImageAndText(thermalImagesAndTexts);
-        // } else if (imagingType === 'nswir') {
-        //   imageAndText = getRandomImageAndText(nswirImagesAndTexts);
-        // }
-        //
-        // if (!imageAndText) {
-        //   console.error('No image and text found for the last detected object type:', lastDetectedObjectType);
-        //   return;
-        // }
-        //
-        // var imageUrl = imageAndText.url;
-        // var imageText1 = imageAndText.text1;
-        // var imageText2 = imageAndText.text2;
-
         const popup = document.createElement("div");
         popup.className = "object-detected-popup";
+
         const image = document.createElement("img");
         image.src = imageUrl;
         image.alt = "Detected Object";
@@ -1874,20 +1878,38 @@
         image.style.marginBottom = "10px";
 
         const textNode1 = document.createElement("div");
-        textNode1.innerHTML = `${message} by ${droneName}.<br>Object: ${text1}`;
+        textNode1.innerHTML = message;
 
-        const textNode2 = document.createElement("div");
-        textNode2.textContent = `Lighting condition: ${text2}`;
+        const table = document.createElement("table");
+        table.classList.add("popup-table");
 
-        const reliabilityTextNode = document.createElement("div");
-        reliabilityTextNode.textContent = `Object Detection Reliability: ${reliabilityPercentage}%`;
+        const headerRow = table.insertRow();
+        const headerCell1 = headerRow.insertCell();
+        const headerCell2 = headerRow.insertCell();
+        headerCell1.textContent = "Detecting drone";
+        headerCell2.textContent = droneName;
+
+        const row1 = table.insertRow();
+        const cell11 = row1.insertCell();
+        const cell12 = row1.insertCell();
+        cell11.textContent = "Object";
+        cell12.textContent = text1;
+
+        const row2 = table.insertRow();
+        const cell21 = row2.insertCell();
+        const cell22 = row2.insertCell();
+        cell21.textContent = "Lighting condition";
+        cell22.textContent = text2;
+
+        const row3 = table.insertRow();
+        const cell31 = row3.insertCell();
+        const cell32 = row3.insertCell();
+        cell31.textContent = "Object Detection Reliability";
+        cell32.textContent = `${reliabilityPercentage}%`;
 
         popup.appendChild(image);
         popup.appendChild(textNode1);
-        // popup.appendChild(document.createElement("br"));
-        popup.appendChild(reliabilityTextNode);
-        // popup.appendChild(document.createElement("br"));
-        popup.appendChild(textNode2);
+        popup.appendChild(table);
 
         popup.style.position = "absolute";
         popup.style.left = "50%";
@@ -1901,13 +1923,8 @@
         document.body.appendChild(popup);
 
         dragElement(document.body);
-
-        // setTimeout(() => {
-        //   document.body.removeChild(popup);
-        // }, 10000); //10 seconds
-
-        // updateDroneControlUI(droneName, text1, text2);
       }
+
 
       // Animation function to update point positions
       let animationFrameId;
@@ -2079,6 +2096,7 @@
 
      const popup = document.createElement("div");
      popup.className = "object-detected-popup";
+
      const image = document.createElement("img");
      image.src = imageUrl;
      image.alt = "Detected Object";
@@ -2087,24 +2105,41 @@
      image.style.display = "block";
      image.style.marginBottom = "10px";
 
-     // const message = "Re-detected object: ";
+     //Message for redetection: droneName
      const textNode1 = document.createElement("div");
      // Use innerHTML to include a line break between the two parts of the text
-     textNode1.innerHTML = `Re-detected object by ${droneName} <br> Object: ${imageText1}`;
+     textNode1.innerHTML = `Re-detected object`;
 
-     const textNode2 = document.createElement("div");
-     textNode2.textContent = `Lighting condition: ${imageText2}`;
+     const table = document.createElement("table");
+     table.classList.add("popup-table");
 
-     const reliabilityTextNode = document.createElement("div");
-     reliabilityTextNode.textContent = `Object Detection Reliability: ${reliabilityPercentage}%`;
+     const headerRow = table.insertRow();
+     const headerCell1 = headerRow.insertCell();
+     const headerCell2 = headerRow.insertCell();
+     headerCell1.textContent = "Re-detecing drone";
+     headerCell2.textContent = droneName;
+
+     const row1 = table.insertRow();
+     const cell11 = row1.insertCell();
+     const cell12 = row1.insertCell();
+     cell11.textContent = "Object:";
+     cell12.textContent = imageText1;
+
+     const row2 = table.insertRow();
+     const cell21 = row2.insertCell();
+     const cell22 = row2.insertCell();
+     cell21.textContent = "Lighting condition:";
+     cell22.textContent = imageText2;
+
+     const row3 = table.insertRow();
+     const cell31 = row3.insertCell();
+     const cell32 = row3.insertCell();
+     cell31.textContent = "Object Detection Reliability:";
+     cell32.textContent = `${reliabilityPercentage}%`;
 
      popup.appendChild(image);
      popup.appendChild(textNode1);
-     // popup.appendChild(document.createElement("br"));
-     popup.appendChild(reliabilityTextNode);
-     // popup.appendChild(document.createElement("br"));
-     popup.appendChild(textNode2);
-
+     popup.appendChild(table);
 
      popup.style.position = "absolute";
      popup.style.left = "50%";
@@ -2116,6 +2151,8 @@
      popup.style.zIndex = "1000";
 
      document.body.appendChild(popup);
+
+     dragElement(document.body);
 
      // setTimeout(() => {
      //   document.body.removeChild(popup);
