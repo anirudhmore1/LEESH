@@ -82,7 +82,7 @@
     }
     #endTrial{
       position: fixed;
-      bottom: 10px;
+      bottom: 40px;
       right: 0;
       width: 230px;
       height: auto;
@@ -193,6 +193,17 @@
     .popup-table td {
       padding: 5px;
       border: 1px solid #ccc;
+    }
+    #reviewTrial{
+      position: fixed;
+      bottom: 10px;
+      right: 0;
+      width: 230px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */ */
+      padding: 5px;
     }
   </style>
 
@@ -1811,6 +1822,9 @@
       // Global object to store detected points and their corresponding images and texts
       let detectedPointsMap = {};
 
+      //Detection counter
+      let detectionCounter = 1; // Initialize the detection counter to 1
+
       // Function to move drones along their paths
       function moveDrone(drone, droneInfo) {
         const currentLocationIndex = droneInfo.path.findIndex(point =>
@@ -1863,7 +1877,8 @@
               text1: imageAndText.text1, // Store the detected object type
               text2: imageAndText.text2,
               timestamp: detectionTimestamp, // Store the timestamp
-              droneId: currentDroneId
+              droneId: currentDroneId,
+              detectionNumber: detectionCounter // Store the current detection number
           };
           console.log("previous type of object detected as stored in text1 in the tracker before global var", lastDetectedObjectInfo.text1);
 
@@ -1894,8 +1909,14 @@
           );
 
           changeDroneColorOnDetection(drone);
+          detectionCounter++;
+
+          console.log("Detection number:", detectionCounter);
+
         }
       }
+
+
 
       // Function to get a random image and text
       function getRandomImageAndText(imagesAndTexts) {
@@ -2247,7 +2268,7 @@
         document.getElementById('reassignToDroneSection').style.display = 'none';
         // Show the quadrant display
         document.getElementById('droneQuadrantDisplay').style.display = 'block';
-        // Hide the recayegorization of drone recommendation
+        // Hide the recategorization of drone recommendation
         document.getElementById('recategorizeObject').style.display = 'none';
         // Update the display with the current drone assignments
         updateQuadrantDisplay();
@@ -2329,6 +2350,11 @@
            // Retrieve the recategorized object from the select element
            let userReobject = document.getElementById('sel_obj').value;
 
+           // Check if the user has accepted the drone's recommendation (i.e., no recategorization)
+           if (userReobject === '') {
+               userReobject = ''; // Set userReobject to an empty string if the user accepts the recommendation
+           }
+
            // Retrieve the reliability percentage for the detected object
            const reliabilityPercentage = lastDetectedObjectInfo.reliabilityPercentage;
 
@@ -2369,6 +2395,19 @@
            userReassignResponse = '';
            document.getElementById('sel_obj').value = '';
            lastDetectedObjectInfo = null;
+
+           // Store the ratings data in localStorage
+           const ratingsData = JSON.parse(localStorage.getItem('ratingsData') || '[]');
+           ratingsData.push({
+             ratings: currentRatings,
+             response: userResponse,
+             reassignResponse: userReassignResponse,
+             userReobject: userReobject,
+             detectedObjectInfo: lastDetectedObjectInfo,
+             reassignedDroneId: reassignedDroneId,
+             reliabilityPercentage: reliabilityPercentage
+           });
+           localStorage.setItem('ratingsData', JSON.stringify(ratingsData));
        }
 
        function exportToCSV() {
@@ -2420,6 +2459,65 @@
            link.click(); // This will download the file
        }
 
+       function openReviewTab() {
+         const reviewWindow = window.open('', '_blank');
+
+         reviewWindow.document.write('<html><head><title>Review</title><style>');
+         reviewWindow.document.write(`
+           table {
+             width: 100%;
+             border-collapse: collapse;
+           }
+
+           th, td {
+             padding: 8px;
+             text-align: left;
+             border-right: 1px solid #ddd; /* Creates vertical separators */
+           }
+
+           th {
+             background-color: #f2f2f2;
+           }
+
+           tr:nth-child(even) {
+             background-color: #f2f2f2;
+           }
+         `);
+         reviewWindow.document.write('</style></head><body>');
+         reviewWindow.document.write('<h1>Review Ratings Data</h1>');
+         if (ratings.length === 0) {
+           reviewWindow.document.write('<p>No ratings data available.</p>');
+         } else {
+           reviewWindow.document.write('<table>');
+           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object detected</th><th>Lighting</th><th>Reliability %</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th></tr>');
+
+           ratings.forEach(rating => {
+             reviewWindow.document.write('<tr>');
+
+             // Check if this is a redetection event
+             if (rating.redetectionText1 && rating.redetectionText2) {
+               reviewWindow.document.write(`<td></td><td>${rating.detectedObjectInfo.droneId || ''}</td><td>${rating.redetectionText1}</td><td>${rating.redetectionText2}</td><td>${rating.reliabilityPercentage || ''}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+             } else {
+               const detectionInfo = rating.detectedObjectInfo || {};
+               const text1 = detectionInfo.text1 || '';
+               const text2 = detectionInfo.text2 || '';
+               const detectingDrone = detectionInfo.droneId || '';
+               const reliabilityPercentage = rating.reliabilityPercentage || '';
+               const detectionNumber = detectionInfo.detectionNumber || '';
+
+               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td>${text1}</td><td>${text2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+             }
+
+             reviewWindow.document.write('</tr>');
+           });
+
+           reviewWindow.document.write('</table>');
+         }
+
+         reviewWindow.document.write('</body></html>');
+         reviewWindow.document.close();
+       }
+
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', function() {
          saveRatings();
@@ -2453,6 +2551,7 @@
        // Event listener for user response for recategorized object recommendation
        document.getElementById('accept-recommendation').addEventListener('click', function() {
            userResponse = 'Accept';
+           document.getElementById('sel_obj').value = ''; // Set the dropdown value to an empty string
            document.getElementById('recategorizeObject').style.display = 'none';
        });
 
@@ -2465,6 +2564,9 @@
        document.getElementById('sel_obj').addEventListener('input', function() {
            userReobject = '';
        });
+
+       //Event listener for reviewing trial data
+       document.getElementById('reviewButton').addEventListener('click', openReviewTab);
 
      // places the initial drone-assignment widget in the top right corner of the view
      view.ui.add("droneSelectionForm", "top-right");
@@ -2486,6 +2588,9 @@
 
      // places the save and export buttons in the bottom right corner of the view
      view.ui.add("endTrial", "bottom-right");
+
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("reviewTrial", "bottom-right");
 
      // Add the legend div to the viewDiv
      view.ui.add(legendDiv, "top-left");
@@ -2695,6 +2800,11 @@
              </div>
          </div>
          <!-- <hr> -->
+       </div>
+
+       <div id="reviewTrial" class="reviewTrial-container">
+         <!-- <label for="trustRange4">Export to CSV and end trial</label> -->
+         <button id="reviewButton">Review</button>
        </div>
 
 </body>
