@@ -2499,7 +2499,7 @@
            reviewWindow.document.write('<p>No ratings data available.</p>');
          } else {
            reviewWindow.document.write('<table>');
-           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object detected</th><th>Lighting</th><th>Reliability %</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th><th>Image</th></tr>');
+           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object Image</th><th>Detection Details</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th></tr>');
 
            let detectionIndex = 0;
            // let redetectionIndex = 0;
@@ -2509,7 +2509,8 @@
 
              // Check if this is a redetection event
              if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
-               reviewWindow.document.write(`<td></td><td>${rating.detectedObjectInfo.droneId || ''}</td><td>${rating.redetectionText1}</td><td>${rating.redetectionText2}</td><td>${rating.reliabilityPercentage || ''}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td><td><img src="${detectedImages[index]}" alt="Redetected Image" width="100"></td>`);
+               const details = `Oject recommendation: ${rating.redetectionText1} <br><br> Lighting condition: ${rating.redetectionText2}<br> <br> Object recognition reliability: ${rating.reliabilityPercentage || ''}%`;
+               reviewWindow.document.write(`<td>Redetection</td><td>${rating.detectedObjectInfo.droneId || ''}</td><td><img src="${detectedImages[index]}" alt="Redetected Image" width="250"></td><td>${details}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
              } else {
                const detectionInfo = rating.detectedObjectInfo || {};
                const text1 = detectionInfo.text1 || '';
@@ -2517,8 +2518,9 @@
                const detectingDrone = detectionInfo.droneId || '';
                const reliabilityPercentage = rating.reliabilityPercentage || '';
                const detectionNumber = detectionInfo.detectionNumber || '';
+               const details = `Object recommendation: ${text1} <br><br> Lighting condition: ${text2} <br><br> Object recognition reliability: ${reliabilityPercentage}%`;
 
-               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td>${text1}</td><td>${text2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td><td><img src="${detectedImages[index]}" alt="Detected Image" width="100"></td>`);
+               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td><td>${details}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
              }
 
              reviewWindow.document.write('</tr>');
