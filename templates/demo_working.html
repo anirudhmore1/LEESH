@@ -1825,6 +1825,10 @@
       //Detection counter
       let detectionCounter = 1; // Initialize the detection counter to 1
 
+      //Storing URL of images
+      let detectedImages = [];
+      // let redetectedImages = [];
+
       // Function to move drones along their paths
       function moveDrone(drone, droneInfo) {
         const currentLocationIndex = droneInfo.path.findIndex(point =>
@@ -1916,8 +1920,6 @@
         }
       }
 
-
-
       // Function to get a random image and text
       function getRandomImageAndText(imagesAndTexts) {
         var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
@@ -1995,9 +1997,12 @@
 
         document.body.appendChild(popup);
 
+        //store image URL of detected object
+        detectedImages.push(imageUrl);
+        console.log("Detected image:", imageUrl);
+
         dragElement(document.body);
       }
-
 
       // Animation function to update point positions
       let animationFrameId;
@@ -2224,6 +2229,11 @@
      popup.style.zIndex = "1000";
 
      document.body.appendChild(popup);
+     //store image URL of re-detected object
+     // redetectedImages.push(imageUrl);
+     // console.log("Re-detected image:", imageUrl);
+     detectedImages.push(imageUrl);
+     console.log("Detected image:", imageUrl);
 
      dragElement(document.body);
 
@@ -2472,7 +2482,7 @@
            th, td {
              padding: 8px;
              text-align: left;
-             border-right: 1px solid #ddd; /* Creates vertical separators */
+             border-right: 1px solid #ddd; /* Add this line to create vertical separators */
            }
 
            th {
@@ -2489,14 +2499,17 @@
            reviewWindow.document.write('<p>No ratings data available.</p>');
          } else {
            reviewWindow.document.write('<table>');
-           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object detected</th><th>Lighting</th><th>Reliability %</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th></tr>');
+           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object detected</th><th>Lighting</th><th>Reliability %</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th><th>Image</th></tr>');
 
-           ratings.forEach(rating => {
+           let detectionIndex = 0;
+           // let redetectionIndex = 0;
+
+           ratings.forEach((rating, index) => {
              reviewWindow.document.write('<tr>');
 
              // Check if this is a redetection event
-             if (rating.redetectionText1 && rating.redetectionText2) {
-               reviewWindow.document.write(`<td></td><td>${rating.detectedObjectInfo.droneId || ''}</td><td>${rating.redetectionText1}</td><td>${rating.redetectionText2}</td><td>${rating.reliabilityPercentage || ''}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+             if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
+               reviewWindow.document.write(`<td></td><td>${rating.detectedObjectInfo.droneId || ''}</td><td>${rating.redetectionText1}</td><td>${rating.redetectionText2}</td><td>${rating.reliabilityPercentage || ''}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td><td><img src="${detectedImages[index]}" alt="Redetected Image" width="100"></td>`);
              } else {
                const detectionInfo = rating.detectedObjectInfo || {};
                const text1 = detectionInfo.text1 || '';
@@ -2505,7 +2518,7 @@
                const reliabilityPercentage = rating.reliabilityPercentage || '';
                const detectionNumber = detectionInfo.detectionNumber || '';
 
-               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td>${text1}</td><td>${text2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td>${text1}</td><td>${text2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td><td><img src="${detectedImages[index]}" alt="Detected Image" width="100"></td>`);
              }
 
              reviewWindow.document.write('</tr>');

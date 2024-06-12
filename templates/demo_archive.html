@@ -367,32 +367,27 @@
               dronePathsTrack[droneId].quadrant = null;
               dronePathsTrack[droneId].path = [];
               dronePathsTrack[droneId].objectDetectionPoints = [];
-              dronePathsTrack[droneId].reassigned = false; // Reset reassigned flag
           });
 
           // Update the dronePathsTrack object with the new assignments and paths
           dronePathsTrack[quadrant1Drone].quadrant = 'quadrant1';
           dronePathsTrack[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.9975, 35.0025);
           dronePathsTrack[quadrant1Drone].objectDetectionPoints = objectDetectionPoints['drone1']; // Object detection points are attached to each quadrant
-          dronePathsTrack[quadrant1Drone].reassigned = true; // Set reassigned flag
           console.log(quadrant1Drone);
 
           dronePathsTrack[quadrant2Drone].quadrant = 'quadrant2';
           dronePathsTrack[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.0025, 35.0025);
           dronePathsTrack[quadrant2Drone].objectDetectionPoints = objectDetectionPoints['drone2'];
-          dronePathsTrack[quadrant2Drone].reassigned = true; // Set reassigned flag
           console.log(quadrant2Drone);
 
           dronePathsTrack[quadrant3Drone].quadrant = 'quadrant3';
           dronePathsTrack[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.0025, 34.9975);
           dronePathsTrack[quadrant3Drone].objectDetectionPoints = objectDetectionPoints['drone3'];
-          dronePathsTrack[quadrant3Drone].reassigned = true; // Set reassigned flag
           console.log(quadrant3Drone);
 
           dronePathsTrack[quadrant4Drone].quadrant = 'quadrant4';
           dronePathsTrack[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.9975, 34.9975);
           dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
-          dronePathsTrack[quadrant4Drone].reassigned = true; // Set reassigned flag
           console.log(quadrant4Drone);
       }
 
@@ -582,8 +577,7 @@
           recentlyReassigned: false, // Initialize as false
           reassignmentTime: 0, // Initialize with a default value
           imagingType: 'thermal',
-          reliability: 'high',
-          reassigned: false
+          reliability: 'high'
         },
         drone2: {
             path: dronePaths.drone2,
@@ -592,8 +586,7 @@
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'thermal',
-            reliability: 'low',
-            reassigned: false
+            reliability: 'low'
         },
         drone3: {
             path: dronePaths.drone3,
@@ -602,8 +595,7 @@
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'nswir',
-            reliability: 'high',
-            reassigned: false
+            reliability: 'high'
         },
         drone4: {
             path: dronePaths.drone4,
@@ -612,8 +604,7 @@
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'nswir',
-            reliability: 'low',
-            reassigned: false
+            reliability: 'low'
         }
       };
 
@@ -1831,6 +1822,13 @@
       // Global object to store detected points and their corresponding images and texts
       let detectedPointsMap = {};
 
+      //Detection counter
+      let detectionCounter = 1; // Initialize the detection counter to 1
+
+      //Storing URL of images
+      let detectedImages = [];
+      let redetectedImages = [];
+
       // Function to move drones along their paths
       function moveDrone(drone, droneInfo) {
         const currentLocationIndex = droneInfo.path.findIndex(point =>
@@ -1883,7 +1881,8 @@
               text1: imageAndText.text1, // Store the detected object type
               text2: imageAndText.text2,
               timestamp: detectionTimestamp, // Store the timestamp
-              droneId: currentDroneId
+              droneId: currentDroneId,
+              detectionNumber: detectionCounter // Store the current detection number
           };
           console.log("previous type of object detected as stored in text1 in the tracker before global var", lastDetectedObjectInfo.text1);
 
@@ -1914,6 +1913,10 @@
           );
 
           changeDroneColorOnDetection(drone);
+          detectionCounter++;
+
+          console.log("Detection number:", detectionCounter);
+
         }
       }
 
@@ -1994,9 +1997,11 @@
 
         document.body.appendChild(popup);
 
+        //store image URL of detected object
+        detectedImages.push(imageUrl);
+
         dragElement(document.body);
       }
-
 
       // Animation function to update point positions
       let animationFrameId;
@@ -2223,6 +2228,8 @@
      popup.style.zIndex = "1000";
 
      document.body.appendChild(popup);
+     //store image URL of re-detected object
+     redetectedImages.push(imageUrl);
 
      dragElement(document.body);
 
@@ -2357,54 +2364,22 @@
            // Retrieve the reliability percentage for the detected object
            const reliabilityPercentage = lastDetectedObjectInfo.reliabilityPercentage;
 
-           // Determine if reassignment has occurred
-           let reassignedDroneId = '';
-           if (userReassignResponse) {
-               reassignedDroneId = userReassignResponse;
-           } else if (lastDetectedObjectInfo && lastDetectedObjectInfo.reassigned) {
-               reassignedDroneId = lastDetectedObjectInfo.reassignedDroneId;
-           }
-
            // Check if this is a redetection event and if so, include text1 and text2
            if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
                // Save the text1 and text2 values for the redetection
                ratings.push({
-                   ratings: currentRatings,
-                   response: userResponse,
-                   reassignResponse: userReassignResponse,
-                   userReobject: userReobject,
-                   detectedObjectInfo: lastDetectedObjectInfo,
-                   reassignedDroneId: reassignedDroneId, // Assign reassignedDroneId only if reassignment occurred
-                   redetectionText1: lastDetectedObjectInfo.text1,
-                   redetectionText2: lastDetectedObjectInfo.text2,
-                   reliabilityPercentage: reliabilityPercentage
-               });
-           } else {
-               ratings.push({
-                   ratings: currentRatings,
-                   response: userResponse,
-                   reassignResponse: userReassignResponse,
-                   userReobject: userReobject,
-                   detectedObjectInfo: lastDetectedObjectInfo,
-                   reassignedDroneId: reassignedDroneId, // Assign reassignedDroneId only if reassignment occurred
-                   reliabilityPercentage: reliabilityPercentage
-               });
-           }
-
-           console.log('Drone ratings saved:', currentRatings); // For debugging
-           console.log('User response saved:', userResponse);
-           console.log('User recategorization saved:', userReobject);
-           console.log('User recategorization saved:', userReassignResponse);
-
-           // Reset user response after saving
-           userResponse = '';
-           userReassignResponse = '';
-           document.getElementById('sel_obj').value = '';
-           lastDetectedObjectInfo = null;
-
-           // Store the ratings data in localStorage
-           const ratingsData = JSON.parse(localStorage.getItem('ratingsData') || '[]');
-           ratingsData.push({
+                 ratings: currentRatings,
+                 response: userResponse,
+                 reassignResponse: userReassignResponse,
+                 userReobject: userReobject,
+                 detectedObjectInfo: lastDetectedObjectInfo,
+                 reassignedDroneId: reassignedDroneId,
+                 redetectionText1: lastDetectedObjectInfo.text1,
+                 redetectionText2: lastDetectedObjectInfo.text2,
+                 reliabilityPercentage: reliabilityPercentage
+             });
+         } else {
+             ratings.push({
                ratings: currentRatings,
                response: userResponse,
                reassignResponse: userReassignResponse,
@@ -2412,13 +2387,33 @@
                detectedObjectInfo: lastDetectedObjectInfo,
                reassignedDroneId: reassignedDroneId,
                reliabilityPercentage: reliabilityPercentage
+             });
+         }
+             // });
+           console.log('Drone ratings saved:', currentRatings); // For debugging
+           console.log('User response saved:', userResponse);
+           console.log('User recategorization saved:', userReobject);
+           console.log('User recategorization saved:', userReassignResponse);
+
+           // Reset user response after saving
+           userResponse = '';
+           // reassignedDroneId = '';
+           userReassignResponse = '';
+           document.getElementById('sel_obj').value = '';
+           lastDetectedObjectInfo = null;
+
+           // Store the ratings data in localStorage
+           const ratingsData = JSON.parse(localStorage.getItem('ratingsData') || '[]');
+           ratingsData.push({
+             ratings: currentRatings,
+             response: userResponse,
+             reassignResponse: userReassignResponse,
+             userReobject: userReobject,
+             detectedObjectInfo: lastDetectedObjectInfo,
+             reassignedDroneId: reassignedDroneId,
+             reliabilityPercentage: reliabilityPercentage
            });
            localStorage.setItem('ratingsData', JSON.stringify(ratingsData));
-
-           // Reset the reassigned flag after updating the CSV
-           Object.keys(dronePathsTrack).forEach(droneId => {
-               dronePathsTrack[droneId].reassigned = false;
-           });
        }
 
        function exportToCSV() {
@@ -2500,33 +2495,25 @@
            reviewWindow.document.write('<p>No ratings data available.</p>');
          } else {
            reviewWindow.document.write('<table>');
-           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object detected</th><th>Lighting</th><th>Reliability %</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th><th>Reassigned Drone</th></tr>');
+           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object detected</th><th>Lighting</th><th>Reliability %</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th><th>Image</th></tr>');
 
-           let detectionNo = 1;
-           ratings.forEach(rating => {
+           ratings.forEach((rating, index) => {
              reviewWindow.document.write('<tr>');
 
-             // Check if this is a re-detection event
-             if (!rating.isRedetection) {
-               // Populate the "Detection No" column for original detections
-               reviewWindow.document.write(`<td>${detectionNo}</td>`);
-               detectionNo++; // Increment detectionNo for the next original detection
-             } else {
-               // Leave the "Detection No" column empty for re-detections
-               reviewWindow.document.write('<td></td>');
-             }
-
-             const detectionInfo = rating.detectedObjectInfo || {};
-             const text1 = detectionInfo.text1 || '';
-             const text2 = detectionInfo.text2 || '';
-             const detectingDrone = detectionInfo.droneId || '';
-             const reliabilityPercentage = rating.reliabilityPercentage || '';
-
-             // Check if this is a redetection event and include text1 and text2 for redetection
+             // Check if this is a redetection event
              if (rating.redetectionText1 && rating.redetectionText2) {
-               reviewWindow.document.write(`<td>${detectingDrone}</td><td>${rating.redetectionText1}</td><td>${rating.redetectionText2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td><td>${rating.reassignedDroneId}</td>`);
+               reviewWindow.document.write(`<td></td><td>${rating.detectedObjectInfo.droneId || ''}</td><td>${rating.redetectionText1}</td><td>${rating.redetectionText2}</td><td>${rating.reliabilityPercentage || ''}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+               reviewWindow.document.write(`<td><img src="${redetectedImages[index]}" alt="Redetected Image" width="100"></td>`); // Display the redetected image
              } else {
-               reviewWindow.document.write(`<td>${detectingDrone}</td><td>${text1}</td><td>${text2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td><td>${rating.reassignedDroneId}</td>`);
+               const detectionInfo = rating.detectedObjectInfo || {};
+               const text1 = detectionInfo.text1 || '';
+               const text2 = detectionInfo.text2 || '';
+               const detectingDrone = detectionInfo.droneId || '';
+               const reliabilityPercentage = rating.reliabilityPercentage || '';
+               const detectionNumber = detectionInfo.detectionNumber || '';
+
+               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td>${text1}</td><td>${text2}</td><td>${reliabilityPercentage}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+               reviewWindow.document.write(`<td><img src="${detectedImages[index]}" alt="Detected Image" width="100"></td>`); // Display the detected image
              }
 
              reviewWindow.document.write('</tr>');
@@ -2538,6 +2525,8 @@
          reviewWindow.document.write('</body></html>');
          reviewWindow.document.close();
        }
+
+
 
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', function() {
