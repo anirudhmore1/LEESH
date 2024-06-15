@@ -1829,6 +1829,37 @@
       let detectedImages = [];
       // let redetectedImages = [];
 
+      class Queue {
+        constructor() {
+          this.items = [];
+        }
+
+        enqueue(item) {
+          this.items.push(item);
+        }
+
+        dequeue() {
+          if (this.isEmpty()) {
+            return null;
+          }
+          return this.items.shift();
+        }
+
+        isEmpty() {
+          return this.items.length === 0;
+        }
+
+        peek() {
+          if (this.isEmpty()) {
+            return null;
+          }
+          return this.items[0];
+        }
+      }
+
+      const detectionQueue = new Queue();
+      let isProcessingQueue = false;
+
       // Function to move drones along their paths
       function moveDrone(drone, droneInfo) {
         const currentLocationIndex = droneInfo.path.findIndex(point =>
@@ -1840,8 +1871,8 @@
 
         if (nextPoint) {
           drone.geometry = new Point({
-            longitude: nextPoint[0], // Use the first element of the nextPoint array for longitude
-            latitude: nextPoint[1]  // Use the second element of the nextPoint array for latitude
+            longitude: nextPoint[0],
+            latitude: nextPoint[1]
           });
         } else {
           console.error("Next point is undefined. Check the path definition for drone:", drone.attributes.id);
@@ -1856,68 +1887,83 @@
           // If an object is detected, pause the drone movement
           isAnimating = false;
 
-          //drone that detected the objects
-          currentDroneId = drone.attributes.id;
-
-          // Check if the point has been detected before
-          let imageAndText;
-          // Select a random image and text for the first detection
-          if (droneInfo.imagingType === 'thermal') {
-            imageAndText = getRandomImageAndText(thermalImagesAndTexts);
-          } else if (droneInfo.imagingType === 'nswir') {
-            imageAndText = getRandomImageAndText(nswirImagesAndTexts);
-          }
-
-          // Capture the current timestamp
-          const detectionTimestamp = new Date().toISOString();
-
-          // If an object is detected, store the location, timestamp
-          lastDetectedObjectInfo = {
-              location: {
-                // let lastDetectedObjectType = '';
-                  longitude: nextPoint[0],
-                  latitude: nextPoint[1]
-              },
-              text1: imageAndText.text1, // Store the detected object type
-              text2: imageAndText.text2,
-              timestamp: detectionTimestamp, // Store the timestamp
-              droneId: currentDroneId,
-              detectionNumber: detectionCounter // Store the current detection number
+          // Create a detection event
+          const detectionEvent = {
+            drone,
+            droneInfo,
+            nextPoint
           };
-          console.log("previous type of object detected as stored in text1 in the tracker before global var", lastDetectedObjectInfo.text1);
 
-          // Store the detected object type in the global variable
-          lastDetectedObjectType = imageAndText.text1;
-          console.log("previous type of object detected", lastDetectedObjectType);
-          lastDetectedLight = imageAndText.text2;
-          console.log("previous lighting condition", lastDetectedLight);
+          // Add the detection event to the queue
+          detectionQueue.enqueue(detectionEvent);
 
-          // Calculation of reliability percentage
-          let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
-            text1: imageAndText.text1,
-            text2: imageAndText.text2
-          });
-
-          // Capture reliability % at detection
-          lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
-
-          // Display the pop-up with the image of the detected object
-          showObjectDetectedPopup(
-            "Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "),
-            drone.attributes.id,
-            droneInfo.imagingType,
-            imageAndText.url,
-            imageAndText.text1,
-            imageAndText.text2,
-            reliabilityPercentage
-          );
-
-          changeDroneColorOnDetection(drone);
-          detectionCounter++;
-
-          console.log("Detection number:", detectionCounter);
-
+          // Process the queue if not already processing
+          if (!isProcessingQueue) {
+            processDetectionQueue();
+          }
         }
+      }
+
+      function processDetectionQueue() {
+        if (detectionQueue.isEmpty()) {
+          isProcessingQueue = false;
+          return;
+        }
+
+        isProcessingQueue = true;
+        const { drone, droneInfo, nextPoint } = detectionQueue.dequeue();
+
+        // Process the detection event
+        currentDroneId = drone.attributes.id;
+
+        let imageAndText;
+        if (droneInfo.imagingType === 'thermal') {
+          imageAndText = getRandomImageAndText(thermalImagesAndTexts);
+        } else if (droneInfo.imagingType === 'nswir') {
+          imageAndText = getRandomImageAndText(nswirImagesAndTexts);
+        }
+
+        const detectionTimestamp = new Date().toISOString();
+
+        lastDetectedObjectInfo = {
+          location: {
+            longitude: nextPoint[0],
+            latitude: nextPoint[1]
+          },
+          text1: imageAndText.text1,
+          text2: imageAndText.text2,
+          timestamp: detectionTimestamp,
+          droneId: currentDroneId,
+          detectionNumber: detectionCounter
+        };
+
+        lastDetectedObjectType = imageAndText.text1;
+        lastDetectedLight = imageAndText.text2;
+
+        let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
+          text1: imageAndText.text1,
+          text2: imageAndText.text2
+        });
+
+        lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
+
+        showObjectDetectedPopup(
+          "Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "),
+          drone.attributes.id,
+          droneInfo.imagingType,
+          imageAndText.url,
+          imageAndText.text1,
+          imageAndText.text2,
+          reliabilityPercentage
+        );
+
+        changeDroneColorOnDetection(drone);
+        detectionCounter++;
+
+        // Wait for the user to confirm the detection before processing the next one
+        document.getElementById('confirmButton').addEventListener('click', () => {
+          processDetectionQueue();
+        }, { once: true });
       }
 
       // Function to get a random image and text

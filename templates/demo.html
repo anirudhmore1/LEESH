@@ -1960,12 +1960,12 @@
         changeDroneColorOnDetection(drone);
         detectionCounter++;
 
-        // Wait for the user to confirm the detection before processing the next one
-        document.getElementById('confirmButton').addEventListener('click', () => {
+        // Wait for the user to press the start button (resume search) before processing the next one
+        document.getElementById('startsearchbutton').addEventListener('click', () => {
           processDetectionQueue();
         }, { once: true });
       }
-      
+
       // Function to get a random image and text
       function getRandomImageAndText(imagesAndTexts) {
         var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
@@ -2303,20 +2303,20 @@
         cancelAnimationFrame(animationFrameId);
         animate();
 
-        // Use the reassignedDroneId as the activeDroneId
-        let activeDroneId = reassignedDroneId; // This is set when the user reassigns a drone
-        if (activeDroneId) {
-          let activeDroneInfo = dronePathsTrack[activeDroneId];
-          let imagingType = activeDroneInfo.imagingType;
-
-          // Show the pop-up for the re-detected object with the correct imaging type
-          // Pass a callback function to reset reassignedDroneId after the pop-up is closed
-          showRedetectedObjectPopup(activeDroneId, imagingType, function() {
-            reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
-          });
-        } else {
-          console.error('No drone has been reassigned yet.');
-        }
+        // // Use the reassignedDroneId as the activeDroneId
+        // let activeDroneId = reassignedDroneId; // This is set when the user reassigns a drone
+        // if (activeDroneId) {
+        //   let activeDroneInfo = dronePathsTrack[activeDroneId];
+        //   let imagingType = activeDroneInfo.imagingType;
+        //
+        //   // Show the pop-up for the re-detected object with the correct imaging type
+        //   // Pass a callback function to reset reassignedDroneId after the pop-up is closed
+        //   showRedetectedObjectPopup(activeDroneId, imagingType, function() {
+        //     reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
+        //   });
+        // } else {
+        //   console.error('No drone has been reassigned yet.');
+        // }
 
         // Hide the Initial drone assignment
         document.getElementById('droneSelectionForm').style.display = 'none';
@@ -2604,6 +2604,32 @@
              delete droneGraphic.originalSymbol; // Clean up the property
            }
          });
+
+         // Use the reassignedDroneId as the activeDroneId
+         let activeDroneId = reassignedDroneId; // This is set when the user reassigns a drone
+         if (activeDroneId) {
+           let activeDroneInfo = dronePathsTrack[activeDroneId];
+           let imagingType = activeDroneInfo.imagingType;
+
+           // Show the pop-up for the re-detected object with the correct imaging type
+           // Pass a callback function to reset reassignedDroneId after the pop-up is closed
+           showRedetectedObjectPopup(activeDroneId, imagingType, function() {
+             reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
+           });
+         } else {
+           console.error('No drone has been reassigned yet.');
+         }
+
+         // Hide the Initial drone assignment
+         document.getElementById('droneSelectionForm').style.display = 'none';
+         // Hide the reassignment options
+         document.getElementById('reassignToDroneSection').style.display = 'none';
+         // Show the quadrant display
+         document.getElementById('droneQuadrantDisplay').style.display = 'block';
+         // Hide the recategorization of drone recommendation
+         document.getElementById('recategorizeObject').style.display = 'none';
+         // Update the display with the current drone assignments
+         updateQuadrantDisplay();
        });
 
        // Event listener for Exporting to CSV button
