@@ -3776,13 +3776,26 @@
            let imagingType = activeDroneInfo.imagingType;
            let reliability = activeDroneInfo.reliability;
 
+           // Hide the "Re-assign task" section
+           document.getElementById('resassignTaskSection').style.display = 'none';
+
            // Show the pop-up for the re-detected object with the correct imaging type
            // Pass a callback function to reset reassignedDroneId after the pop-up is closed
            showRedetectedObjectPopup(activeDroneId, imagingType, reliability, function() {
              reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
+             document.getElementById('resassignTaskSection').style.display = 'block'; // Show the "Re-assign task" section
            });
+
+           // Reset the Yes and No button states
+           const buttonIds = ['yesBtn', 'noBtn'];
+           buttonIds.forEach(function(buttonId) {
+             const button = document.getElementById(buttonId);
+             button.style.backgroundColor = ''; // Reset the background color
+           });
+
          } else {
            console.error('No drone has been reassigned yet.');
+           document.getElementById('resassignTaskSection').style.display = 'block';
          }
 
          // Hide the Initial drone assignment
