@@ -84,33 +84,33 @@
       right: 0;
       height: auto;
       background: rgba(255,255,255, 0.9);
-      width: 230px;
+      width: 280px;
       padding: 1px;
     }
     #objectRecommendation {
       position: fixed;
-      top: 550px;
+      top: 700px;
       left: 0;
       height: auto;
       background: rgba(255, 255, 255, 0.9);
-      width: 280px;
-      padding: 5px;
+      width: 285px;
+      padding: 1px;
     }
     #droneRatings {
       /* position: absolute; */
       position: fixed;
       top: 00px;
       left: 0;
-      width: 280px;
+      width: 285px;
       height: auto;
       background: rgba(255,255,255, 0.9);
-      padding: 5px;
+      padding: 1px;
     }
     #droneSelectionForm {
       position: fixed;
       top: 50px;
       right: 0;
-      width: 230px;
+      width: 280px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -129,7 +129,7 @@
       position: fixed;
       top: 50px;
       right: 0;
-      width: 230px;
+      width: 280px;
       background: rgba(255,255,255,0.9);
       padding: 2px;
       /* z-index: 10; */
@@ -138,23 +138,23 @@
       position: fixed;
       bottom: 60px;
       right: 0;
-      width: 290px;
-      height: auto;
-      background: rgba(255,255,255, 0.9);
-      /* display: flex; */
-      /* flex-direction: column; /* This will stack the fields vertically */ */
-      padding: 20px;
-    }
-    #saveAndExport{
-      position: fixed;
-      bottom: 109px;
-      left: 0;
       width: 280px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
       /* flex-direction: column; /* This will stack the fields vertically */
       padding: 5px;
+    }
+    #saveAndExport{
+      position: fixed;
+      bottom: 0px;
+      left: 0;
+      width: 285px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */
+      padding: 1px;
     }
     .quadrant-info {
       margin-bottom: 8px;
@@ -171,13 +171,13 @@
       height: 00px; /* height of slider */
       background: #000 10%;
       outline: none; /* remove outline */
-      border-radius: 50px; /* round corners */
-      margin-bottom: 10px;
+      border-radius: 0px; /* round corners */
+      margin-bottom: 5px;
     }
     .competence-slider-container {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      /* align-items: center; */
     }
     datalist {
       display: flex;
@@ -185,13 +185,13 @@
       justify-content: space-between;
       /* writing-mode: vertical-lr; */
       width: 200px;
-      margin-left: 28px;
+      /* margin-left: 28px; */
       margin-bottom: 3px;
     }
     option {
       padding: 0;
       font-size: 12px;
-      text-align: center;
+      text-align: left;
       /* writing-mode: vertical-rl;
       text-orientation: upright;       */
     }
@@ -290,7 +290,7 @@
       const droneSymbolSize = `${0.25 * 100}px`; // Convert gridSize to pixels if necessary
 
      // Define the symbol for drawing the points
-     //drone1
+     //ThermalAlpha
       const markerSymbol1 = {
         type: "picture-marker",
         url: "{% static 'img/thermal-drone.png' %}",
@@ -300,7 +300,7 @@
         // height: "30px"
       };
 
-      // drone2
+      // ThermalBeta
        const markerSymbol3 = {
          type: "picture-marker",
          url: "{% static 'img/thermal-drone-1.png' %}",
@@ -310,7 +310,7 @@
          // height: "30px"
        };
 
-      //drone3
+      //InfraredGamma
       const markerSymbol2 = {
         type: "picture-marker",
         url: "{% static 'img/sniffer-drone.png' %}",
@@ -321,7 +321,7 @@
       };
 
 
-       //drone4
+       //InfraredDelta
         const markerSymbol4 = {
           type: "picture-marker",
           url: "{% static 'img/sniffer-drone-1.png' %}",
@@ -336,22 +336,22 @@
         new Graphic({
           geometry: new Point({ longitude: -84.9975, latitude: 35.0025 }), // Quadrant 1
           symbol: markerSymbol1,
-          attributes: { id: "drone1"}
+          attributes: { id: "ThermalAlpha"}
         }),
         new Graphic({
           geometry: new Point({ longitude: -85.0025, latitude: 35.0025 }), // Quadrant 2
           symbol: markerSymbol3,
-          attributes: { id: "drone2"}
+          attributes: { id: "ThermalBeta"}
         }),
         new Graphic({
           geometry: new Point({ longitude: -85.0025, latitude: 34.9975 }), // Quadrant 3
           symbol: markerSymbol2,
-          attributes: { id: "drone3"}
+          attributes: { id: "InfraredGamma"}
         }),
         new Graphic({
           geometry: new Point({ longitude: -84.9975, latitude: 34.9975 }), // Quadrant 4
           symbol: markerSymbol4,
-          attributes: { id: "drone4"}
+          attributes: { id: "InfraredDelta"}
         })
       ];
 
@@ -449,22 +449,22 @@
           // Update the dronePathsTrack object with the new assignments and paths
           dronePathsTrack[quadrant1Drone].quadrant = 'quadrant1';
           dronePathsTrack[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.9975, 35.0025);
-          dronePathsTrack[quadrant1Drone].objectDetectionPoints = objectDetectionPoints['drone1']; // Object detection points are attached to each quadrant
+          dronePathsTrack[quadrant1Drone].objectDetectionPoints = objectDetectionPoints['ThermalAlpha']; // Object detection points are attached to each quadrant
           console.log(quadrant1Drone);
 
           dronePathsTrack[quadrant2Drone].quadrant = 'quadrant2';
           dronePathsTrack[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.0025, 35.0025);
-          dronePathsTrack[quadrant2Drone].objectDetectionPoints = objectDetectionPoints['drone2'];
+          dronePathsTrack[quadrant2Drone].objectDetectionPoints = objectDetectionPoints['ThermalBeta'];
           console.log(quadrant2Drone);
 
           dronePathsTrack[quadrant3Drone].quadrant = 'quadrant3';
           dronePathsTrack[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.0025, 34.9975);
-          dronePathsTrack[quadrant3Drone].objectDetectionPoints = objectDetectionPoints['drone3'];
+          dronePathsTrack[quadrant3Drone].objectDetectionPoints = objectDetectionPoints['InfraredGamma'];
           console.log(quadrant3Drone);
 
           dronePathsTrack[quadrant4Drone].quadrant = 'quadrant4';
           dronePathsTrack[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.9975, 34.9975);
-          dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['drone4'];
+          dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['InfraredDelta'];
           console.log(quadrant4Drone);
       }
 
@@ -474,10 +474,10 @@
 
       // Create legend items for each drone
       const droneData = [
-        { name: "drone1:", thumbnail: "{% static 'img/thermal-drone.png' %}", sensorType: "Thermal" },
-        { name: "drone2:", thumbnail: "{% static 'img/thermal-drone-1.png' %}", sensorType: "Thermal" },
-        { name: "drone3:", thumbnail: "{% static 'img/sniffer-drone.png' %}", sensorType: "N/SWIR" },
-        { name: "drone4:", thumbnail: "{% static 'img/sniffer-drone-1.png' %}", sensorType: "N/SWIR" }
+        { name: "ThermalAlpha:", thumbnail: "{% static 'img/thermal-drone.png' %}", sensorType: "Thermal" },
+        { name: "ThermalBeta:", thumbnail: "{% static 'img/thermal-drone-1.png' %}", sensorType: "Thermal" },
+        { name: "InfraredGamma:", thumbnail: "{% static 'img/sniffer-drone.png' %}", sensorType: "N/SWIR" },
+        { name: "InfraredDelta:", thumbnail: "{% static 'img/sniffer-drone-1.png' %}", sensorType: "N/SWIR" }
       ];
 
       droneData.forEach(drone => {
@@ -619,64 +619,64 @@
 
       // Assign random object detection points to each drone
       const objectDetectionPoints = {
-          drone1: selectObjectDetectionPointsFromPath(drone1Path, 5), // Quadrant 1
-          drone2: selectObjectDetectionPointsFromPath(drone2Path, 5), // Quadrant 2
-          drone3: selectObjectDetectionPointsFromPath(drone3Path, 5), // Quadrant 3
-          drone4: selectObjectDetectionPointsFromPath(drone4Path, 5)  // Quadrant 4
+          ThermalAlpha: selectObjectDetectionPointsFromPath(drone1Path, 5), // Quadrant 1
+          ThermalBeta: selectObjectDetectionPointsFromPath(drone2Path, 5), // Quadrant 2
+          InfraredGamma: selectObjectDetectionPointsFromPath(drone3Path, 5), // Quadrant 3
+          InfraredDelta: selectObjectDetectionPointsFromPath(drone4Path, 5)  // Quadrant 4
       };
 
       // Define paths for each drone to follow
       const dronePaths = {
-        drone1: {
+        ThermalAlpha: {
           path: generateLawnmowerPatternQuadrant1(-84.9975, 35.0025),
-          objectDetectionPoints: objectDetectionPoints.drone1
+          objectDetectionPoints: objectDetectionPoints.ThermalAlpha
         },
-        drone2: {
+        ThermalBeta: {
           path: generateLawnmowerPatternQuadrant2(-85.0025, 35.0025),
-          objectDetectionPoints: objectDetectionPoints.drone2
+          objectDetectionPoints: objectDetectionPoints.ThermalBeta
         },
-        drone3: {
+        InfraredGamma: {
           path: generateLawnmowerPatternQuadrant3(-85.0025, 34.9975),
-          objectDetectionPoints: objectDetectionPoints.drone3
+          objectDetectionPoints: objectDetectionPoints.InfraredGamma
         },
-        drone4: {
+        InfraredDelta: {
           path: generateLawnmowerPatternQuadrant4(-84.9975, 34.9975),
-          objectDetectionPoints: objectDetectionPoints.drone4
+          objectDetectionPoints: objectDetectionPoints.InfraredDelta
         },
       };
 
       // Global object to track drone paths and object detection points initialized with paths and object detection points
       var dronePathsTrack = {
-        drone1: {
-          path: dronePaths.drone1,
-          objectDetectionPoints: objectDetectionPoints.drone1,
+        ThermalAlpha: {
+          path: dronePaths.ThermalAlpha,
+          objectDetectionPoints: objectDetectionPoints.ThermalAlpha,
           quadrant: 'quadrant1',
           recentlyReassigned: false, // Initialize as false
           reassignmentTime: 0, // Initialize with a default value
           imagingType: 'thermal',
           reliability: 'high'
         },
-        drone2: {
-            path: dronePaths.drone2,
-            objectDetectionPoints: objectDetectionPoints.drone2,
+        ThermalBeta: {
+            path: dronePaths.ThermalBeta,
+            objectDetectionPoints: objectDetectionPoints.ThermalBeta,
             quadrant: 'quadrant2',
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'thermal',
             reliability: 'low'
         },
-        drone3: {
-            path: dronePaths.drone3,
-            objectDetectionPoints: objectDetectionPoints.drone3,
+        InfraredGamma: {
+            path: dronePaths.InfraredGamma,
+            objectDetectionPoints: objectDetectionPoints.InfraredGamma,
             quadrant: 'quadrant3',
             recentlyReassigned: false,
             reassignmentTime: 0,
             imagingType: 'nswir',
             reliability: 'high'
         },
-        drone4: {
-            path: dronePaths.drone4,
-            objectDetectionPoints: objectDetectionPoints.drone4,
+        InfraredDelta: {
+            path: dronePaths.InfraredDelta,
+            objectDetectionPoints: objectDetectionPoints.InfraredDelta,
             quadrant: 'quadrant4',
             recentlyReassigned: false,
             reassignmentTime: 0,
@@ -689,10 +689,10 @@
       // let ratings = [];
 
       // Print the object detection points for each drone
-      console.log("Q1 Object Detection Points:", objectDetectionPoints.drone1);
-      console.log("Q2 Object Detection Points:", objectDetectionPoints.drone2);
-      console.log("Q3 Object Detection Points:", objectDetectionPoints.drone3);
-      console.log("Q4 Object Detection Points:", objectDetectionPoints.drone4);
+      console.log("Q1 Object Detection Points:", objectDetectionPoints.ThermalAlpha);
+      console.log("Q2 Object Detection Points:", objectDetectionPoints.ThermalBeta);
+      console.log("Q3 Object Detection Points:", objectDetectionPoints.InfraredGamma);
+      console.log("Q4 Object Detection Points:", objectDetectionPoints.InfraredDelta);
 
       // Function to generate lawnmower pattern for quadrant 1
       function generateLawnmowerPatternQuadrant1(startX, startY) {
@@ -810,7 +810,7 @@
       function updateQuadrantDisplay() {
           var display = document.getElementById('droneQuadrantDisplay');
           display.innerHTML = ''; // Clear existing content
-          var heading = document.createElement('h3');
+          var heading = document.createElement('h4');
           heading.textContent = 'Current Drone Assignment';
           display.appendChild(heading);
           var hr = document.createElement('hr');
@@ -831,7 +831,7 @@
 
       //  Object tracker for drones
       // Text1: for obj type & Text2: for lighting/illumination
-      //drone1
+      //ThermalAlpha
       var thermalImagesAndTextsHigh = [
         //NLT
         //Trial 1
@@ -1284,7 +1284,7 @@
         // ... add more thermal images and texts as needed
       ];
 
-      //drone2
+      //ThermalBeta
       var thermalImagesAndTextsLow = [
         //NLT
         //Trial 1
@@ -1737,7 +1737,7 @@
         // ... add more thermal images and texts as needed
       ];
 
-      // drone3
+      // InfraredGamma
       var nswirImagesAndTextsHigh = [
         //NLT
         //Trial 1
@@ -2190,7 +2190,7 @@
         // ... add more thermal images and texts as needed
       ];
 
-      // drone4
+      // InfraredDelta
       var nswirImagesAndTextsLow = [
         //NLT
         //Trial 1
@@ -3347,12 +3347,27 @@
         document.getElementById('recategorizeObject').style.display = 'none';
         // Update the display with the current drone assignments
         updateQuadrantDisplay();
+        this.style.backgroundColor = 'green'; // Change button color to green
 
+        // Reset the stop-search button states
+        const buttonIds = ['stopsearchbutton'];
+        buttonIds.forEach(function(buttonId) {
+          const button = document.getElementById(buttonId);
+          button.style.backgroundColor = ''; // Reset the background color
+        });
       });
 
       // Event listener for the Stop Search button
       document.getElementById('stopsearchbutton').addEventListener('click', function() {
         isAnimating = false;
+        this.style.backgroundColor = 'red'; // Change button color to red
+
+        // Reset the start-search button states
+        const buttonIds = ['startsearchbutton'];
+        buttonIds.forEach(function(buttonId) {
+          const button = document.getElementById(buttonId);
+          button.style.backgroundColor = ''; // Reset the background color
+        });
       });
 
       // Event listener for the Submit button (Initial assignment)
@@ -3365,12 +3380,28 @@
       document.getElementById('yesBtn').addEventListener('click', function() {
         document.getElementById('reassignToDroneSection').style.display = 'block';
         userReassignResponse = 'Yes';
+        this.style.backgroundColor = 'green'; // Change button color to green
+
+        // Reset the noBtn states
+        const buttonIds = ['noBtn'];
+        buttonIds.forEach(function(buttonId) {
+          const button = document.getElementById(buttonId);
+          button.style.backgroundColor = ''; // Reset the background color
+        });
       });
 
       // Event listener for the 'No' button in task assignment
       document.getElementById('noBtn').addEventListener('click', function() {
         document.getElementById('reassignToDroneSection').style.display = 'none';
         userReassignResponse = 'No';
+        this.style.backgroundColor = 'red'; // Change button color to red
+
+        // Reset the yesBtn states
+        const buttonIds = ['yesBtn'];
+        buttonIds.forEach(function(buttonId) {
+          const button = document.getElementById(buttonId);
+          button.style.backgroundColor = ''; // Reset the background color
+        });
       });
 
       // Event listener for the 'Reassign' button
@@ -3585,7 +3616,7 @@
            reviewWindow.document.write('<p>No ratings data available.</p>');
          } else {
            // Predefined drone types and target types
-           const drones = ['drone1', 'drone2', 'drone3', 'drone4'];
+           const drones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
            const targetTypes = ['Living target', 'Non-living target', 'Living distractor', 'Non-living distractor'];
 
            // Create a 2D array to store the count of target types detected by each drone
@@ -3640,7 +3671,7 @@
            reviewWindow.document.write('</table>');
 
            // Create the summary table
-           reviewWindow.document.write('<h2>Drone Target Type Detection Summary</h2>');
+           reviewWindow.document.write('<h2>Target Type Detection Summary</h2>');
            reviewWindow.document.write('<table>');
            reviewWindow.document.write('<tr><th></th>');
 
@@ -3731,6 +3762,13 @@
            }
          });
 
+         // Reset the button states
+         const buttonIds = ['startsearchbutton', 'stopsearchbutton', 'yesBtn', 'noBtn', 'accept-recommendation', 'reject-recommendation'];
+         buttonIds.forEach(function(buttonId) {
+           const button = document.getElementById(buttonId);
+           button.style.backgroundColor = ''; // Reset the background color
+         });
+
          // Use the reassignedDroneId as the activeDroneId
          let activeDroneId = reassignedDroneId; // This is set when the user reassigns a drone
          if (activeDroneId) {
@@ -3767,12 +3805,27 @@
            userResponse = 'Accept';
            document.getElementById('sel_obj').value = ''; // Set the dropdown value to an empty string
            document.getElementById('recategorizeObject').style.display = 'none';
-       });
+           this.style.backgroundColor = 'green'; // Change button color to green
 
+           // Reset the reject-recommendation button states
+           const buttonIds = ['reject-recommendation'];
+           buttonIds.forEach(function(buttonId) {
+             const button = document.getElementById(buttonId);
+             button.style.backgroundColor = ''; // Reset the background color
+           });
+         });
        document.getElementById('reject-recommendation').addEventListener('click', function() {
            userResponse = 'Reject';
            document.getElementById('recategorizeObject').style.display = 'block';
-       });
+           this.style.backgroundColor = 'red'; // Change button color to red
+
+           // Reset the accept-recommendation button states
+           const buttonIds = ['accept-recommendation'];
+           buttonIds.forEach(function(buttonId) {
+             const button = document.getElementById(buttonId);
+             button.style.backgroundColor = ''; // Reset the background color
+           });
+         });
 
        // Event listener for re-categorize object selection
        document.getElementById('sel_obj').addEventListener('input', function() {
@@ -3826,75 +3879,75 @@
        <div id="popup" class="popup">
          <div class="popup-content">
            <!-- <span class="close">&times;</span> -->
-           <p>You are tasked with correctly identifying objects with the help of 4 autonomous drones, 2 drones equipped with thermal cameras and the other 2 equipped with near/short-wave infrared cameras, with different levels of object detection reliability.</p>
-           <button id="closePopupBtn">Close pop-up</button>
+           <p>You are tasked with correctly identifying objects with the help of 4 autonomous drones, 2 drones equipped with thermal cameras and the other 2 equipped with near/short-wave infrared cameras, with different levels of object detection reliability</p>
+           <button id="closePopupBtn">Close</button>
          </div>
        </div>
 
        <form id="droneSelectionForm">
-          <h3 class="main-heading">Initial Drone assignment</h3>
+          <h4 class="main-heading">Initial Drone assignment</h4>
           <div>
          <label for="quadrant1">Quadrant 1:</label>
          <select id="quadrant1" name="quadrant1">
-           <option value="drone1" selected>Drone 1</option>
-           <option value="drone2">Drone 2</option>
-           <option value="drone3">Drone 3</option>
-           <option value="drone4">Drone 4</option>
+           <option value="ThermalAlpha" selected>ThermalAlpha</option>
+           <option value="ThermalBeta">ThermalBeta</option>
+           <option value="InfraredGamma">InfraredGamma</option>
+           <option value="InfraredDelta">InfraredDelta</option>
          </select>
        </div>
        <div>
          <label for="quadrant2">Quadrant 2:</label>
          <select id="quadrant2" name="quadrant2">
-           <option value="drone1">Drone 1</option>
-           <option value="drone2" selected>Drone 2</option>
-           <option value="drone3">Drone 3</option>
-           <option value="drone4">Drone 4</option>
+           <option value="ThermalAlpha">ThermalAlpha</option>
+           <option value="ThermalBeta" selected>ThermalBeta</option>
+           <option value="InfraredGamma">InfraredGamma</option>
+           <option value="InfraredDelta">InfraredDelta</option>
          </select>
        </div>
        <div>
          <label for="quadrant3">Quadrant 3:</label>
          <select id="quadrant3" name="quadrant3">
-           <option value="drone1">Drone 1</option>
-           <option value="drone2">Drone 2</option>
-           <option value="drone3" selected>Drone 3</option>
-           <option value="drone4">Drone 4</option>
+           <option value="ThermalAlpha">ThermalAlpha</option>
+           <option value="ThermalBeta">ThermalBeta</option>
+           <option value="InfraredGamma" selected>InfraredGamma</option>
+           <option value="InfraredDelta">InfraredDelta</option>
          </select>
        </div>
        <div>
          <label for="quadrant4">Quadrant 4:</label>
          <select id="quadrant4" name="quadrant4">
-           <option value="drone1">Drone 1</option>
-           <option value="drone2">Drone 2</option>
-           <option value="drone3">Drone 3</option>
-           <option value="drone4" selected>Drone 4</option>
+           <option value="ThermalAlpha">ThermalAlpha</option>
+           <option value="ThermalBeta">ThermalBeta</option>
+           <option value="InfraredGamma">InfraredGamma</option>
+           <option value="InfraredDelta" selected>InfraredDelta</option>
          </select>
        </div>
          <input id="submitBtn" type="submit" value="Submit">
        </form>
 
        <div id="droneQuadrantDisplay">
-         <hr>
-         <h3 class="main-heading">Current Drone assignment</h3>
-            <hr>
+         <!-- <hr> -->
+         <h4 class="main-heading">Current Drone assignment</h4>
+            <!-- <hr> -->
        </div>
 
        <div id="droneControl" class="droneControl-container">
-           <!-- <h3 class="drone-motion">Drone Control Tools</h3> -->
+           <!-- <h4 class="drone-motion">Drone Control Tools</h4> -->
            <!-- <div> -->
-             <h3 >Object Search: </h3>
+             <h4 >Object Search: </h4>
              <input type="button" class="start-button" value="Start" id="startsearchbutton">
              <input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
            </div>
           <!-- <hr> -->
 
            <!-- <div>
-           <h3 class="detection-info">Object detection</h3>
+           <h4 class="detection-info">Object detection</h4>
              <p id="current-drone">Current drone:</p>
              <p id="lighting-illumination">Lighting/Illumination:</p>
              <p id="object-detected">Object detected:</p>
            </div> -->
        <div id="objectRecommendation" class="objectRecommendation-container">
-             <h3>Object Recommendation:</h3>
+             <h4>Object Recommendation:</h4>
              <!-- <div> -->
              <input type="button" class="yes-button" value="Accept" id="accept-recommendation" />
              <input type="button" class="no-button" value="Reject" id="reject-recommendation" />
@@ -3902,8 +3955,7 @@
            </div> -->
 
            <div id="recategorizeObject" style="display:none">
-             <label >Re-categorize object: </label>
-             <select id="sel_obj">
+             <label >Re-categorize object: </label> <select id="sel_obj">
                <option value="living target">Living target</option>
                <option value="non-living target">Non-living target</option>
                <option value="living distractor">Living distractor</option>
@@ -3913,7 +3965,7 @@
              <hr>
 
              <!-- <div>
-             <h3 class="detection-info">Task assignment</h3>
+             <h4 class="detection-info">Task assignment</h4>
              </div> -->
              <div id="resassignTaskSection">
                <label >Re-assign task:</label>
@@ -3923,17 +3975,17 @@
              <div id="reassignToDroneSection" style="display:none;">
                <label >Re-assign task to: </label>
                <select id="sel_drone">
-                 <option value="drone1">Drone 1</option>
-                 <option value="drone2">Drone 2</option>
-                 <option value="drone3">Drone 3</option>
-                 <option value="drone4">Drone 4</option>
+                 <option value="ThermalAlpha">ThermalAlpha</option>
+                 <option value="ThermalBeta">ThermalBeta</option>
+                 <option value="InfraredGamma">InfraredGamma</option>
+                 <option value="InfraredDelta">InfraredDelta</option>
                </select>
                <input type="button" id="reassignBtn" value="Reassign/Swap" />
              </div>
            </div>
 
              <div id="saveAndExport" class="saveExport-container">
-             <!-- <h3 class="Save-and-export-ratings">Confirm selections/Ratings</h3> -->
+             <!-- <h4 class="Save-and-export-ratings">Confirm selections/Ratings</h4> -->
              <div>
                <!-- <label for="confirmButton">Confirm Ratings </label> -->
                <label >Confirm selections and ratings </label>
@@ -3948,12 +4000,12 @@
        <!-- change label class for each drone type -->
        <div id="droneRatings" class="droneRatings-container">
          <!-- <hr> -->
-         <h3 class="list-heading">Rank the drones in the order of their competence in detecting the current object</h3>
+         <h4 class="list-heading">Rank the drones in the order of their competence for the current detection</h4>
          <div class="droneRatings-container">
          <!-- <hr> -->
-         <!-- <label><strong> Drone 1: </strong></label> -->
+         <!-- <label><strong> ThermalAlpha: </strong></label> -->
          <div class="slider-group">
-               <label for="competenceRange1">Drone1: </label>
+               <label for="competenceRange1">ThermalAlpha: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange1" list="tickmarks1">
                <div class="competence-slider-container">
                <datalist id="tickmarks1">
@@ -3965,7 +4017,7 @@
                <!-- <span id="competenceValue1">3</span> -->
              </div>
              <div class="slider-group">
-               <label for="competenceRange2">Drone2: </label>
+               <label for="competenceRange2">ThermalBeta: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange2" list="tickmarks2">
                <div class="competence-slider-container">
                <datalist id="tickmarks2">
@@ -3977,7 +4029,7 @@
                <!-- <span id="competenceValue2">3</span> -->
              </div>
              <div class="slider-group">
-               <label for="competenceRange3">Drone3: </label>
+               <label for="competenceRange3">InfraredGamma: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange3" list="tickmarks3">
                <div class="competence-slider-container">
                <datalist id="tickmarks3">
@@ -3989,7 +4041,7 @@
                <!-- <span id="competenceValue3">3</span> -->
              </div>
              <div class="slider-group">
-               <label for="competenceRange4">Drone4: </label>
+               <label for="competenceRange4">InfraredDelta: </label>
                <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange4" list="tickmarks4">
                <div class="competence-slider-container">
                <datalist id="tickmarks4">
@@ -4003,25 +4055,25 @@
          </div>
          <hr>
          <div>
-         <!-- <label><strong> Drone 2: </strong></label> -->
-         <h3 class="list-heading">How much do you trust the drone's object detection recommendation?</h3>
+         <!-- <label><strong> ThermalBeta: </strong></label> -->
+         <h4 class="list-heading">How much do you trust the drone's object detection recommendation?</h4>
              <div class="slider-group">
-               <label for="trustRange1">Drone1: </label>
+               <label for="trustRange1">ThermalAlpha: </label>
                <input type="range" min="1" max="10" value="3" class="slider" id="trustRange1">
                <span id="trustValue1">3</span>
              </div>
              <div class="slider-group">
-               <label for="trustRange2">Drone2: </label>
+               <label for="trustRange2">ThermalBeta: </label>
                <input type="range" min="1" max="10" value="3" class="slider" id="trustRange2">
                <span id="trustValue2">3</span>
              </div>
              <div class="slider-group">
-               <label for="trustRange3">Drone3: </label>
+               <label for="trustRange3">InfraredGamma: </label>
                <input type="range" min="1" max="10" value="3" class="slider" id="trustRange3">
                <span id="trustValue3">3</span>
              </div>
              <div class="slider-group">
-               <label for="trustRange4">Drone4: </label>
+               <label for="trustRange4">InfraredDelta: </label>
                <input type="range" min="1" max="10" value="3" class="slider" id="trustRange4">
                <span id="trustValue4">3</span>
              </div>
