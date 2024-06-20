@@ -136,20 +136,20 @@
     }
     #endTrial{
       position: fixed;
-      bottom: 40px;
+      bottom: 60px;
       right: 0;
-      width: 230px;
+      width: 290px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
       /* flex-direction: column; /* This will stack the fields vertically */ */
-      padding: 5px;
+      padding: 20px;
     }
     #saveAndExport{
       position: fixed;
       bottom: 109px;
       left: 0;
-      width: 290px;
+      width: 280px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -252,7 +252,7 @@
       position: fixed;
       bottom: 10px;
       right: 0;
-      width: 230px;
+      width: 280px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       /* display: flex; */
@@ -2969,8 +2969,8 @@
         const image = document.createElement("img");
         image.src = imageUrl;
         image.alt = "Detected Object";
-        image.style.width = "400px";
-        image.style.height = "400px";
+        image.style.width = "450px";
+        image.style.height = "450px";
         image.style.display = "block";
         image.style.marginBottom = "10px";
 
@@ -3219,8 +3219,8 @@
      const image = document.createElement("img");
      image.src = imageUrl;
      image.alt = "Detected Object";
-     image.style.width = "400px";
-     image.style.height = "400px";
+     image.style.width = "450px";
+     image.style.height = "450px";
      image.style.display = "block";
      image.style.marginBottom = "10px";
 
@@ -3534,6 +3534,26 @@
            link.click(); // This will download the file
        }
 
+       // Get unique drones
+       const drones = [...new Set(ratings.map(rating => rating.detectedObjectInfo.droneId))];
+
+       // Get unique target types
+       const targetTypes = [...new Set(ratings.flatMap(rating => rating.detectedObjectInfo.text1.split(', ')))];
+
+       const droneTargetCounts = drones.map(() => targetTypes.map(() => 0));
+
+       ratings.forEach(rating => {
+         const drone = rating.detectedObjectInfo.droneId;
+         const targetType = rating.detectedObjectInfo.text1;
+         const droneIndex = drones.indexOf(drone);
+         const targetTypeIndex = targetTypes.indexOf(targetType);
+
+         if (droneIndex !== -1 && targetTypeIndex !== -1) {
+           droneTargetCounts[droneIndex][targetTypeIndex]++;
+         }
+       });
+
+
        function openReviewTab() {
          const reviewWindow = window.open('', '_blank');
 
@@ -3547,7 +3567,7 @@
            th, td {
              padding: 8px;
              text-align: left;
-             border-right: 1px solid #ddd; /* Add this line to create vertical separators */
+             border: 1px solid #ddd;
            }
 
            th {
@@ -3560,22 +3580,109 @@
          `);
          reviewWindow.document.write('</style></head><body>');
          reviewWindow.document.write('<h1>Review Ratings Data</h1>');
+
          if (ratings.length === 0) {
            reviewWindow.document.write('<p>No ratings data available.</p>');
          } else {
+           // Predefined drone types and target types
+           const drones = ['drone1', 'drone2', 'drone3', 'drone4'];
+           const targetTypes = ['Living target', 'Non-living target', 'Living distractor', 'Non-living distractor'];
+
+           // Create a 2D array to store the count of target types detected by each drone
+           const droneTargetCounts = drones.map(() => targetTypes.map(() => 0));
+           const droneTargetReliabilitySums = drones.map(() => targetTypes.map(() => 0));
+           const droneTargetReliabilityCounts = drones.map(() => targetTypes.map(() => 0));
+
+           // Update the counts and reliability sums in the 2D arrays
+           ratings.forEach(rating => {
+             const drone = rating.detectedObjectInfo.droneId;
+             const targetType = rating.detectedObjectInfo.text1;
+             const reliability = rating.reliabilityPercentage || 0;
+             const droneIndex = drones.indexOf(drone);
+             const targetTypeIndex = targetTypes.indexOf(targetType);
+
+             if (droneIndex !== -1 && targetTypeIndex !== -1) {
+               droneTargetCounts[droneIndex][targetTypeIndex]++;
+               droneTargetReliabilitySums[droneIndex][targetTypeIndex] += reliability;
+               droneTargetReliabilityCounts[droneIndex][targetTypeIndex]++;
+             }
+           });
+
+           // Create the Living/Non-living summary table
+           reviewWindow.document.write('<h2>Living/Non-living Detection Summary</h2>');
            reviewWindow.document.write('<table>');
-           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting drone</th><th>Object Image</th><th>Detection Details</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th></tr>');
+           reviewWindow.document.write('<tr><th></th><th>Living</th><th>Non-living</th></tr>');
+
+           // Write rows for drones
+           drones.forEach((drone, rowIndex) => {
+             reviewWindow.document.write('<tr>');
+             reviewWindow.document.write(`<th>${drone}</th>`);
+
+             // Calculate counts and average reliability for Living and Non-living categories
+             const livingCount = droneTargetCounts[rowIndex][0] + droneTargetCounts[rowIndex][2];
+             const nonLivingCount = droneTargetCounts[rowIndex][1] + droneTargetCounts[rowIndex][3];
+
+             const livingReliabilitySum = droneTargetReliabilitySums[rowIndex][0] + droneTargetReliabilitySums[rowIndex][2];
+             const nonLivingReliabilitySum = droneTargetReliabilitySums[rowIndex][1] + droneTargetReliabilitySums[rowIndex][3];
+
+             const livingReliabilityCount = droneTargetReliabilityCounts[rowIndex][0] + droneTargetReliabilityCounts[rowIndex][2];
+             const nonLivingReliabilityCount = droneTargetReliabilityCounts[rowIndex][1] + droneTargetReliabilityCounts[rowIndex][3];
+
+             const averageLivingReliability = livingReliabilityCount > 0 ? (livingReliabilitySum / livingReliabilityCount).toFixed(2) : 'N/A';
+             const averageNonLivingReliability = nonLivingReliabilityCount > 0 ? (nonLivingReliabilitySum / nonLivingReliabilityCount).toFixed(2) : 'N/A';
+
+             reviewWindow.document.write(`<td>${livingCount} (${averageLivingReliability}%)</td>`);
+             reviewWindow.document.write(`<td>${nonLivingCount} (${averageNonLivingReliability}%)</td>`);
+
+             reviewWindow.document.write('</tr>');
+           });
+
+           reviewWindow.document.write('</table>');
+
+           // Create the summary table
+           reviewWindow.document.write('<h2>Drone Target Type Detection Summary</h2>');
+           reviewWindow.document.write('<table>');
+           reviewWindow.document.write('<tr><th></th>');
+
+           // Write target type column headers
+           targetTypes.forEach(targetType => {
+             reviewWindow.document.write(`<th>${targetType}</th>`);
+           });
+
+           reviewWindow.document.write('</tr>');
+
+           // Write rows for drones
+           drones.forEach((drone, rowIndex) => {
+             reviewWindow.document.write('<tr>');
+             reviewWindow.document.write(`<th>${drone}</th>`);
+
+             targetTypes.forEach((targetType, colIndex) => {
+               const count = droneTargetCounts[rowIndex][colIndex];
+               const reliabilitySum = droneTargetReliabilitySums[rowIndex][colIndex];
+               const reliabilityCount = droneTargetReliabilityCounts[rowIndex][colIndex];
+               const averageReliability = reliabilityCount > 0 ? (reliabilitySum / reliabilityCount).toFixed(2) : 'N/A';
+               reviewWindow.document.write(`<td>${count} (${averageReliability}%)</td>`);
+             });
+
+             reviewWindow.document.write('</tr>');
+           });
+
+           reviewWindow.document.write('</table>');
+
+           // Create the detailed table
+           reviewWindow.document.write('<h2>Detailed Detection Information</h2>');
+           reviewWindow.document.write('<table>');
+           reviewWindow.document.write('<tr><th>Detection No</th><th>Detecting Drone</th><th>Object Image</th><th>Detection Details</th><th>True Object</th><th>User Response</th><th>Re-categorized Object</th><th>Task Reassigned</th></tr>');
 
            let detectionIndex = 0;
-           // let redetectionIndex = 0;
 
            ratings.forEach((rating, index) => {
              reviewWindow.document.write('<tr>');
 
              // Check if this is a redetection event
              if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
-               const details = `Oject recommendation: ${rating.redetectionText1} <br><br> Lighting condition: ${rating.redetectionText2}<br> <br> Object recognition reliability: ${rating.reliabilityPercentage || ''}%`;
-               reviewWindow.document.write(`<td>Redetection</td><td>${rating.detectedObjectInfo.droneId || ''}</td><td><img src="${detectedImages[index]}" alt="Redetected Image" width="250"></td><td>${details}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+               const details = `Object recommendation: ${rating.redetectionText1} <br><br> Lighting condition: ${rating.redetectionText2}<br> <br> Object recognition reliability: ${rating.reliabilityPercentage || ''}%`;
+               reviewWindow.document.write(`<td>Redetection</td><td>${rating.detectedObjectInfo.droneId || ''}</td><td><img src="${detectedImages[index]}" alt="Redetected Image" width="250"></td><td>${details}</td><td>${rating.redetectionText1}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
              } else {
                const detectionInfo = rating.detectedObjectInfo || {};
                const text1 = detectionInfo.text1 || '';
@@ -3585,7 +3692,7 @@
                const detectionNumber = detectionInfo.detectionNumber || '';
                const details = `Object recommendation: ${text1} <br><br> Lighting condition: ${text2} <br><br> Object recognition reliability: ${reliabilityPercentage}%`;
 
-               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td><td>${details}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
+               reviewWindow.document.write(`<td>${detectionNumber}</td><td>${detectingDrone}</td><td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td><td>${details}</td><td>${text1}</td><td>${rating.response}</td><td>${rating.userReobject}</td><td>${rating.reassignResponse}</td>`);
              }
 
              reviewWindow.document.write('</tr>');
@@ -3719,7 +3826,7 @@
        <div id="popup" class="popup">
          <div class="popup-content">
            <!-- <span class="close">&times;</span> -->
-           <p>You are tasked with correctly identifying objects with the help of 4 autonomous drones.</p>
+           <p>You are tasked with correctly identifying objects with the help of 4 autonomous drones, 2 drones equipped with thermal cameras and the other 2 equipped with near/short-wave infrared cameras, with different levels of object detection reliability.</p>
            <button id="closePopupBtn">Close pop-up</button>
          </div>
        </div>
