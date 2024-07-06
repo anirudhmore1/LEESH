@@ -3404,12 +3404,41 @@
         });
       });
 
+      function showReassignPopup(message, duration) {
+        const popup = document.createElement('div');
+        popup.textContent = message;
+        popup.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: white;
+          color: black;
+          padding: 20px;
+          border-radius: 5px;
+          z-index: 1000;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          // font-family: Arial, sans-serif;
+          // font-size: 16px;
+          text-align: center;
+        `;
+
+        document.body.appendChild(popup);
+
+        setTimeout(() => {
+          document.body.removeChild(popup);
+        }, duration);
+      }
+
       // Event listener for the 'Reassign' button
       document.getElementById('reassignBtn').addEventListener('click', function() {
         const newDroneId = document.getElementById('sel_drone').value;
         reassignedDroneId = newDroneId;
         reassignTaskToDrone(currentDroneId, newDroneId);
         updateQuadrantDisplay();
+
+        // Display the pop-up message
+      showReassignPopup(`Drone ${currentDroneId} swapped with ${newDroneId}`, 3000);
       });
 
      // Function to update the displayed value of the competence rating
@@ -3432,6 +3461,21 @@
          document.getElementById('trustRange' + i).addEventListener('input', function() {
            updateTrustValue(this.value, i);
          });
+       }
+
+       function resetSliders() {
+         // Reset competence sliders
+         for (let i = 1; i <= 4; i++) {
+           const competenceSlider = document.getElementById(`competenceRange${i}`);
+           competenceSlider.value = competenceSlider.defaultValue;
+         }
+
+         // Reset trust sliders
+         for (let i = 1; i <= 4; i++) {
+           const trustSlider = document.getElementById(`trustRange${i}`);
+           trustSlider.value = trustSlider.defaultValue;
+           document.getElementById(`trustValue${i}`).textContent = trustSlider.defaultValue;
+         }
        }
 
        // Array to store the ratings
@@ -3514,6 +3558,8 @@
              reliabilityPercentage: reliabilityPercentage
            });
            localStorage.setItem('ratingsData', JSON.stringify(ratingsData));
+
+           resetSliders();
        }
 
        function exportToCSV() {
@@ -3736,9 +3782,42 @@
          reviewWindow.document.close();
        }
 
+       function showPopupMessage(message, duration) {
+         // Create a new div element for the pop-up
+         const popup = document.createElement('div');
+         popup.textContent = message;
+         popup.style.cssText = `
+           position: fixed;
+           top: 50%;
+           left: 50%;
+           transform: translate(-50%, -50%);
+           background-color: white;
+           color: black;
+           padding: 20px;
+           border-radius: 5px;
+           z-index: 1000;
+           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+           // font-family: Arial, sans-serif;
+           // font-size: 16px;
+           text-align: center;
+         `;
+
+         // Add the pop-up to the document body
+         document.body.appendChild(popup);
+
+         // Remove the pop-up after the specified duration
+         setTimeout(() => {
+           document.body.removeChild(popup);
+         }, duration);
+       }
+
+
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', function() {
          saveRatings();
+
+         // Pop-up message for when sletections and ratings are saved set to time out after 3 sec
+         showPopupMessage("Drone ratings and selections saved for the current detection", 3000);
 
          // Find all pop-up elements
          const popups = document.querySelectorAll('.object-detected-popup');

@@ -370,7 +370,7 @@
       // Symbol for drawing the lines
       const lineSymbol = {
            type: "simple-line", // autocasts as SimpleLineSymbol()
-           color: [226, 119, 40],
+           color: [0, 0, 0, 0.4],
            width: 4
          };
 
@@ -3434,6 +3434,21 @@
          });
        }
 
+       function resetSliders() {
+         // Reset competence sliders
+         for (let i = 1; i <= 4; i++) {
+           const competenceSlider = document.getElementById(`competenceRange${i}`);
+           competenceSlider.value = competenceSlider.defaultValue;
+         }
+
+         // Reset trust sliders
+         for (let i = 1; i <= 4; i++) {
+           const trustSlider = document.getElementById(`trustRange${i}`);
+           trustSlider.value = trustSlider.defaultValue;
+           document.getElementById(`trustValue${i}`).textContent = trustSlider.defaultValue;
+         }
+       }
+
        // Array to store the ratings
        let ratings = [];
 
@@ -3514,6 +3529,8 @@
              reliabilityPercentage: reliabilityPercentage
            });
            localStorage.setItem('ratingsData', JSON.stringify(ratingsData));
+
+           resetSliders();
        }
 
        function exportToCSV() {
@@ -3776,13 +3793,26 @@
            let imagingType = activeDroneInfo.imagingType;
            let reliability = activeDroneInfo.reliability;
 
+           // Hide the "Re-assign task" section
+           document.getElementById('resassignTaskSection').style.display = 'none';
+
            // Show the pop-up for the re-detected object with the correct imaging type
            // Pass a callback function to reset reassignedDroneId after the pop-up is closed
            showRedetectedObjectPopup(activeDroneId, imagingType, reliability, function() {
              reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
+             document.getElementById('resassignTaskSection').style.display = 'block'; // Show the "Re-assign task" section
            });
+
+           // Reset the Yes and No button states
+           const buttonIds = ['yesBtn', 'noBtn'];
+           buttonIds.forEach(function(buttonId) {
+             const button = document.getElementById(buttonId);
+             button.style.backgroundColor = ''; // Reset the background color
+           });
+
          } else {
            console.error('No drone has been reassigned yet.');
+           document.getElementById('resassignTaskSection').style.display = 'block';
          }
 
          // Hide the Initial drone assignment
