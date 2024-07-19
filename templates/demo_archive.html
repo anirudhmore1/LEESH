@@ -89,7 +89,7 @@
     }
     #objectRecommendation {
       position: fixed;
-      top: 700px;
+      top: 720px;
       left: 0;
       height: auto;
       background: rgba(255, 255, 255, 0.9);
@@ -259,6 +259,37 @@
       /* flex-direction: column; /* This will stack the fields vertically */
       padding: 5px;
     }
+    #scoreDisplay {
+      position: absolute;
+      top: -10px;
+      left: 50px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 1px;
+      z-index: 1;
+      display: none;
+      font-size: 20px;
+      width: 190px;
+      flex-direction: row;
+      align-items: center;
+    }
+    .toggle-score-btn {
+      position: absolute;
+      font-size: 10px;
+      top: -20px;
+      padding: 3px;
+      width: 32px;
+      height: 15px;
+      background-color: #f0f0f0;
+      color: #333;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .toggle-score-btn:hover {
+      background-color: #e0e0e0;
+    }
+
   </style>
 
   <script>
@@ -2679,6 +2710,103 @@
         }
       };
 
+      const reliabilityRankings = {
+        thermal: {
+          high: {
+            'Living target': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+            'Non-living target': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+            'Living distractor': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+            'Non-living distractor': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+          },
+          low: {
+            'Living target': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+            'Non-living target': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+            'Living distractor': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+            'Non-living distractor': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+          }
+        },
+        nswir: {
+          high: {
+            'Living target': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+            'Non-living target': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+            'Living distractor': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+            'Non-living distractor': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+          },
+          low: {
+            'Living target': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+            'Non-living target': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+            'Living distractor': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+            'Non-living distractor': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+          }
+        }
+      };
+
+      function calculateScore(ranking) {
+        switch(ranking) {
+          case 1: return 5;
+          case 2: return 3.75;
+          case 3: return 2.5;
+          case 4: return 1.25;
+          default: return 0;
+        }
+      }
+
+      let cumulativeScore = 0;
+
+      function updateScore(droneId, objectDetected) {
+        const droneInfo = dronePathsTrack[droneId];
+        if (!droneInfo) {
+          console.error('Drone information not found for droneId:', droneId);
+          return 0;
+        }
+
+        const imagingTypeData = reliabilityRankings[droneInfo.imagingType];
+        if (!imagingTypeData) {
+          console.error('Ranking data not found for imaging type:', droneInfo.imagingType);
+          return 0;
+        }
+
+        const reliabilityLevelData = imagingTypeData[droneInfo.reliability];
+        if (!reliabilityLevelData) {
+          console.error('Ranking data not found for reliability level:', droneInfo.reliability);
+          return 0;
+        }
+
+        const objectType = objectDetected.text1;
+        const lightingCondition = objectDetected.text2.charAt(0).toUpperCase() + objectDetected.text2.slice(1).toLowerCase();
+
+        const objectTypeData = reliabilityLevelData[objectType];
+        if (!objectTypeData) {
+          console.error('Ranking data not found for object type:', objectType);
+          return 0;
+        }
+
+        const ranking = objectTypeData[lightingCondition];
+        if (ranking === undefined) {
+          console.error('Ranking data not found for lighting condition:', lightingCondition);
+          return 0;
+        }
+
+        const score = calculateScore(ranking);
+        cumulativeScore += score;
+
+        // Update the score display on the frontend
+        document.getElementById('scoreDisplay').textContent = `Current Score: ${cumulativeScore.toFixed(2)}`;
+
+        return score;
+      }
+
+      function calculateAndUpdateScore() {
+        let activeDroneId = reassignedDroneId || currentDroneId;
+        let objectDetected = {
+          text1: lastDetectedObjectType,
+          text2: lastDetectedLight
+        };
+
+        let scoreEarned = updateScore(activeDroneId, objectDetected);
+        // showPopupMessage(`Score earned: ${scoreEarned.toFixed(2)}`, 3000);
+      }
+
       function calculateReliabilityPercentage(droneId, objectDetected) {
         // Retrieve drone information from the global tracker
         const droneInfo = dronePathsTrack[droneId];
@@ -2935,6 +3063,11 @@
 
         changeDroneColorOnDetection(drone);
         detectionCounter++;
+
+        // Check if we need to set the pendingReview flag
+        if (detectionCounter === 6 || detectionCounter === 11 || detectionCounter === 16 || detectionCounter === 21) {
+          pendingReview = true;
+        }
 
         // Wait for the user to press the start button (resume search) before processing the next one
         document.getElementById('startsearchbutton').addEventListener('click', () => {
@@ -3289,8 +3422,17 @@
      // updateDroneControlUI(droneName, imageText1, imageText2);
 
      // Store the callback to be called later
-     popup.callback = callback;
-
+     const originalCallback = callback;
+     popup.callback = function() {
+       if (typeof originalCallback === "function") {
+         originalCallback();
+       }
+       // Check if we need to show the review tab after redetection
+       if (pendingReview) {
+         checkAndShowReviewTab();
+         pendingReview = false;
+       }
+     };
    }
 
    // Get the popup and close button elements
@@ -3404,12 +3546,41 @@
         });
       });
 
+      function showReassignPopup(message, duration) {
+        const popup = document.createElement('div');
+        popup.textContent = message;
+        popup.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: white;
+          color: black;
+          padding: 20px;
+          border-radius: 5px;
+          z-index: 1000;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          // font-family: Arial, sans-serif;
+          // font-size: 16px;
+          text-align: center;
+        `;
+
+        document.body.appendChild(popup);
+
+        setTimeout(() => {
+          document.body.removeChild(popup);
+        }, duration);
+      }
+
       // Event listener for the 'Reassign' button
       document.getElementById('reassignBtn').addEventListener('click', function() {
         const newDroneId = document.getElementById('sel_drone').value;
         reassignedDroneId = newDroneId;
         reassignTaskToDrone(currentDroneId, newDroneId);
         updateQuadrantDisplay();
+
+        // Display the pop-up message
+      showReassignPopup(`Drone ${currentDroneId} swapped with ${newDroneId}`, 3000);
       });
 
      // Function to update the displayed value of the competence rating
@@ -3601,7 +3772,6 @@
          }
        });
 
-
        function openReviewTab() {
          const reviewWindow = window.open('', '_blank');
 
@@ -3625,9 +3795,24 @@
            tr:nth-child(even) {
              background-color: #f2f2f2;
            }
+
+           .score-display {
+             font-size: 30px;
+             font-weight: bold;
+             margin-bottom: 20px;
+           }
          `);
          reviewWindow.document.write('</style></head><body>');
-         reviewWindow.document.write('<h1>Review Ratings Data</h1>');
+
+         // cumulative score display
+         reviewWindow.document.write(`<div class="score-display">Total Score: ${cumulativeScore.toFixed(2)}</div>`);
+
+         // Check if it's a special detection number (6, 11, 16)
+         const isSpecialDetection = [6, 11, 16].includes(detectionCounter);
+
+         if (!isSpecialDetection) {
+           reviewWindow.document.write('<h1>Detection Data</h1>');
+         }
 
          if (ratings.length === 0) {
            reviewWindow.document.write('<p>No ratings data available.</p>');
@@ -3656,66 +3841,69 @@
              }
            });
 
-           // Create the Living/Non-living summary table
-           reviewWindow.document.write('<h2>Living/Non-living Detection Summary</h2>');
-           reviewWindow.document.write('<table>');
-           reviewWindow.document.write('<tr><th></th><th>Living</th><th>Non-living</th></tr>');
+           if (!isSpecialDetection) {
 
-           // Write rows for drones
-           drones.forEach((drone, rowIndex) => {
-             reviewWindow.document.write('<tr>');
-             reviewWindow.document.write(`<th>${drone}</th>`);
+                        // Create the Living/Non-living summary table
+                        reviewWindow.document.write('<h2>Living/Non-living Detection Summary</h2>');
+                        reviewWindow.document.write('<table>');
+                        reviewWindow.document.write('<tr><th></th><th>Living</th><th>Non-living</th></tr>');
 
-             // Calculate counts and average reliability for Living and Non-living categories
-             const livingCount = droneTargetCounts[rowIndex][0] + droneTargetCounts[rowIndex][2];
-             const nonLivingCount = droneTargetCounts[rowIndex][1] + droneTargetCounts[rowIndex][3];
+                        // Write rows for drones
+                        drones.forEach((drone, rowIndex) => {
+                          reviewWindow.document.write('<tr>');
+                          reviewWindow.document.write(`<th>${drone}</th>`);
 
-             const livingReliabilitySum = droneTargetReliabilitySums[rowIndex][0] + droneTargetReliabilitySums[rowIndex][2];
-             const nonLivingReliabilitySum = droneTargetReliabilitySums[rowIndex][1] + droneTargetReliabilitySums[rowIndex][3];
+                          // Calculate counts and average reliability for Living and Non-living categories
+                          const livingCount = droneTargetCounts[rowIndex][0] + droneTargetCounts[rowIndex][2];
+                          const nonLivingCount = droneTargetCounts[rowIndex][1] + droneTargetCounts[rowIndex][3];
 
-             const livingReliabilityCount = droneTargetReliabilityCounts[rowIndex][0] + droneTargetReliabilityCounts[rowIndex][2];
-             const nonLivingReliabilityCount = droneTargetReliabilityCounts[rowIndex][1] + droneTargetReliabilityCounts[rowIndex][3];
+                          const livingReliabilitySum = droneTargetReliabilitySums[rowIndex][0] + droneTargetReliabilitySums[rowIndex][2];
+                          const nonLivingReliabilitySum = droneTargetReliabilitySums[rowIndex][1] + droneTargetReliabilitySums[rowIndex][3];
 
-             const averageLivingReliability = livingReliabilityCount > 0 ? (livingReliabilitySum / livingReliabilityCount).toFixed(2) : 'N/A';
-             const averageNonLivingReliability = nonLivingReliabilityCount > 0 ? (nonLivingReliabilitySum / nonLivingReliabilityCount).toFixed(2) : 'N/A';
+                          const livingReliabilityCount = droneTargetReliabilityCounts[rowIndex][0] + droneTargetReliabilityCounts[rowIndex][2];
+                          const nonLivingReliabilityCount = droneTargetReliabilityCounts[rowIndex][1] + droneTargetReliabilityCounts[rowIndex][3];
 
-             reviewWindow.document.write(`<td>${livingCount} (${averageLivingReliability}%)</td>`);
-             reviewWindow.document.write(`<td>${nonLivingCount} (${averageNonLivingReliability}%)</td>`);
+                          const averageLivingReliability = livingReliabilityCount > 0 ? (livingReliabilitySum / livingReliabilityCount).toFixed(2) : 'N/A';
+                          const averageNonLivingReliability = nonLivingReliabilityCount > 0 ? (nonLivingReliabilitySum / nonLivingReliabilityCount).toFixed(2) : 'N/A';
 
-             reviewWindow.document.write('</tr>');
-           });
+                          reviewWindow.document.write(`<td>${livingCount} (${averageLivingReliability}%)</td>`);
+                          reviewWindow.document.write(`<td>${nonLivingCount} (${averageNonLivingReliability}%)</td>`);
 
-           reviewWindow.document.write('</table>');
+                          reviewWindow.document.write('</tr>');
+                        });
 
-           // Create the summary table
-           reviewWindow.document.write('<h2>Target Type Detection Summary</h2>');
-           reviewWindow.document.write('<table>');
-           reviewWindow.document.write('<tr><th></th>');
+                        reviewWindow.document.write('</table>');
 
-           // Write target type column headers
-           targetTypes.forEach(targetType => {
-             reviewWindow.document.write(`<th>${targetType}</th>`);
-           });
+                        // Create the summary table
+                        reviewWindow.document.write('<h2>Target Type Detection Summary</h2>');
+                        reviewWindow.document.write('<table>');
+                        reviewWindow.document.write('<tr><th></th>');
 
-           reviewWindow.document.write('</tr>');
+                        // Write target type column headers
+                        targetTypes.forEach(targetType => {
+                          reviewWindow.document.write(`<th>${targetType}</th>`);
+                        });
 
-           // Write rows for drones
-           drones.forEach((drone, rowIndex) => {
-             reviewWindow.document.write('<tr>');
-             reviewWindow.document.write(`<th>${drone}</th>`);
+                        reviewWindow.document.write('</tr>');
 
-             targetTypes.forEach((targetType, colIndex) => {
-               const count = droneTargetCounts[rowIndex][colIndex];
-               const reliabilitySum = droneTargetReliabilitySums[rowIndex][colIndex];
-               const reliabilityCount = droneTargetReliabilityCounts[rowIndex][colIndex];
-               const averageReliability = reliabilityCount > 0 ? (reliabilitySum / reliabilityCount).toFixed(2) : 'N/A';
-               reviewWindow.document.write(`<td>${count} (${averageReliability}%)</td>`);
-             });
+                        // Write rows for drones
+                        drones.forEach((drone, rowIndex) => {
+                          reviewWindow.document.write('<tr>');
+                          reviewWindow.document.write(`<th>${drone}</th>`);
 
-             reviewWindow.document.write('</tr>');
-           });
+                          targetTypes.forEach((targetType, colIndex) => {
+                            const count = droneTargetCounts[rowIndex][colIndex];
+                            const reliabilitySum = droneTargetReliabilitySums[rowIndex][colIndex];
+                            const reliabilityCount = droneTargetReliabilityCounts[rowIndex][colIndex];
+                            const averageReliability = reliabilityCount > 0 ? (reliabilitySum / reliabilityCount).toFixed(2) : 'N/A';
+                            reviewWindow.document.write(`<td>${count} (${averageReliability}%)</td>`);
+                          });
 
-           reviewWindow.document.write('</table>');
+                          reviewWindow.document.write('</tr>');
+                        });
+
+                        reviewWindow.document.write('</table>');
+                      }
 
            // Create the detailed table
            reviewWindow.document.write('<h2>Detailed Detection Information</h2>');
@@ -3753,9 +3941,53 @@
          reviewWindow.document.close();
        }
 
+       function showPopupMessage(message, duration) {
+         // Create a new div element for the pop-up
+         const popup = document.createElement('div');
+         popup.textContent = message;
+         popup.style.cssText = `
+           position: fixed;
+           top: 50%;
+           left: 50%;
+           transform: translate(-50%, -50%);
+           background-color: white;
+           color: black;
+           padding: 20px;
+           border-radius: 5px;
+           z-index: 1000;
+           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+           // font-family: Arial, sans-serif;
+           // font-size: 16px;
+           text-align: center;
+         `;
+
+         // Add the pop-up to the document body
+         document.body.appendChild(popup);
+
+         // Remove the pop-up after the specified duration
+         setTimeout(() => {
+           document.body.removeChild(popup);
+         }, duration);
+       }
+
+       // let reviewTabCounter = 0;
+       let lastReviewedDetection = 0;
+       let pendingReview = false;
+
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', function() {
          saveRatings();
+
+         // Check if this is a redetection
+         if (reassignedDroneId) {
+           pendingReview = true;
+         } else {
+           // If it's not a redetection, check if we need to show the review tab
+           checkAndShowReviewTab();
+         }
+
+         // Pop-up message for when sletections and ratings are saved set to time out after 3 sec
+         showPopupMessage("Drone ratings and selections saved for the current detection", 3000);
 
          // Find all pop-up elements
          const popups = document.querySelectorAll('.object-detected-popup');
@@ -3798,9 +4030,16 @@
 
            // Show the pop-up for the re-detected object with the correct imaging type
            // Pass a callback function to reset reassignedDroneId after the pop-up is closed
+           // Show the pop-up for the re-detected object with the correct imaging type
            showRedetectedObjectPopup(activeDroneId, imagingType, reliability, function() {
              reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
              document.getElementById('resassignTaskSection').style.display = 'block'; // Show the "Re-assign task" section
+
+             // Check if we need to show the review tab after redetection
+             if (pendingReview) {
+               checkAndShowReviewTab();
+               pendingReview = false;
+             }
            });
 
            // Reset the Yes and No button states
@@ -3827,23 +4066,34 @@
          updateQuadrantDisplay();
        });
 
+       function checkAndShowReviewTab() {
+         if ((detectionCounter === 6 || detectionCounter === 11 || detectionCounter === 16 || detectionCounter === 21) && detectionCounter > lastReviewedDetection) {
+           openReviewTab();
+           lastReviewedDetection = detectionCounter;
+         }
+       }
+
        // Event listener for Exporting to CSV button
        document.getElementById('exportButton').addEventListener('click', exportToCSV);
 
        // Event listener for user response for recategorized object recommendation
        document.getElementById('accept-recommendation').addEventListener('click', function() {
-           userResponse = 'Accept';
-           document.getElementById('sel_obj').value = ''; // Set the dropdown value to an empty string
-           document.getElementById('recategorizeObject').style.display = 'none';
-           this.style.backgroundColor = 'green'; // Change button color to green
+         userResponse = 'Accept';
+         document.getElementById('sel_obj').value = ''; // Set the dropdown value to an empty string
+         document.getElementById('recategorizeObject').style.display = 'none';
+         this.style.backgroundColor = 'green'; // Change button color to green
 
-           // Reset the reject-recommendation button states
-           const buttonIds = ['reject-recommendation'];
-           buttonIds.forEach(function(buttonId) {
-             const button = document.getElementById(buttonId);
-             button.style.backgroundColor = ''; // Reset the background color
-           });
+         // Reset the reject-recommendation button states
+         const buttonIds = ['reject-recommendation'];
+         buttonIds.forEach(function(buttonId) {
+           const button = document.getElementById(buttonId);
+           button.style.backgroundColor = ''; // Reset the background color
          });
+
+         // Calculate and update the score
+         calculateAndUpdateScore();
+       });
+
        document.getElementById('reject-recommendation').addEventListener('click', function() {
            userResponse = 'Reject';
            document.getElementById('recategorizeObject').style.display = 'block';
@@ -3860,6 +4110,19 @@
        // Event listener for re-categorize object selection
        document.getElementById('sel_obj').addEventListener('input', function() {
            userReobject = '';
+       });
+
+       // Get references to the score display and toggle button
+       const scoreDisplay = document.getElementById('scoreDisplay');
+       const toggleScoreBtn = document.getElementById('toggleScoreBtn');
+
+       // Add click event listener to the toggle button
+       toggleScoreBtn.addEventListener('click', function() {
+         if (scoreDisplay.style.display === 'none') {
+           scoreDisplay.style.display = 'flex';
+         } else {
+           scoreDisplay.style.display = 'none';
+         }
        });
 
        //Event listener for reviewing trial data
@@ -3895,6 +4158,12 @@
      // Add the legend div to the viewDiv
      view.ui.add(legendDiv, "top-left");
 
+     // Add the score to the viewDiv
+     view.ui.add(scoreDisplay, "top-left");
+
+     // Add the score button to the viewDiv
+     view.ui.add(toggleScoreBtn, "top-left");
+
          });
 
   </script>
@@ -3903,6 +4172,9 @@
 
 <body>
        <div id="viewDiv"></div>
+
+       <button id="toggleScoreBtn" class="toggle-score-btn">Score</button>
+       <div id="scoreDisplay">Current Score: 0.00</div>
 
        <button id="startExpBtn" class="start-exp-button">Experiment brief</button>
 
