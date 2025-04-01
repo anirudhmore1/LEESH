@@ -1,0 +1,3493 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Experiment 2 - Leadership Structures</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.28/"></script>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+
+  <style>
+    html,
+    body,
+    #viewDiv {
+      width: 88%;
+      height: 100%;
+      top: 0;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      /* align-items: center; */
+    }
+    .start-exp-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+    .popup-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 400px;
+      position: relative;
+    }
+    #closePopupBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #888;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #closePopupBtn:hover {
+      background-color: #555;
+    }
+    #droneControl {
+      position: fixed;
+      top: 212px;
+      left: 0;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      width: 300px;
+      padding: 1px;
+    }
+    #AutonomousAgent{
+      position: fixed;
+      top: 60px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
+    .config-button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .config-button:hover {
+      background-color: #e0e0e0; /* Darker shade for hover */
+      transition: 0.2s ease-in; /* Smooth transition */
+    }
+    .config-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border: 1px solid #ccc;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      border-radius: 5px;
+      width: 280px;
+    }
+    .popup-content p {
+      text-align: center;
+    }
+    .popup-buttons {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-around;
+    }
+    .popup-buttons button {
+      padding: 5px 10px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .popup-buttons button:hover {
+      background-color: #e0e0e0;
+    }
+
+    #objectRecommendation {
+        position: fixed;
+        top: 840px;
+        left: 0;
+        height: auto;
+        background: rgba(255, 255, 255, 0.9);
+        width: 300px;
+        padding: 1px;
+    }
+    .detection-statement {
+        margin: 0 0 5px 0;
+        font-weight: bold;
+    }
+    #objectRecommendation input[type="button"] {
+        margin-right: 5px;
+    }
+    #droneRatings {
+      /* position: absolute; */
+      position: fixed;
+      top: 240px;
+      left: 0;
+      width: 300px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 1px;
+    }
+    #droneSelectionForm {
+      position: fixed;
+      top: 0px;
+      left: 0;
+      width: 300px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */
+      padding: 1px;
+    }
+    #droneSelectionForm > div {
+      margin-bottom: 5px; /* Adds space between the form elements */
+    }
+    #submitBtn {
+      width: 40%; /* Smaller width */
+      margin: 0 auto; /* Center the button */
+    }
+    #droneQuadrantDisplay {
+      display: none; /* Initially hidden */
+      position: fixed;
+      top: 0px;
+      left: 0;
+      width: 300px;
+      background: rgba(255,255,255,0.9);
+      padding: 2px;
+      /* z-index: 10; */
+    }
+    #endTrial{
+      position: fixed;
+      bottom: 60px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */
+      padding: 5px;
+    }
+    #saveAndExport{
+      position: fixed;
+      bottom: 0px;
+      left: 0;
+      width: 285px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */
+      padding: 1px;
+    }
+    .quadrant-info {
+      margin-bottom: 8px;
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background: #ccc; /* Light grey line */
+      margin: 10px 0; /* Spacing above and below the line */
+    }
+    .competence-slider {
+      /* appearance: none; /* removes browser-specific styling */
+      width: 200px; /* width of slider */
+      height: 13px; /* height of slider */
+      background: #000 10%;
+      outline: none; /* remove outline */
+      border-radius: 0px; /* round corners */
+      margin-bottom: 5px;
+    }
+    .competence-slider-container {
+      display: flex;
+      flex-direction: column;
+      /* align-items: center; */
+    }
+    .competence-slider {
+        background-color: white; /* Set background to white */
+    }
+    .competence-slider::-moz-range-track {
+        background-color: white; /* For Firefox */
+    }
+    .competence-slider {
+        display: flex;
+        flex-direction: column; /* Stack elements vertically */
+        margin-bottom: 10px; /* Add spacing between slider groups */
+    }
+    .trust-slider-group {
+        display: flex; /* Align label, slider, and value horizontally */
+        align-items: left; /* Vertically align elements */
+        margin-bottom: 10px; /* Space between slider groups */
+    }
+    .trust-slider {
+        margin-left: 20px; /* Space between label and slider */
+        margin-right: 20px; /* Space between slider and value */
+    }
+    .slider-value {
+        width: 200px;
+        margin-left: 10px; /* Space between slider and value */
+        font-size: 14px; /* Adjust font size for better readability */
+    }
+    label {
+        margin-bottom: 5px; /* Space between label and slider */
+        font-weight: bold; /* Make labels stand out */
+    }
+    datalist {
+        display: flex;
+        justify-content: space-between;
+        width: 200px; /* Match slider width */
+    }
+    option {
+        font-size: 10px;
+        text-align: center;
+    }
+    input[type="range"] {
+      width: 200px;
+      margin: 0;
+    }
+
+    #legendDiv {
+      position: absolute;
+      top: -10px;
+      left: 280px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 1px;
+      z-index: 1;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-right: 20px;
+    }
+    .legend-item img {
+      width: 30px;
+      height: 30px;
+      margin-right: 5px;
+    }
+    .legend-item span {
+      white-space: nowrap;
+    }
+    .object-detected-popup {
+      position: absolute;
+      background-color: white;
+      border: 1px solid black;
+      padding: 10px;
+      z-index: 1000;
+      cursor: move;
+    }
+    .redetected-object-popup {
+      position: absolute;
+      background-color: white;
+      border: 1px solid black;
+      padding: 10px;
+      z-index: 1000;
+      cursor: move;
+    }
+    .popup-table {
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+    .popup-table td {
+      padding: 5px;
+      border: 1px solid #ccc;
+    }
+    #reviewTrial{
+      position: fixed;
+      bottom: 10px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      /* display: flex; */
+      /* flex-direction: column; /* This will stack the fields vertically */
+      padding: 5px;
+    }
+    #scoreDisplay {
+      position: absolute;
+      top: -10px;
+      left: 50px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 1px;
+      z-index: 1;
+      display: none;
+      font-size: 20px;
+      width: 190px;
+      flex-direction: row;
+      align-items: center;
+    }
+    .toggle-score-btn {
+      position: absolute;
+      font-size: 10px;
+      top: -20px;
+      padding: 3px;
+      width: 32px;
+      height: 15px;
+      background-color: #f0f0f0;
+      color: #333;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .toggle-score-btn:hover {
+      background-color: #e0e0e0;
+    }
+
+  </style>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/Graphic",
+      "esri/geometry/Point",
+      "esri/geometry/Polyline",
+      "esri/widgets/Expand",
+      "esri/widgets/Search",
+      "esri/geometry/Polygon"
+    ], (Map, MapView, Graphic, Point, Polyline, Expand, Search, Polygon) => {
+      const map = new Map({
+        basemap: "hybrid"
+      });
+
+      const view = new MapView({
+        center: [-85, 35],
+        container: "viewDiv",
+        map: map,
+        zoom: 13
+      });
+
+      // Assuming gridSize is the size of your grid cells
+      const gridSize = 0.005; // Size of each grid cell in some unit
+
+      // Dynamic size of drones based on gridSize
+      const droneSymbolSize = `${0.25 * 100}px`; // Convert gridSize to pixels if necessary
+
+     // Define the symbol for drawing the points
+     //ThermalAlpha
+      const markerSymbol1 = {
+        type: "picture-marker",
+        url: "{% static 'img/thermal-drone.png' %}",
+        width: droneSymbolSize,
+        height: droneSymbolSize
+        // width: "30px",
+        // height: "30px"
+      };
+
+      // ThermalBeta
+       const markerSymbol3 = {
+         type: "picture-marker",
+         url: "{% static 'img/thermal-drone-1.png' %}",
+         width: droneSymbolSize,
+         height: droneSymbolSize
+         // width: "30px",
+         // height: "30px"
+       };
+
+      //InfraredGamma
+      const markerSymbol2 = {
+        type: "picture-marker",
+        url: "{% static 'img/sniffer-drone.png' %}",
+        width: droneSymbolSize,
+        height: droneSymbolSize
+        // width: "30px",
+        // height: "30px"
+      };
+
+
+       //InfraredDelta
+        const markerSymbol4 = {
+          type: "picture-marker",
+          url: "{% static 'img/sniffer-drone-1.png' %}",
+          width: droneSymbolSize,
+          height: droneSymbolSize
+          // width: "30px",
+          // height: "30px"
+        };
+
+      // Create multiple point graphics - Drones
+      const pointGraphics = [
+        new Graphic({
+          geometry: new Point({ longitude: -84.9975, latitude: 35.0025 }), // Quadrant 1
+          symbol: markerSymbol1,
+          attributes: { id: "ThermalAlpha"}
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -85.0025, latitude: 35.0025 }), // Quadrant 2
+          symbol: markerSymbol3,
+          attributes: { id: "ThermalBeta"}
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -85.0025, latitude: 34.9975 }), // Quadrant 3
+          symbol: markerSymbol2,
+          attributes: { id: "InfraredGamma"}
+        }),
+        new Graphic({
+          geometry: new Point({ longitude: -84.9975, latitude: 34.9975 }), // Quadrant 4
+          symbol: markerSymbol4,
+          attributes: { id: "InfraredDelta"}
+        })
+      ];
+
+      //Line 1 - Xaxis
+      const Xaxis = {
+           type: "polyline", // autocasts as new Polyline()
+           paths: [[-85.1, 35], [-84.8948, 35]]
+         };
+
+      // Line 2 - Yaxis
+      const Yaxis = {
+           type: "polyline", // autocasts as new Polyline()
+           paths: [[-85, 34.95], [-85, 35.05]]
+         };
+
+      // Symbol for drawing the lines
+      const lineSymbol = {
+           type: "simple-line", // autocasts as SimpleLineSymbol()
+           color: [0, 0, 0, 0.4],
+           width: 4
+         };
+
+      // Symbol for grid lines
+      const gridLineSymbol = {
+             type: "simple-line",
+             color: [0, 0, 0, 0.3], // Semi-transparent black
+             width: "1px"
+           };
+
+      const XaxisGraphic = new Graphic({
+           geometry: Xaxis,
+           symbol: lineSymbol
+         });
+
+      const YaxisGraphic = new Graphic({
+           geometry: Yaxis,
+           symbol: lineSymbol
+         });
+
+      // Function to create a grid in a quadrant
+      function createGrid(xStart, yStart, xEnd, yEnd, cellSize) {
+           const gridGraphics = [];
+           for (let x = xStart; x < xEnd; x += cellSize) {
+             for (let y = yStart; y < yEnd; y += cellSize) {
+               const cell = new Polygon({
+                 rings: [
+                   [
+                     [x, y],
+                     [x + cellSize, y],
+                     [x + cellSize, y + cellSize],
+                     [x, y + cellSize],
+                     [x, y] // Close the polygon
+                   ]
+                 ]
+               });
+
+               const cellGraphic = new Graphic({
+                 geometry: cell,
+                 symbol: {
+                   type: "simple-fill",
+                   color: [0, 0, 0, 0], // Transparent fill
+                   outline: gridLineSymbol
+                 }
+               });
+
+               gridGraphics.push(cellGraphic);
+             }
+           }
+           return gridGraphics;
+         }
+
+      // Create grids for each quadrant
+      // const gridSize = 0.5; // Size of each grid cell
+      const quadrant1 = createGrid(-85, 35, -84.9, 35.05, gridSize);
+      const quadrant2 = createGrid(-85.1, 35, -85, 35.05, gridSize);
+      const quadrant3 = createGrid(-85.1, 34.95, -85, 35, gridSize);
+      const quadrant4 = createGrid(-85, 34.95, -84.9, 35, gridSize);
+
+      // Add the point graphics to the view's graphics layer
+      view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+
+      function assignDronesToQuadrants() {
+          const quadrant1Drone = document.getElementById('quadrant1').value;
+          const quadrant2Drone = document.getElementById('quadrant2').value;
+          const quadrant3Drone = document.getElementById('quadrant3').value;
+          const quadrant4Drone = document.getElementById('quadrant4').value;
+
+          // Clear the previous quadrant assignments
+          Object.keys(dronePathsTrack).forEach(droneId => {
+              dronePathsTrack[droneId].quadrant = null;
+              dronePathsTrack[droneId].path = [];
+              dronePathsTrack[droneId].objectDetectionPoints = [];
+          });
+
+          // Update the dronePathsTrack object with the new assignments and paths
+          dronePathsTrack[quadrant1Drone].quadrant = 'quadrant1';
+          dronePathsTrack[quadrant1Drone].path = generateLawnmowerPatternQuadrant1(-84.9975, 35.0025);
+          dronePathsTrack[quadrant1Drone].objectDetectionPoints = objectDetectionPoints['ThermalAlpha']; // Object detection points are attached to each quadrant
+          console.log(quadrant1Drone);
+
+          dronePathsTrack[quadrant2Drone].quadrant = 'quadrant2';
+          dronePathsTrack[quadrant2Drone].path = generateLawnmowerPatternQuadrant2(-85.0025, 35.0025);
+          dronePathsTrack[quadrant2Drone].objectDetectionPoints = objectDetectionPoints['ThermalBeta'];
+          console.log(quadrant2Drone);
+
+          dronePathsTrack[quadrant3Drone].quadrant = 'quadrant3';
+          dronePathsTrack[quadrant3Drone].path = generateLawnmowerPatternQuadrant3(-85.0025, 34.9975);
+          dronePathsTrack[quadrant3Drone].objectDetectionPoints = objectDetectionPoints['InfraredGamma'];
+          console.log(quadrant3Drone);
+
+          dronePathsTrack[quadrant4Drone].quadrant = 'quadrant4';
+          dronePathsTrack[quadrant4Drone].path = generateLawnmowerPatternQuadrant4(-84.9975, 34.9975);
+          dronePathsTrack[quadrant4Drone].objectDetectionPoints = objectDetectionPoints['InfraredDelta'];
+          console.log(quadrant4Drone);
+      }
+
+      // Create the legend div
+      const legendDiv = document.createElement("div");
+      legendDiv.id = "legendDiv";
+
+      // Create legend items for each drone
+      const droneData = [
+        { name: "ThermalAlpha:", thumbnail: "{% static 'img/thermal-drone.png' %}", sensorType: "Thermal" },
+        { name: "ThermalBeta:", thumbnail: "{% static 'img/thermal-drone-1.png' %}", sensorType: "Thermal" },
+        { name: "InfraredGamma:", thumbnail: "{% static 'img/sniffer-drone.png' %}", sensorType: "N/SWIR" },
+        { name: "InfraredDelta:", thumbnail: "{% static 'img/sniffer-drone-1.png' %}", sensorType: "N/SWIR" }
+      ];
+
+      droneData.forEach(drone => {
+        const legendItem = document.createElement("div");
+        legendItem.className = "legend-item";
+
+        const thumbnailImg = document.createElement("img");
+        thumbnailImg.src = drone.thumbnail;
+        legendItem.appendChild(thumbnailImg);
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `${drone.name} ${drone.sensorType}`;
+        legendItem.appendChild(nameSpan);
+
+        legendDiv.appendChild(legendItem);
+      });
+
+      //Quadrant quadrantLabels
+      function createQuadrantLabels() {
+        const quadrantLabels = [];
+
+        // Quadrant 1 label
+        const quadrant1Label = document.createElement("div");
+        quadrant1Label.textContent = "Quadrant 1";
+        quadrant1Label.style.position = "absolute";
+        quadrant1Label.style.top = "80px";
+        quadrant1Label.style.right = "30px";
+        quadrant1Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant1Label.style.padding = "5px";
+        quadrantLabels.push(quadrant1Label);
+
+        // Quadrant 2 label
+        const quadrant2Label = document.createElement("div");
+        quadrant2Label.textContent = "Quadrant 2";
+        quadrant2Label.style.position = "absolute";
+        quadrant2Label.style.top = "80px";
+        quadrant2Label.style.left = "50px";
+        quadrant2Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant2Label.style.padding = "5px";
+        quadrantLabels.push(quadrant2Label);
+
+        // Quadrant 3 label
+        const quadrant3Label = document.createElement("div");
+        quadrant3Label.textContent = "Quadrant 3";
+        quadrant3Label.style.position = "absolute";
+        quadrant3Label.style.bottom = "80px";
+        quadrant3Label.style.left = "50px";
+        quadrant3Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant3Label.style.padding = "5px";
+        quadrantLabels.push(quadrant3Label);
+
+        // Quadrant 4 label
+        const quadrant4Label = document.createElement("div");
+        quadrant4Label.textContent = "Quadrant 4";
+        quadrant4Label.style.position = "absolute";
+        quadrant4Label.style.bottom = "80px";
+        quadrant4Label.style.right = "30px";
+        quadrant4Label.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+        quadrant4Label.style.padding = "5px";
+        quadrantLabels.push(quadrant4Label);
+
+        return quadrantLabels;
+      }
+
+      const quadrantLabels = createQuadrantLabels();
+      quadrantLabels.forEach(label => {
+        view.ui.add(label);
+      });
+
+      // Function to assign drones to quadrants based on user input and update their positions immediately
+      function assignDronesToQuadrantsAndUpdatePositions() {
+        assignDronesToQuadrants();
+
+        // Immediately update drones' positions to the start of their paths before animation starts
+        pointGraphics.forEach(graphic => {
+          const droneId = graphic.attributes.id;
+          const droneInfo = dronePathsTrack[droneId];
+          if (droneInfo && droneInfo.path.length > 0) {
+            const startPoint = droneInfo.path[0]; // Assuming the path is an array of [longitude, latitude]
+            graphic.geometry = new Point({
+              longitude: startPoint[0], // Use the first element of the startPoint array for longitude
+              latitude: startPoint[1] // Use the second element of the startPoint array for latitude
+            });
+          }
+        });
+
+        // Update the map with the new positions
+        updateMap();
+      }
+
+      // Function to update the map with the assigned drone positions
+      function updateMap() {
+        // Refresh the graphics on the view
+        view.graphics.removeAll();
+        view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+      }
+
+      // Global variable to store the timestamp
+      let reassignmentTimestamp = null;
+
+      document.getElementById('droneSelectionForm').addEventListener('submit', function(event) {
+          event.preventDefault(); // Prevent the form from submitting normally
+          assignDronesToQuadrantsAndUpdatePositions();
+          updateMap(); // Update the map after assigning drones to quadrants
+
+          reassignmentTimestamp = new Date().toISOString();
+      });
+
+      // Function to select object detection points from a drone's path
+      function selectObjectDetectionPointsFromPath(dronePath, count) {
+          let selectedPoints = [];
+          let pathLength = dronePath.length;
+
+          // Ensure there are enough points in the path
+          if (count > pathLength) {
+              console.error("Requested more detection points than available in the path.");
+              return selectedPoints;
+          }
+
+          // Randomly select 'count' unique indices from the drone path
+          let selectedIndices = new Set();
+          while (selectedIndices.size < count) {
+              let randomIndex = Math.floor(Math.random() * pathLength);
+              selectedIndices.add(randomIndex);
+          }
+
+          // Add the points at the selected indices to the selectedPoints array
+          selectedIndices.forEach(index => {
+              selectedPoints.push(dronePath[index]);
+          });
+
+          return selectedPoints;
+      }
+
+      let drone1Path = generateLawnmowerPatternQuadrant1(-84.9975, 35.0025);
+      let drone2Path = generateLawnmowerPatternQuadrant2(-85.0025, 35.0025);
+      let drone3Path = generateLawnmowerPatternQuadrant3(-85.0025, 34.9975);
+      let drone4Path = generateLawnmowerPatternQuadrant4(-84.9975, 34.9975);
+
+      // Assign random object detection points to each drone
+      const objectDetectionPoints = {
+          ThermalAlpha: selectObjectDetectionPointsFromPath(drone1Path, 5), // Quadrant 1
+          ThermalBeta: selectObjectDetectionPointsFromPath(drone2Path, 5), // Quadrant 2
+          InfraredGamma: selectObjectDetectionPointsFromPath(drone3Path, 5), // Quadrant 3
+          InfraredDelta: selectObjectDetectionPointsFromPath(drone4Path, 5)  // Quadrant 4
+      };
+
+      // Define paths for each drone to follow
+      const dronePaths = {
+        ThermalAlpha: {
+          path: generateLawnmowerPatternQuadrant1(-84.9975, 35.0025),
+          objectDetectionPoints: objectDetectionPoints.ThermalAlpha
+        },
+        ThermalBeta: {
+          path: generateLawnmowerPatternQuadrant2(-85.0025, 35.0025),
+          objectDetectionPoints: objectDetectionPoints.ThermalBeta
+        },
+        InfraredGamma: {
+          path: generateLawnmowerPatternQuadrant3(-85.0025, 34.9975),
+          objectDetectionPoints: objectDetectionPoints.InfraredGamma
+        },
+        InfraredDelta: {
+          path: generateLawnmowerPatternQuadrant4(-84.9975, 34.9975),
+          objectDetectionPoints: objectDetectionPoints.InfraredDelta
+        },
+      };
+
+      // Global object to track drone paths and object detection points initialized with paths and object detection points
+      var dronePathsTrack = {
+        ThermalAlpha: {
+          path: dronePaths.ThermalAlpha,
+          objectDetectionPoints: objectDetectionPoints.ThermalAlpha,
+          quadrant: 'quadrant1',
+          recentlyReassigned: false, // Initialize as false
+          reassignmentTime: 0, // Initialize with a default value
+          imagingType: 'thermal',
+          reliability: 'high'
+        },
+        ThermalBeta: {
+            path: dronePaths.ThermalBeta,
+            objectDetectionPoints: objectDetectionPoints.ThermalBeta,
+            quadrant: 'quadrant2',
+            recentlyReassigned: false,
+            reassignmentTime: 0,
+            imagingType: 'thermal',
+            reliability: 'low'
+        },
+        InfraredGamma: {
+            path: dronePaths.InfraredGamma,
+            objectDetectionPoints: objectDetectionPoints.InfraredGamma,
+            quadrant: 'quadrant3',
+            recentlyReassigned: false,
+            reassignmentTime: 0,
+            imagingType: 'nswir',
+            reliability: 'high'
+        },
+        InfraredDelta: {
+            path: dronePaths.InfraredDelta,
+            objectDetectionPoints: objectDetectionPoints.InfraredDelta,
+            quadrant: 'quadrant4',
+            recentlyReassigned: false,
+            reassignmentTime: 0,
+            imagingType: 'nswir',
+            reliability: 'low'
+        }
+      };
+
+      // // Array to store the ratings
+      // let ratings = [];
+
+      // Print the object detection points for each drone
+      console.log("Q1 Object Detection Points:", objectDetectionPoints.ThermalAlpha);
+      console.log("Q2 Object Detection Points:", objectDetectionPoints.ThermalBeta);
+      console.log("Q3 Object Detection Points:", objectDetectionPoints.InfraredGamma);
+      console.log("Q4 Object Detection Points:", objectDetectionPoints.InfraredDelta);
+
+      // Function to generate lawnmower pattern for quadrant 1
+      function generateLawnmowerPatternQuadrant1(startX, startY) {
+        let path = [];
+        let moveRight = true; // Start by moving right
+        for (let y = startY; y <= 35.05; y += gridSize) {
+          if (moveRight) {
+            for (let x = startX; x <= -84.9; x += gridSize) {
+              path.push([x, y]);
+            }
+          } else {
+            for (let x = -84.9; x >= startX; x -= gridSize) {
+              path.push([x, y]);
+            }
+          }
+          moveRight = !moveRight; // Toggle direction
+        }
+        console.log("Q1 Path:", path)
+        return path;
+      }
+
+      // Function to generate lawnmower pattern for quadrant 2
+      function generateLawnmowerPatternQuadrant2(startX, startY) {
+        let path = [];
+        let moveLeft = true; // Start by moving left
+        for (let y = startY; y <= 35.05; y += gridSize) {
+          if (moveLeft) {
+            for (let x = startX; x >= -85.1; x -= gridSize) {
+              path.push([x, y]);
+            }
+          } else {
+            for (let x = -85.1; x <= startX; x += gridSize) {
+              path.push([x, y]);
+            }
+          }
+          moveLeft = !moveLeft; // Toggle direction
+        }
+        console.log("Q2 Path:", path)
+        return path;
+      }
+
+      // Function to generate lawnmower pattern for quadrant 3
+      function generateLawnmowerPatternQuadrant3(startX, startY) {
+        let path = [];
+        let moveLeft = true; // Start by moving left
+        for (let y = startY; y >= 34.95; y -= gridSize) {
+          if (moveLeft) {
+            for (let x = startX; x >= -85.1; x -= gridSize) {
+              path.push([x, y]);
+            }
+          } else {
+            for (let x = -85.1; x <= startX; x += gridSize) {
+              path.push([x, y]);
+            }
+          }
+          moveLeft = !moveLeft; // Toggle direction
+        }
+        console.log("Q3 Path:", path)
+        return path;
+      }
+
+      // Function to generate lawnmower pattern for quadrant 4
+      function generateLawnmowerPatternQuadrant4(startX, startY) {
+        let path = [];
+        let moveRight = true; // Start by moving right
+        for (let y = startY; y >= 34.95; y -= gridSize) {
+          if (moveRight) {
+            for (let x = startX; x <= -84.9; x += gridSize) {
+              path.push([x, y]);
+            }
+          } else {
+            for (let x = -84.9; x >= startX; x -= gridSize) {
+              path.push([x, y]);
+            }
+          }
+          moveRight = !moveRight; // Toggle direction
+        }
+        console.log("Q4 Path:", path)
+        return path;
+      }
+
+      // Function to change drone color for 10 seconds upon detecting an object
+      function changeDroneColorOnDetection(droneGraphic) {
+        // Clone the original symbol to preserve its properties
+        const originalSymbol = {
+            type: droneGraphic.symbol.type,
+            url: droneGraphic.symbol.url,
+            width: droneGraphic.symbol.width,
+            height: droneGraphic.symbol.height,
+            // Include any other properties that are relevant to your symbol
+        };
+
+        // Define a new symbol with a different color or image to indicate detection
+        const detectionSymbol = {
+          type: "picture-marker",
+          url: "{% static 'img/target1.png' %}",
+          width: droneSymbolSize,
+          height: droneSymbolSize
+          // color: "red" // Change the color to red or any other color
+        };
+
+        // Change the drone's symbol to the detection symbol
+        droneGraphic.symbol = detectionSymbol;
+
+        // Update the graphic on the map
+        view.graphics.remove(droneGraphic);
+        view.graphics.add(droneGraphic);
+
+        // Store the original symbol in the droneGraphic for later use
+        droneGraphic.originalSymbol = originalSymbol;
+
+      }
+
+      // Function to update the quadrant display with the current drones
+      function updateQuadrantDisplay() {
+          var display = document.getElementById('droneQuadrantDisplay');
+          display.innerHTML = ''; // Clear existing content
+          var heading = document.createElement('h4');
+          heading.textContent = 'Current Drone Assignment';
+          display.appendChild(heading);
+          var hr = document.createElement('hr');
+          display.appendChild(hr);
+
+          // Define the order of quadrants explicitly
+          var quadrantsOrder = ['quadrant1', 'quadrant2', 'quadrant3', 'quadrant4'];
+
+          // Iterate over the quadrants in the defined order
+          quadrantsOrder.forEach(function(quadrant) {
+              // Assuming dronePathsTrack[droneId].quadrant holds the quadrant assignment
+              var droneId = Object.keys(dronePathsTrack).find(key => dronePathsTrack[key].quadrant === quadrant);
+              var div = document.createElement('div');
+              div.textContent = `${quadrant}: ${droneId}`;
+              display.appendChild(div);
+          });
+      }
+
+      //  Object tracker for drones
+      // Text1: for obj type & Text2: for lighting/illumination
+      //ThermalAlpha
+      var thermalImagesAndTextsHigh = [
+        //NLT
+        //Trial 3
+        { url: "{% static 'img/thermal/T_NLT-25.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-25.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-25.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-26.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-26.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-26.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-27.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-27.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-27.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-28.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-28.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-28.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-29.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-29.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-29.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-30.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-30.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-30.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-31.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-31.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-31.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-32.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-32.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-32.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-33.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-33.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-33.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-34.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-34.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-34.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-35.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-35.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-35.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-36.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-36.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-36.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //LT
+        //Trial 3
+        { url: "{% static 'img/thermal/T_LT-25.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-25.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-25.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-26.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-26.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-26.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-27.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-27.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-27.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-28.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-28.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-28.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-29.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-29.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-29.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-30.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-30.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-30.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-31.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-31.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-31.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-32.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-32.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-32.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-33.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-33.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-33.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-34.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-34.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-34.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-35.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-35.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-35.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-36.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-36.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-36.png' %}", text1: "Living target", text2: "High Lighting" },
+        // LD
+        //Trial 3
+        { url: "{% static 'img/thermal/T_LD-25.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-25.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-25.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-26.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-26.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-26.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-27.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-27.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-27.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-28.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-28.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-28.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-29.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-29.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-29.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-30.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-30.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-30.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-31.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-31.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-31.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-32.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-32.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-32.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-33.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-33.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-33.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-34.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-34.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-34.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-35.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-35.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-35.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-36.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-36.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-36.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //NLD
+        //Trial 3
+        { url: "{% static 'img/thermal/T_NLD-25.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-25.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-25.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-26.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-26.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-26.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-27.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-27.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-27.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-28.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-28.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-28.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-29.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-29.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-29.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-30.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-30.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-30.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-31.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-31.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-31.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-32.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-32.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-32.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-33.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-33.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-33.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-34.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-34.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-34.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-35.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-35.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-35.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-36.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-36.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-36.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        // ... add more thermal images and texts as needed
+      ];
+
+      //ThermalBeta
+      var thermalImagesAndTextsLow = [
+        //NLT
+        //Trial 3
+        { url: "{% static 'img/thermal/T_NLT-25_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-25_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-25_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-26_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-26_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-26_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-27_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-27_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-27_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-28_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-28_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-28_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-29_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-29_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-29_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-30_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-30_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-30_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-31_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-31_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-31_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-32_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-32_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-32_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-33_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-33_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-33_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-34_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-34_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-34_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-35_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-35_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-35_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-36_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-36_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLT-36_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //LT
+        //Trial 3
+        { url: "{% static 'img/thermal/T_LT-25_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-25_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-25_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-26_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-26_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-26_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-27_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-27_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-27_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-28_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-28_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-28_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-29_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-29_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-29_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-30_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-30_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-30_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-31_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-31_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-31_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-32_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-32_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-32_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-33_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-33_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-33_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-34_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-34_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-34_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-35_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-35_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-35_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LT-36_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LT-36_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LT-36_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        // LD
+        //Trial 3
+        { url: "{% static 'img/thermal/T_LD-25_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-25_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-25_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-26_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-26_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-26_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-27_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-27_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-27_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-28_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-28_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-28_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-29_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-29_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-29_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-30_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-30_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-30_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-31_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-31_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-31_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-32_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-32_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-32_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-33_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-33_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-33_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-34_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-34_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-34_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-35_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-35_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-35_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_LD-36_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_LD-36_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_LD-36_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //NLD
+        //Trial 3
+        { url: "{% static 'img/thermal/T_NLD-25_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-25_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-25_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-26_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-26_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-26_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-27_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-27_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-27_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-28_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-28_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-28_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-29_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-29_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-29_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-30_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-30_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-30_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-31_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-31_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-31_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-32_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-32_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-32_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-33_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-33_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-33_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-34_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-34_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-34_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-35_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-35_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-35_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-36_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-36_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/thermal/T_NLD-36_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        // ... add more thermal images and texts as needed
+      ];
+
+      // InfraredGamma
+      var nswirImagesAndTextsHigh = [
+        //NLT
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_NLT-25.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-25.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-25.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-26.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-26.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-26.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-27.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-27.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-27.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-28.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-28.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-28.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-29.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-29.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-29.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-30.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-30.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-30.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-31.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-31.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-31.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-32.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-32.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-32.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-33.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-33.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-33.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-34.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-34.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-34.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-35.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-35.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-35.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-36.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-36.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-36.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //LT
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_LT-25.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-25.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-25.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-26.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-26.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-26.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-27.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-27.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-27.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-28.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-28.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-28.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-29.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-29.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-29.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-30.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-30.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-30.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-31.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-31.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-31.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-32.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-32.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-32.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-33.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-33.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-33.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-34.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-34.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-34.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-35.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-35.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-35.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-36.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-36.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-36.png' %}", text1: "Living target", text2: "High Lighting" },
+        // LD
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_LD-25.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-25.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-25.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-26.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-26.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-26.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-27.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-27.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-27.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-28.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-28.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-28.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-29.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-29.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-29.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-30.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-30.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-30.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-31.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-31.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-31.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-32.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-32.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-32.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-33.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-33.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-33.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-34.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-34.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-34.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-35.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-35.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-35.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-36.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-36.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-36.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //NLD
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_NLD-25.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-25.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-25.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-26.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-26.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-26.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-27.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-27.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-27.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-28.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-28.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-28.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-29.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-29.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-29.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-30.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-30.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-30.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-31.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-31.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-31.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-32.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-32.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-32.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-33.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-33.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-33.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-34.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-34.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-34.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-35.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-35.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-35.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-36.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-36.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-36.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        // ... add more thermal images and texts as needed
+      ];
+
+      // InfraredDelta
+      var nswirImagesAndTextsLow = [
+        //NLT
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_NLT-25_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-25_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-25_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-26_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-26_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-26_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-27_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-27_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-27_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-28_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-28_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-28_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-29_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-29_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-29_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-30_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-30_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-30_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-31_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-31_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-31_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-32_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-32_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-32_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-33_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-33_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-33_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-34_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-34_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-34_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-35_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-35_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-35_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-36_LR.png' %}", text1: "Non-living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-36_LR.png' %}", text1: "Non-living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLT-36_LR.png' %}", text1: "Non-living target", text2: "High Lighting" },
+        //LT
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_LT-25_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-25_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-25_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-26_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-26_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-26_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-27_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-27_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-27_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-28_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-28_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-28_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-29_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-29_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-29_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-30_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-30_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-30_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-31_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-31_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-31_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-32_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-32_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-32_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-33_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-33_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-33_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-34_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-34_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-34_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-35_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-35_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-35_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-36_LR.png' %}", text1: "Living target", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-36_LR.png' %}", text1: "Living target", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LT-36_LR.png' %}", text1: "Living target", text2: "High Lighting" },
+        // LD
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_LD-25_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-25_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-25_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-26_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-26_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-26_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-27_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-27_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-27_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-28_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-28_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-28_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-29_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-29_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-29_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-30_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-30_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-30_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-31_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-31_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-31_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-32_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-32_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-32_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-33_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-33_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-33_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-34_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-34_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-34_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-35_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-35_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-35_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-36_LR.png' %}", text1: "Living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-36_LR.png' %}", text1: "Living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_LD-36_LR.png' %}", text1: "Living distractor", text2: "High Lighting" },
+        //NLD
+        //Trial 3
+        { url: "{% static 'img/nswir/NS_NLD-25_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-25_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-25_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-26_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-26_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-26_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-27_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-27_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-27_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-28_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-28_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-28_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-29_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-29_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-29_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-30_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-30_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-30_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-31_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-31_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-31_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-32_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-32_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-32_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-33_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-33_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-33_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-34_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-34_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-34_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-35_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-35_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-35_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-36_LR.png' %}", text1: "Non-living distractor", text2: "Low Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-36_LR.png' %}", text1: "Non-living distractor", text2: "Medium Lighting" },
+        { url: "{% static 'img/nswir/NS_NLD-36_LR.png' %}", text1: "Non-living distractor", text2: "High Lighting" },
+        // ... add more N/SWIR images and texts as needed
+      ];
+
+      // % reliability of detection for drones
+      const reliabilityData = {
+        thermal: {
+          high: {
+            'Living target': { 'High lighting': 80, 'Medium lighting': 85, 'Low lighting': 100 },
+            'Non-living target': { 'High lighting': 60, 'Medium lighting': 70, 'Low lighting': 70 },
+            'Living distractor': { 'High lighting': 80, 'Medium lighting': 85, 'Low lighting': 100 },
+            'Non-living distractor': { 'High lighting': 60, 'Medium lighting': 70, 'Low lighting': 70 },
+            // Add more object types and lighting conditions as needed
+          },
+          low: {
+            'Living target': { 'High lighting': 75, 'Medium lighting': 75, 'Low lighting': 90 },
+            'Non-living target': { 'High lighting': 50, 'Medium lighting': 60, 'Low lighting': 60 },
+            'Living distractor': { 'High lighting': 75, 'Medium lighting': 75, 'Low lighting': 90 },
+            'Non-living distractor': { 'High lighting': 50, 'Medium lighting': 60, 'Low lighting': 60 },
+            // Add more object types and lighting conditions as needed
+          }
+        },
+        nswir: {
+          high: {
+            'Living target': { 'High lighting': 70, 'Medium lighting': 70, 'Low lighting': 60 },
+            'Non-living target': { 'High lighting': 100, 'Medium lighting': 85, 'Low lighting': 80 },
+            'Living distractor': { 'High lighting': 70, 'Medium lighting': 70, 'Low lighting': 60 },
+            'Non-living distractor': { 'High lighting': 100, 'Medium lighting': 85, 'Low lighting': 80 },
+            // Add more object types and lighting conditions as needed
+          },
+          low: {
+            'Living target': { 'High lighting': 60, 'Medium lighting': 60, 'Low lighting': 50 },
+            'Non-living target': { 'High lighting': 90, 'Medium lighting': 75, 'Low lighting': 75 },
+            'Living distractor': { 'High lighting': 60, 'Medium lighting': 60, 'Low lighting': 50 },
+            'Non-living distractor': { 'High lighting': 90, 'Medium lighting': 75, 'Low lighting': 75 },
+            // Add more object types and lighting conditions as needed
+          }
+        }
+      };
+
+      const reliabilityRankings = {
+        thermal: {
+          high: {
+            'Living target': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+            'Non-living target': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+            'Living distractor': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+            'Non-living distractor': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+          },
+          low: {
+            'Living target': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+            'Non-living target': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+            'Living distractor': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+            'Non-living distractor': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+          }
+        },
+        nswir: {
+          high: {
+            'Living target': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+            'Non-living target': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+            'Living distractor': { 'High lighting': 3, 'Medium lighting': 3, 'Low lighting': 3 },
+            'Non-living distractor': { 'High lighting': 1, 'Medium lighting': 1, 'Low lighting': 1 },
+          },
+          low: {
+            'Living target': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+            'Non-living target': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+            'Living distractor': { 'High lighting': 4, 'Medium lighting': 4, 'Low lighting': 4 },
+            'Non-living distractor': { 'High lighting': 2, 'Medium lighting': 2, 'Low lighting': 2 },
+          }
+        }
+      };
+
+      function calculateScore(isCorrect, reliability, isReassignment = false, originalReliability = null) {
+        let score = 0;
+        const reliabilityNumber = reliability / 100; // Convert percentage to decimal
+
+        if (isCorrect) {
+          score = reliabilityNumber * 100;
+        } else {
+          score = -(1 - reliabilityNumber) * 100;
+        }
+
+        console.log('Initial score:', score);
+
+        if (isReassignment) {
+          const originalReliabilityNumber = originalReliability / 100;
+          let reassignmentBonus = 0;
+          if (reliabilityNumber > originalReliabilityNumber) {
+            reassignmentBonus = (reliabilityNumber - originalReliabilityNumber) * 50; // Improvement Bonus
+          } else {
+            reassignmentBonus = -(originalReliabilityNumber - reliabilityNumber) * 50; // Penalty for Unnecessary Reassignment
+          }
+
+          if (originalReliability > 70) {
+            reassignmentBonus -= 25; // Penalty for reassignment when reliability was greater than 80%
+          }
+          console.log('original reliability', originalReliability);
+          console.log('new reliability', reliability);
+
+          console.log('Reassignment bonus/penalty:', reassignmentBonus);
+          return { initialScore: score, reassignmentBonus: reassignmentBonus };
+        }
+
+        return { initialScore: score, reassignmentBonus: 0 };
+      }
+
+      function getDecisionQuality(score, isRedetection = false) {
+          if (isRedetection) {
+              if (score >= 85) return 'Good';
+              if (score >= 75) return 'Decent';
+              if (score >= 60) return 'Bad';
+              return 'Worst';
+          } else {
+              if (score >= 170) return 'Good';
+              if (score >= 150) return 'Decent';
+              if (score >= 120) return 'Bad';
+              return 'Worst';
+          }
+      }
+
+      let cumulativeScore = 0;
+
+      let lastConfirmedScore = 0;
+
+      function updateScore(droneId, objectDetected) {
+        const droneInfo = dronePathsTrack[droneId];
+        if (!droneInfo) {
+          console.error('Drone information not found for droneId:', droneId);
+          return 0;
+        }
+
+        const imagingTypeData = reliabilityRankings[droneInfo.imagingType];
+        if (!imagingTypeData) {
+          console.error('Ranking data not found for imaging type:', droneInfo.imagingType);
+          return 0;
+        }
+
+        const reliabilityLevelData = imagingTypeData[droneInfo.reliability];
+        if (!reliabilityLevelData) {
+          console.error('Ranking data not found for reliability level:', droneInfo.reliability);
+          return 0;
+        }
+
+        const objectType = objectDetected.text1;
+        const lightingCondition = objectDetected.text2.charAt(0).toUpperCase() + objectDetected.text2.slice(1).toLowerCase();
+
+        const objectTypeData = reliabilityLevelData[objectType];
+        if (!objectTypeData) {
+          console.error('Ranking data not found for object type:', objectType);
+          return 0;
+        }
+
+        const ranking = objectTypeData[lightingCondition];
+        if (ranking === undefined) {
+          console.error('Ranking data not found for lighting condition:', lightingCondition);
+          return 0;
+        }
+
+        const score = calculateScore(ranking);
+        return score;
+      }
+
+      let tempScore = 0;
+      let totalScore = 0;
+
+      function calculateAndUpdateScore() {
+        let activeDroneId = reassignedDroneId || currentDroneId;
+        let objectDetected = {
+          text1: lastDetectedObjectType,
+          text2: lastDetectedLight
+        };
+        let initialScore = updateScore(activeDroneId, objectDetected);
+        let totalScore = initialScore;
+
+        if (isReassignment) {
+          totalScore += reassignmentScore + redetectionInitialScore;
+        } else {
+          totalScore += (reassignmentScore || 0);
+        }
+
+        console.log('Total score calculated:', totalScore);
+        return totalScore;
+      }
+
+      function calculateReliabilityPercentage(droneId, objectDetected) {
+        // Retrieve drone information from the global tracker
+        // const droneInfo = dronePathsTrack[droneId] || dronePathsTrack[currentDroneId];
+        const droneInfo = dronePathsTrack[droneId];
+        if (!droneInfo) {
+          console.error('Drone information not found for droneId:', droneId);
+          return;
+        }
+
+        // Retrieve the reliability data for the drone's imaging type and reliability level
+        const imagingTypeData = reliabilityData[droneInfo.imagingType];
+        if (!imagingTypeData) {
+          console.error('Reliability data not found for imaging type:', droneInfo.imagingType);
+          return;
+        }
+
+        const reliabilityLevelData = imagingTypeData[droneInfo.reliability];
+        if (!reliabilityLevelData) {
+          console.error('Reliability data not found for reliability level:', droneInfo.reliability);
+          return;
+        }
+
+        // Normalize the object type and lighting condition to match the keys in the reliabilityData object
+        const objectType = objectDetected.text1;
+        // Correctly format the lighting condition to match the keys in the reliabilityData object
+        const lightingCondition = objectDetected.text2.charAt(0).toUpperCase() + objectDetected.text2.slice(1).toLowerCase();
+
+        // Retrieve the reliability percentage based on the object type and lighting condition
+        const objectTypeData = reliabilityLevelData[objectType];
+        if (!objectTypeData) {
+          console.error('Reliability data not found for object type:', objectType);
+          return;
+        }
+
+        const reliabilityPercentage = objectTypeData[lightingCondition];
+        if (reliabilityPercentage === undefined) {
+          console.error('Reliability data not found for lighting condition:', lightingCondition);
+          return;
+        }
+
+        // Return the calculated reliability percentage
+        return reliabilityPercentage;
+      }
+
+      //Function to drag pop-up with mouse click
+      function dragElement(elmnt) {
+        const dragElement = elmnt.querySelector(".object-detected-popup, .redetected-object-popup");
+
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        dragElement.addEventListener("mousedown", dragMouseDown);
+
+        function dragMouseDown(e) {
+          e = e || window.event;
+          e.preventDefault();
+
+          // Check if the cursor is over the pop-up element
+          const isOverPopup = e.target.closest(".object-detected-popup, .redetected-object-popup");
+          if (!isOverPopup) return;
+
+          isDragging = true;
+          currentX = e.clientX;
+          currentY = e.clientY;
+          initialX = dragElement.offsetLeft;
+          initialY = dragElement.offsetTop;
+          xOffset = currentX - initialX;
+          yOffset = currentY - initialY;
+        }
+
+        document.addEventListener("mouseup", closeDragElement);
+        document.addEventListener("mousemove", elementDrag);
+
+        function elementDrag(e) {
+          e = e || window.event;
+          e.preventDefault();
+
+          if (isDragging) {
+            currentX = e.clientX;
+            currentY = e.clientY;
+            dragElement.style.left = currentX - xOffset + "px";
+            dragElement.style.top = currentY - yOffset + "px";
+          }
+        }
+
+        function closeDragElement() {
+          isDragging = false;
+          document.removeEventListener("mouseup", closeDragElement);
+          document.removeEventListener("mousemove", elementDrag);
+
+          // Reset the dragging state and re-attach event listeners
+          setTimeout(() => {
+            dragElement.addEventListener("mousedown", dragMouseDown);
+            document.addEventListener("mouseup", closeDragElement);
+            document.addEventListener("mousemove", elementDrag);
+          }, 0);
+        }
+      }
+
+      // Global variable to store the lobject detected type
+      let lastDetectedObjectType = '';
+
+      // Global variable to store the last detected object location
+      let lastObjectDetectionLocation = null;
+
+      // Global object to store detected points and their corresponding images and texts
+      let detectedPointsMap = {};
+
+      //Detection counter
+      let detectionCounter = 1; // Initialize the detection counter to 1
+
+      //Storing URL of images
+      let detectedImages = [];
+      // let redetectedImages = [];
+
+      class Queue {
+        constructor() {
+          this.items = [];
+        }
+
+        enqueue(item) {
+          this.items.push(item);
+        }
+
+        dequeue() {
+          if (this.isEmpty()) {
+            return null;
+          }
+          return this.items.shift();
+        }
+
+        isEmpty() {
+          return this.items.length === 0;
+        }
+
+        peek() {
+          if (this.isEmpty()) {
+            return null;
+          }
+          return this.items[0];
+        }
+      }
+
+      const detectionQueue = new Queue();
+      let isProcessingQueue = false;
+
+      // Function to move drones along their paths
+      function moveDrone(drone, droneInfo) {
+        const currentLocationIndex = droneInfo.path.findIndex(point =>
+          Math.abs(point[0] - drone.geometry.longitude) < 0.00001 &&
+          Math.abs(point[1] - drone.geometry.latitude) < 0.00001
+        );
+        const nextLocationIndex = (currentLocationIndex + 1) % droneInfo.path.length;
+        const nextPoint = droneInfo.path[nextLocationIndex];
+
+        if (nextPoint) {
+          drone.geometry = new Point({
+            longitude: nextPoint[0],
+            latitude: nextPoint[1]
+          });
+        } else {
+          console.error("Next point is undefined. Check the path definition for drone:", drone.attributes.id);
+        }
+
+        const detected = droneInfo.objectDetectionPoints.some(detectedPoint =>
+          Math.abs(detectedPoint[0] - nextPoint[0]) < 0.00001 &&
+          Math.abs(detectedPoint[1] - nextPoint[1]) < 0.00001
+        );
+
+        if (detected) {
+          // If an object is detected, pause the drone movement
+          isAnimating = false;
+
+          // Create a detection event
+          const detectionEvent = {
+            drone,
+            droneInfo,
+            nextPoint
+          };
+
+          // Add the detection event to the queue
+          detectionQueue.enqueue(detectionEvent);
+
+          // Process the queue if not already processing
+          if (!isProcessingQueue) {
+            processDetectionQueue();
+          }
+        }
+      }
+
+      function processDetectionQueue() {
+        if (detectionQueue.isEmpty()) {
+          isProcessingQueue = false;
+          return;
+        }
+
+        isProcessingQueue = true;
+        const { drone, droneInfo, nextPoint } = detectionQueue.dequeue();
+
+        // Process the detection event
+        currentDroneId = drone.attributes.id;
+
+        let imageAndText;
+        if (droneInfo.imagingType === 'thermal') {
+          if (droneInfo.reliability === 'high') {
+            imageAndText = getRandomImageAndText(thermalImagesAndTextsHigh);
+          } else {
+            imageAndText = getRandomImageAndText(thermalImagesAndTextsLow);
+          }
+        } else if (droneInfo.imagingType === 'nswir') {
+          if (droneInfo.reliability === 'high') {
+            imageAndText = getRandomImageAndText(nswirImagesAndTextsHigh);
+          } else {
+            imageAndText = getRandomImageAndText(nswirImagesAndTextsLow);
+          }
+        }
+        const detectionTimestamp = new Date().toISOString();
+
+        lastDetectedObjectInfo = {
+          location: {
+            longitude: nextPoint[0],
+            latitude: nextPoint[1]
+          },
+          text1: imageAndText.text1,
+          text2: imageAndText.text2,
+          timestamp: detectionTimestamp,
+          droneId: currentDroneId,
+          detectionNumber: detectionCounter
+        };
+
+        lastDetectedObjectType = imageAndText.text1;
+        lastDetectedLight = imageAndText.text2;
+
+        let reliabilityPercentage = calculateReliabilityPercentage(drone.attributes.id, {
+          text1: imageAndText.text1,
+          text2: imageAndText.text2
+        });
+
+        lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
+
+        showObjectDetectedPopup(
+          "Object detected at " + nextPoint.map(coord => coord.toFixed(2)).join(", "),
+          drone.attributes.id,
+          droneInfo.imagingType,
+          imageAndText.url,
+          imageAndText.text1,
+          imageAndText.text2,
+          reliabilityPercentage
+        );
+
+        changeDroneColorOnDetection(drone);
+        detectionCounter++;
+
+        // Check if we need to set the pendingReview flag
+        if (detectionCounter === 6 || detectionCounter === 11 || detectionCounter === 16 || detectionCounter === 21) {
+          pendingReview = true;
+        }
+
+        // Wait for the user to press the start button (resume search) before processing the next one
+        document.getElementById('startsearchbutton').addEventListener('click', () => {
+          processDetectionQueue();
+        }, { once: true });
+      }
+
+      // Function to get a random image and text
+      function getRandomImageAndText(imagesAndTexts) {
+        var randomIndex = Math.floor(Math.random() * imagesAndTexts.length);
+        return imagesAndTexts[randomIndex];
+      }
+
+      //Function for pop-up of object detected
+      function showObjectDetectedPopup(message, droneName, imagingType, imageUrl, text1, text2, reliabilityPercentage) {
+        isAnimating = false;
+        cancelAnimationFrame(animationFrameId);
+
+        const popup = document.createElement("div");
+        popup.className = "object-detected-popup";
+
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "Detected Object";
+        image.style.width = "525px";
+        image.style.height = "525px";
+        image.style.display = "block";
+        image.style.marginBottom = "10px";
+
+        const textNode1 = document.createElement("div");
+        textNode1.innerHTML = message;
+
+        const table = document.createElement("table");
+        table.classList.add("popup-table");
+
+        const headerRow = table.insertRow();
+        const headerCell1 = headerRow.insertCell();
+        const headerCell2 = headerRow.insertCell();
+        headerCell1.textContent = "Detecting drone";
+        headerCell2.textContent = droneName;
+
+        const row1 = table.insertRow();
+        const cell11 = row1.insertCell();
+        const cell12 = row1.insertCell();
+        cell11.textContent = "Object";
+        cell12.textContent = text1;
+
+        const row2 = table.insertRow();
+        const cell21 = row2.insertCell();
+        const cell22 = row2.insertCell();
+        cell21.textContent = "Lighting condition";
+        cell22.textContent = text2;
+
+        const row3 = table.insertRow();
+        const cell31 = row3.insertCell();
+        const cell32 = row3.insertCell();
+        cell31.textContent = "Object Detection Reliability";
+        cell32.textContent = `${reliabilityPercentage}%`;
+
+        popup.appendChild(image);
+        popup.appendChild(textNode1);
+        popup.appendChild(table);
+
+        popup.style.position = "absolute";
+        popup.style.left = "50%";
+        popup.style.top = "50%";
+        popup.style.transform = "translate(-50%, -50%)";
+        popup.style.backgroundColor = "white";
+        popup.style.padding = "10px";
+        popup.style.border = "1px solid black";
+        popup.style.zIndex = "1000";
+
+        document.body.appendChild(popup);
+
+        //store image URL of detected object
+        detectedImages.push(imageUrl);
+        console.log("Detected image:", imageUrl);
+
+        dragElement(document.body);
+      }
+
+      // Animation function to update point positions
+      let animationFrameId;
+      let isAnimating = false;
+
+      function animate() {
+        if (!isAnimating) {
+          return;
+        }
+
+        pointGraphics.forEach(graphic => {
+            const droneId = graphic.attributes.id;
+            const droneInfo = dronePathsTrack[droneId];
+
+
+            if (droneInfo.recentlyReassigned) {
+                const timeSinceReassignment = Date.now() - droneInfo.reassignmentTime;
+                if (timeSinceReassignment < droneInfo.delay) {
+                    // Skip animation for this drone if the delay period has not yet passed
+                    return;
+                } else {
+                    // Reset the flag once the delay period has passed
+                    droneInfo.recentlyReassigned = false;
+                }
+            }
+
+            // const dronePath = droneInfo.path;
+            if (droneInfo && droneInfo.path && droneInfo.path.length > 0) {
+                moveDrone(graphic, droneInfo);
+            } else {
+                console.warn(`No path found for drone with id: ${droneId}`);
+            }
+          });
+
+        // Refresh the graphics on the view
+        view.graphics.removeAll();
+        view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+
+        // Request the next frame in the animation with a delay
+        setTimeout(() => {
+          animationFrameId = requestAnimationFrame(animate);
+        }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
+      }
+
+      // function handleRedetection(newDroneId) {
+      //   const newReliability = calculateReliabilityPercentage(newDroneId, lastDetectedObjectInfo);
+      //   const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+      //                     (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+      //
+      //   reassignmentScore = calculateScore(isCorrect, newReliability, true, originalReliability);
+      //   redetectionInitialScore = calculateScore(isCorrect, newReliability);
+      //   console.log('Reassignment score:', reassignmentScore);
+      //   console.log('Redetection initial score:', redetectionInitialScore);
+      // }
+      function handleRedetection(newDroneId) {
+        const newReliability = calculateReliabilityPercentage(newDroneId, lastDetectedObjectInfo);
+        const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+                          (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+
+        const result = calculateScore(isCorrect, newReliability, true, originalReliability);
+        reassignmentScore = result.reassignmentBonus;
+        redetectionInitialScore = result.initialScore;
+        console.log('Reassignment score:', reassignmentScore);
+        console.log('Redetection initial score:', redetectionInitialScore);
+      }
+
+   // Object detection task reassignment to another drone
+   function reassignTaskToDrone(currentDroneId, newDroneId) {
+     // Swap quadrant info of drones
+     // let temp = dronePathsTrack[currentDroneId]
+     // dronePathsTrack[currentDroneId] = dronePathsTrack[newDroneId];
+     // dronePathsTrack[newDroneId] = temp;
+     let tempQuadrant = dronePathsTrack[currentDroneId].quadrant; // Temporarily store current drone's quadrant
+
+     // Swap paths, object detection points of drones
+     let tempPath = dronePathsTrack[currentDroneId].path;
+     let tempObjectDetectionPoints = dronePathsTrack[currentDroneId].objectDetectionPoints;
+     let currentDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === currentDroneId).geometry;
+     let newDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === newDroneId).geometry;
+
+     dronePathsTrack[currentDroneId].path = dronePathsTrack[newDroneId].path;
+     dronePathsTrack[currentDroneId].objectDetectionPoints = dronePathsTrack[newDroneId].objectDetectionPoints;
+     dronePathsTrack[currentDroneId].quadrant = dronePathsTrack[newDroneId]. quadrant // Assign new drone's quadrant to current drone
+
+     dronePathsTrack[newDroneId].path = tempPath;
+     dronePathsTrack[newDroneId].objectDetectionPoints = tempObjectDetectionPoints;
+     dronePathsTrack[newDroneId].quadrant = tempQuadrant; // Assign temp (original current drone's) quadrant to new drone
+
+     // // Calculate the distance between the two drones
+     // let currentDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === currentDroneId).geometry;
+     // let newDroneLocation = pointGraphics.find(graphic => graphic.attributes.id === newDroneId).geometry;
+     let distance = calculateDistance(currentDroneLocation, newDroneLocation);
+
+     // Set a proportional delay based on the distance
+     let delayInMilliseconds = distance * 1000; // 1000 ms /1 second per unit distance
+
+     // Set a reassignment flag and timestamp for both drones
+     dronePathsTrack[currentDroneId].recentlyReassigned = true;
+     dronePathsTrack[currentDroneId].reassignmentTime = Date.now();
+     dronePathsTrack[currentDroneId].delay = delayInMilliseconds;
+     dronePathsTrack[newDroneId].recentlyReassigned = true;
+     dronePathsTrack[newDroneId].reassignmentTime = Date.now();
+     dronePathsTrack[newDroneId].delay = delayInMilliseconds;
+
+     // Move the new drone to the current drone's previous location
+     moveDroneToPoint(newDroneId, [currentDroneLocation.longitude, currentDroneLocation.latitude]);
+
+     // Move the current drone to the new drone's previous location
+     moveDroneToPoint(currentDroneId, [newDroneLocation.longitude, newDroneLocation.latitude]);
+
+     // Update the map with the new positions
+     updateMap();
+     updateQuadrantDisplay();
+
+     handleRedetection(newDroneId);
+   }
+
+   function calculateDistance(location1, location2) {
+     // Distance calculation between two points, Euclidean distance calculation
+     let dx = location1.longitude - location2.longitude;
+     let dy = location1.latitude - location2.latitude;
+     return Math.sqrt(dx * dx + dy * dy);
+   }
+
+   function moveDroneToPoint(droneId, point) {
+     // Find the drone graphic by id
+     const droneGraphic = pointGraphics.find(graphic => graphic.attributes.id === droneId);
+     if (droneGraphic && point) {
+       // Update the drone's location
+       droneGraphic.geometry = new Point({
+         longitude: point[0], // Use the first element of the point array for longitude
+         latitude: point[1] // Use the second element of the point array for latitude
+       });
+     //   // Refresh the graphics on the view
+     //   view.graphics.removeAll();
+     //   view.graphics.addMany([...quadrant1, ...quadrant2, ...quadrant3, ...quadrant4, ...pointGraphics, XaxisGraphic, YaxisGraphic]);
+     } else {
+       console.error(`Drone with id ${droneId} or point is undefined`);
+     }
+   } // Update the UI or map to reflect the new positions and assignments
+
+   // Function to show pop-up for re-detected object by new/reassigned drone
+   function showRedetectedObjectPopup(droneName, imagingType, reliability, callback) {
+     // Find the drone graphic corresponding to the droneName
+     const droneGraphic = pointGraphics.find(graphic => graphic.attributes.id === droneName);
+
+     if (!droneGraphic) {
+       console.error('Drone graphic not found for droneName:', droneName);
+       return;
+     }
+
+     // Call the changeDroneColorOnDetection function with the found drone graphic
+     changeDroneColorOnDetection(droneGraphic);
+
+     // Stop all drones before showing the pop-up
+     isAnimating = false;
+     cancelAnimationFrame(animationFrameId);
+
+     let selectedImagesAndTexts;
+
+     // Assign array to selectedImagesAndTexts based on the imagingType
+     if (imagingType === 'thermal') {
+       if (reliability === 'high') {
+         selectedImagesAndTexts = thermalImagesAndTextsHigh;
+       } else {
+         selectedImagesAndTexts = thermalImagesAndTextsLow;
+       }
+     } else if (imagingType === 'nswir') {
+       if (reliability === 'high') {
+         selectedImagesAndTexts = nswirImagesAndTextsHigh;
+       } else {
+         selectedImagesAndTexts = nswirImagesAndTextsLow;
+       }
+     } else {
+       console.error('Invalid imaging type:', imagingType);
+       return;
+     }
+
+     // Find the image and text that match the last detected object type
+     const matchingImageAndText = selectedImagesAndTexts.find(item => item.text1 === lastDetectedObjectType && item.text2 === lastDetectedLight);
+     if (!matchingImageAndText) {
+       console.error('No matching image and text found for the last detected object type:', lastDetectedObjectType);
+       return;
+     }
+
+     // Calculate the reliability percentage for the redetected object
+     const reliabilityPercentage = calculateReliabilityPercentage(droneName, {
+       text1: matchingImageAndText.text1,
+       text2: matchingImageAndText.text2
+     });
+
+      // Generate the pop-up using the matching image and text
+     const imageUrl = matchingImageAndText.url;
+     const imageText1 = matchingImageAndText.text1;
+     const imageText2 = matchingImageAndText.text2;
+
+     // If an object is detected, store the location, timestamp, and texts
+     lastDetectedObjectInfo = {
+       // location: {
+       //   longitude: nextPoint[0],
+       //   latitude: nextPoint[1]
+       // },
+       text1: imageText1, // Store the detected object type
+       text2: imageText2,
+       // timestamp: detectionTimestamp, // Store the timestamp
+       droneId: droneName,
+       isRedetection: true // Indicate that this is a redetection event
+     };
+
+     //Capture %reliability of re-detection
+     lastDetectedObjectInfo.reliabilityPercentage = reliabilityPercentage;
+
+     const popup = document.createElement("div");
+     popup.className = "object-detected-popup";
+
+     const image = document.createElement("img");
+     image.src = imageUrl;
+     image.alt = "Detected Object";
+     image.style.width = "525px";
+     image.style.height = "525px";
+     image.style.display = "block";
+     image.style.marginBottom = "10px";
+
+     //Message for redetection: droneName
+     const textNode1 = document.createElement("div");
+     // Use innerHTML to include a line break between the two parts of the text
+     textNode1.innerHTML = `Re-detected object`;
+
+     const table = document.createElement("table");
+     table.classList.add("popup-table");
+
+     const headerRow = table.insertRow();
+     const headerCell1 = headerRow.insertCell();
+     const headerCell2 = headerRow.insertCell();
+     headerCell1.textContent = "Re-detecing drone";
+     headerCell2.textContent = droneName;
+
+     const row1 = table.insertRow();
+     const cell11 = row1.insertCell();
+     const cell12 = row1.insertCell();
+     cell11.textContent = "Object:";
+     cell12.textContent = imageText1;
+
+     const row2 = table.insertRow();
+     const cell21 = row2.insertCell();
+     const cell22 = row2.insertCell();
+     cell21.textContent = "Lighting condition:";
+     cell22.textContent = imageText2;
+
+     const row3 = table.insertRow();
+     const cell31 = row3.insertCell();
+     const cell32 = row3.insertCell();
+     cell31.textContent = "Object Detection Reliability:";
+     cell32.textContent = `${reliabilityPercentage}%`;
+
+     popup.appendChild(image);
+     popup.appendChild(textNode1);
+     popup.appendChild(table);
+
+     popup.style.position = "absolute";
+     popup.style.left = "50%";
+     popup.style.top = "50%";
+     popup.style.transform = "translate(-50%, -50%)";
+     popup.style.backgroundColor = "white";
+     popup.style.padding = "10px";
+     popup.style.border = "1px solid black";
+     popup.style.zIndex = "1000";
+
+     document.body.appendChild(popup);
+     //store image URL of re-detected object
+     // redetectedImages.push(imageUrl);
+     // console.log("Re-detected image:", imageUrl);
+     detectedImages.push(imageUrl);
+     console.log("Detected image:", imageUrl);
+
+     dragElement(document.body);
+
+     // setTimeout(() => {
+     //   document.body.removeChild(popup);
+     //   if (typeof callback === "function") {
+     //     callback(); // Call the callback function to reset reassignedDroneId
+     //   }
+     // }, 10000);
+
+     // // Update the drone control UI with the name of the drone that detected the object
+     // updateDroneControlUI(droneName, imageText1, imageText2);
+
+     // Store the callback to be called later
+     const originalCallback = callback;
+     popup.callback = function() {
+       if (typeof originalCallback === "function") {
+         originalCallback();
+       }
+       // Check if we need to show the review tab after redetection
+       if (pendingReview) {
+         checkAndShowReviewTab();
+         pendingReview = false;
+       }
+     };
+   }
+
+   // Get the popup and close button elements
+   var popup = document.getElementById("popup");
+   var closePopupBtn = document.getElementById("closePopupBtn");
+
+   // Get the "Start Exp" button element
+   var startExpBtn = document.getElementById("startExpBtn");
+
+   // When the user clicks the "Start Exp" button, open the popup
+   startExpBtn.onclick = function() {
+     popup.style.display = "block";
+   }
+
+   // When the user clicks the close button, close the popup
+   closePopupBtn.onclick = function() {
+     popup.style.display = "none";
+   }
+
+   // // When the user clicks outside of the popup, close it
+   // window.onclick = function(event) {
+   //   if (event.target == popup) {
+   //     popup.style.display = "none";
+   //   }
+   // }
+      // Event listener for the Start Search button
+      document.getElementById('startsearchbutton').addEventListener('click', function() {
+        isAnimating = true;
+        cancelAnimationFrame(animationFrameId);
+        animate();
+
+        // Hide the Initial drone assignment
+        document.getElementById('droneSelectionForm').style.display = 'none';
+        // Hide the reassignment options
+        document.getElementById('reassignToDroneSection').style.display = 'none';
+        // Show the quadrant display
+        document.getElementById('droneQuadrantDisplay').style.display = 'block';
+        // Hide the recategorization of drone recommendation
+        document.getElementById('recategorizeObject').style.display = 'none';
+        // Update the display with the current drone assignments
+        updateQuadrantDisplay();
+        this.style.backgroundColor = 'green'; // Change button color to green
+
+        // Reset the stop-search button states
+        const buttonIds = ['stopsearchbutton'];
+        buttonIds.forEach(function(buttonId) {
+          const button = document.getElementById(buttonId);
+          button.style.backgroundColor = ''; // Reset the background color
+        });
+      });
+
+      // Event listener for the Stop Search button
+      document.getElementById('stopsearchbutton').addEventListener('click', function() {
+        isAnimating = false;
+        this.style.backgroundColor = 'red'; // Change button color to red
+
+        // Reset the start-search button states
+        const buttonIds = ['startsearchbutton'];
+        buttonIds.forEach(function(buttonId) {
+          const button = document.getElementById(buttonId);
+          button.style.backgroundColor = ''; // Reset the background color
+        });
+      });
+
+      // Event listener for the Submit button (Initial assignment)
+      document.getElementById('submitBtn').addEventListener('click', function() {
+        // event.preventDefault();
+        updateQuadrantDisplay();
+    });
+
+    document.getElementById('yesBtn').addEventListener('click', function() {
+      document.getElementById('reassignToDroneSection').style.display = 'block';
+      userReassignResponse = 'Yes';
+      this.style.backgroundColor = 'green';
+      document.getElementById('noBtn').style.backgroundColor = '';
+
+      originalReliability = lastDetectedObjectInfo.reliabilityPercentage;
+      isReassignment = true;
+    });
+
+    document.getElementById('noBtn').addEventListener('click', function() {
+      document.getElementById('reassignToDroneSection').style.display = 'none';
+      userReassignResponse = 'No';
+      this.style.backgroundColor = 'red';
+      document.getElementById('yesBtn').style.backgroundColor = '';
+
+      isReassignment = false;
+      originalReliability = null;
+
+      // Calculate score for non-reassignment
+      const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+      let scoreEarned = reliability;
+      tempScore += scoreEarned;
+      reassignmentScore = scoreEarned;
+      console.log('non-reassignment score', reassignmentScore);
+    });
+
+      function showReassignPopup(message, duration) {
+        const popup = document.createElement('div');
+        popup.textContent = message;
+        popup.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: white;
+          color: black;
+          padding: 20px;
+          border-radius: 5px;
+          z-index: 1000;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          // font-family: Arial, sans-serif;
+          // font-size: 16px;
+          text-align: center;
+        `;
+
+        document.body.appendChild(popup);
+
+        setTimeout(() => {
+          document.body.removeChild(popup);
+        }, duration);
+      }
+
+      // Event listener for the 'Reassign' button
+      document.getElementById('reassignBtn').addEventListener('click', function() {
+        const newDroneId = document.getElementById('sel_drone').value;
+        if (newDroneId) {
+          handleRedetection(newDroneId);
+          reassignedDroneId = newDroneId;
+          reassignTaskToDrone(currentDroneId, newDroneId);
+          updateQuadrantDisplay();
+
+          // Display the pop-up message
+          showReassignPopup(`Drone ${currentDroneId} swapped with ${newDroneId}`, 2000);
+        }
+      });
+
+     // Function to update the displayed value of the competence rating
+     function updateCompetenceValue(value, droneNumber) {
+      document.getElementById('competenceValue' + droneNumber).textContent = value;
+    }
+
+    // Function to update the displayed value of the trust rating
+    function updateTrustValue(value, droneNumber) {
+      document.getElementById('trustValue' + droneNumber).textContent = value;
+    }
+
+    // Event listener for the competence slider
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('competenceRange' + i).addEventListener('input', function() {
+        updateCompetenceValue(this.value, i);
+      });
+
+      // Event listeners for the trust sliders
+         document.getElementById('trustRange' + i).addEventListener('input', function() {
+           updateTrustValue(this.value, i);
+         });
+       }
+
+       function resetSliders() {
+         // Reset competence sliders
+         for (let i = 1; i <= 4; i++) {
+           const competenceSlider = document.getElementById(`competenceRange${i}`);
+           competenceSlider.value = competenceSlider.defaultValue;
+         }
+
+         // Reset trust sliders
+         for (let i = 1; i <= 4; i++) {
+           const trustSlider = document.getElementById(`trustRange${i}`);
+           trustSlider.value = trustSlider.defaultValue;
+           document.getElementById(`trustValue${i}`).textContent = trustSlider.defaultValue;
+         }
+       }
+
+       // Array to store the ratings
+       let ratings = [];
+
+       // Variable to store user response to recommendation
+       let userResponse = '';
+
+       // Variable to store user response to reassignment
+       let userReassignResponse = '';
+       let reassignedDroneId = '';
+
+       let initialScore = 0;
+       let reassignmentScore = 0;
+       let redetectionInitialScore = 0;
+
+       function saveRatings() {
+         let scoreEarned = detScore;
+         scoreEarned = parseFloat(scoreEarned.toFixed(2));
+         console.log('score earned', scoreEarned);
+
+           // Retrieve the current ratings for each drone
+           let currentRatings = [];
+           for (let i = 1; i <= 4; i++) { // Assuming you have 4 drones
+               let trust = document.getElementById(`trustRange${i}`).value;
+               let competence = document.getElementById(`competenceRange${i}`).value;
+               currentRatings.push({drone: i, trust: trust, competence: competence});
+           }
+
+           // Retrieve the recategorized object from the select element
+           let userReobject = document.getElementById('sel_obj').value;
+
+           // Check if the user has accepted the drone's recommendation (i.e., no recategorization)
+           if (userReobject === '') {
+               userReobject = ''; // Set userReobject to an empty string if the user accepts the recommendation
+           }
+
+           // Retrieve the reliability percentage for the detected object
+           const reliabilityPercentage = lastDetectedObjectInfo.reliabilityPercentage;
+
+         let ratingObject = {
+           ratings: currentRatings,
+           response: userResponse,
+           reassignResponse: userReassignResponse,
+           userReobject: userReobject,
+           detectedObjectInfo: lastDetectedObjectInfo,
+           reassignedDroneId: reassignedDroneId,
+           reliabilityPercentage: reliabilityPercentage,
+           initialScore: initScore,
+           reassignmentScore: reassignmentScore,
+           redetectionInitialScore: redetectionInitialScore || 0,
+           scoreEarned: scoreEarned
+         };
+
+         if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
+           ratingObject.redetectionText1 = lastDetectedObjectInfo.text1;
+           ratingObject.redetectionText2 = lastDetectedObjectInfo.text2;
+         }
+
+         ratings.push(ratingObject);
+         // console.log('updated ratings', ratings);
+         // console.log('initial score', initScore);
+         // console.log('reassignment score', reassignmentScore);
+         // console.log('ratings scoreEarned', scoreEarned);
+             // });
+           console.log('Drone ratings saved:', currentRatings); // For debugging
+           console.log('User response saved:', userResponse);
+           console.log('User recategorization saved:', userReobject);
+           console.log('User recategorization saved:', userReassignResponse);
+
+           // Reset user response after saving
+           userResponse = '';
+           // reassignedDroneId = '';
+           userReassignResponse = '';
+           document.getElementById('sel_obj').value = '';
+           lastDetectedObjectInfo = null;
+           isReassignment = false;
+           originalReliability = null;
+
+           // Store the ratings data in localStorage
+           const ratingsData = JSON.parse(localStorage.getItem('ratingsData') || '[]');
+           ratingsData.push({
+             ratings: currentRatings,
+             response: userResponse,
+             reassignResponse: userReassignResponse,
+             userReobject: userReobject,
+             detectedObjectInfo: lastDetectedObjectInfo,
+             reassignedDroneId: reassignedDroneId,
+             reliabilityPercentage: reliabilityPercentage,
+             initScore: initScore,
+             reassignmentScore: reassignmentScore,
+             scoreEarned: scoreEarned
+           });
+           localStorage.setItem('ratingsData', JSON.stringify(ratingsData));
+
+           initScore = 0;
+           reassignmentScore = 0;
+           redetectionInitialScore = 0;
+           detScore = 0;
+           isReassignment = false;
+           originalReliability = null;
+           resetSliders();
+       }
+
+       function exportToCSV() {
+           let csvContent = "data:text/csv;charset=utf-8,";
+
+           // Check if there is a reassignment timestamp to include
+           if (reassignmentTimestamp) {
+               // Add a separator and headers for the reassignment timestamp
+               csvContent += "Initial assignment\n";
+               // Add the reassignment timestamp as a separate row
+               csvContent += `${reassignmentTimestamp}\n\n`;
+           }
+
+           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Lighting, Reliability %, User Response to recommendation, Re-categorized Object, Task Reassigned, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
+           ratings.forEach((entry, sessionIndex) => {
+               entry.ratings.forEach((rating, ratingIndex) => {
+                   // Include the user response to object detection and reassigment only on the first drone rating of each session
+                   if (ratingIndex === 0) {
+                       const detectionInfo = entry.detectedObjectInfo || {};
+                       // Concatenate longitude and latitude into a single string
+                       const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
+                       const text1 = detectionInfo.text1 || '';
+                       const text2 = detectionInfo.text2 || '';
+                       const timestamp = detectionInfo.timestamp || '';
+                       const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
+                       const reliabilityPercentage = entry.reliabilityPercentage || '';
+
+                       // Check if this is a redetection event and include text1 and text2 for redetection
+                       if (entry.redetectionText1 && entry.redetectionText2) {
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${entry.redetectionText1}","${entry.redetectionText2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       } else {
+                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
+                       }
+                   } else {
+                       csvContent += `,,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
+                   }
+               });
+               // Add a separator between sessions if needed
+               if (sessionIndex < ratings.length - 1) {
+                   csvContent += "\n";
+               }
+           });
+
+           var encodedUri = encodeURI(csvContent);
+           var link = document.createElement("a");
+           link.setAttribute("href", encodedUri);
+           link.setAttribute("download", "drone_ratings.csv");
+           document.body.appendChild(link); // Required for FF
+           link.click(); // This will download the file
+       }
+
+       // Get unique drones
+       const drones = [...new Set(ratings.map(rating => rating.detectedObjectInfo.droneId))];
+
+       // Get unique target types
+       const targetTypes = [...new Set(ratings.flatMap(rating => rating.detectedObjectInfo.text1.split(', ')))];
+
+       const droneTargetCounts = drones.map(() => targetTypes.map(() => 0));
+
+       ratings.forEach(rating => {
+         const drone = rating.detectedObjectInfo.droneId;
+         const targetType = rating.detectedObjectInfo.text1;
+         const droneIndex = drones.indexOf(drone);
+         const targetTypeIndex = targetTypes.indexOf(targetType);
+
+         if (droneIndex !== -1 && targetTypeIndex !== -1) {
+           droneTargetCounts[droneIndex][targetTypeIndex]++;
+         }
+       });
+
+       function openReviewTab() {
+         const reviewWindow = window.open('', '_blank');
+
+         reviewWindow.document.write('<html><head><title>Review</title><style>');
+         reviewWindow.document.write(`
+           table {
+             width: 100%;
+             border-collapse: collapse;
+           }
+
+           th, td {
+             padding: 8px;
+             text-align: left;
+             border: 1px solid #ddd;
+           }
+
+           th {
+             background-color: #d3d3d3; /* Darker gray for headers */
+             font-weight: bold;
+           }
+
+           .detection-row {
+             background-color: #ffffff;
+           }
+           .redetection-row {
+             background-color: #f2f2f2; /* Light gray for odd-numbered rows */
+           }
+
+           .score-display {
+             font-size: 30px;
+             font-weight: bold;
+             margin-bottom: 20px;
+           }
+
+         `);
+         reviewWindow.document.write('</style></head><body>');
+
+         const totalScore = ratings.reduce((sum, rating) => {
+           const initialScore = rating.initialScore || 0;
+           const reassignmentScore = rating.reassignmentScore || 0;
+           //const redetectionInitialScore = rating.redetectionInitialScore || 0;
+           //return sum + initialScore + reassignmentScore + redetectionInitialScore;
+           return sum + initialScore + reassignmentScore;
+         }, 0);
+
+         console.log('total score', totalScore);
+
+         // cumulative score display
+         reviewWindow.document.write(`<div class="score-display">Total score: ${totalScore.toFixed(2)}</div>`);
+
+         // Check if it's a special detection number (6, 11, 16)
+         const isSpecialDetection = [6, 11, 16].includes(detectionCounter);
+
+         if (!isSpecialDetection) {
+           reviewWindow.document.write('<h1>Detection data</h1>');
+         }
+
+         if (ratings.length === 0) {
+           reviewWindow.document.write('<p>No ratings data available.</p>');
+         } else {
+           // Predefined drone types and target types
+           const drones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
+           const targetTypes = ['Living target', 'Non-living target', 'Living distractor', 'Non-living distractor'];
+
+           // Create a 2D array to store the count of target types detected by each drone
+           const droneTargetCounts = drones.map(() => targetTypes.map(() => 0));
+           const droneTargetReliabilitySums = drones.map(() => targetTypes.map(() => 0));
+           const droneTargetReliabilityCounts = drones.map(() => targetTypes.map(() => 0));
+
+           // Update the counts and reliability sums in the 2D arrays
+           ratings.forEach(rating => {
+             const drone = rating.detectedObjectInfo.droneId;
+             const targetType = rating.detectedObjectInfo.text1;
+             const reliability = rating.reliabilityPercentage || 0;
+             const droneIndex = drones.indexOf(drone);
+             const targetTypeIndex = targetTypes.indexOf(targetType);
+
+             if (droneIndex !== -1 && targetTypeIndex !== -1) {
+               droneTargetCounts[droneIndex][targetTypeIndex]++;
+               droneTargetReliabilitySums[droneIndex][targetTypeIndex] += reliability;
+               droneTargetReliabilityCounts[droneIndex][targetTypeIndex]++;
+             }
+           });
+
+           if (!isSpecialDetection) {
+
+                        // Create the Living/Non-living summary table
+                        reviewWindow.document.write('<h2>Living/Non-living detection summary</h2>');
+                        reviewWindow.document.write('<table>');
+                        reviewWindow.document.write('<tr><th></th><th>Living</th><th>Non-living</th></tr>');
+
+                        // Write rows for drones
+                        drones.forEach((drone, rowIndex) => {
+                          reviewWindow.document.write('<tr>');
+                          reviewWindow.document.write(`<th>${drone}</th>`);
+
+                          // Calculate counts and average reliability for Living and Non-living categories
+                          const livingCount = droneTargetCounts[rowIndex][0] + droneTargetCounts[rowIndex][2];
+                          const nonLivingCount = droneTargetCounts[rowIndex][1] + droneTargetCounts[rowIndex][3];
+
+                          const livingReliabilitySum = droneTargetReliabilitySums[rowIndex][0] + droneTargetReliabilitySums[rowIndex][2];
+                          const nonLivingReliabilitySum = droneTargetReliabilitySums[rowIndex][1] + droneTargetReliabilitySums[rowIndex][3];
+
+                          const livingReliabilityCount = droneTargetReliabilityCounts[rowIndex][0] + droneTargetReliabilityCounts[rowIndex][2];
+                          const nonLivingReliabilityCount = droneTargetReliabilityCounts[rowIndex][1] + droneTargetReliabilityCounts[rowIndex][3];
+
+                          const averageLivingReliability = livingReliabilityCount > 0 ? (livingReliabilitySum / livingReliabilityCount).toFixed(2) : 'N/A';
+                          const averageNonLivingReliability = nonLivingReliabilityCount > 0 ? (nonLivingReliabilitySum / nonLivingReliabilityCount).toFixed(2) : 'N/A';
+
+                          reviewWindow.document.write(`<td>${livingCount} (${averageLivingReliability}%)</td>`);
+                          reviewWindow.document.write(`<td>${nonLivingCount} (${averageNonLivingReliability}%)</td>`);
+
+                          reviewWindow.document.write('</tr>');
+                        });
+
+                        reviewWindow.document.write('</table>');
+
+                        // Create the summary table
+                        reviewWindow.document.write('<h2>Target type detection summary</h2>');
+                        reviewWindow.document.write('<table>');
+                        reviewWindow.document.write('<tr><th></th>');
+
+                        // Write target type column headers
+                        targetTypes.forEach(targetType => {
+                          reviewWindow.document.write(`<th>${targetType}</th>`);
+                        });
+
+                        reviewWindow.document.write('</tr>');
+
+                        // Write rows for drones
+                        drones.forEach((drone, rowIndex) => {
+                          reviewWindow.document.write('<tr>');
+                          reviewWindow.document.write(`<th>${drone}</th>`);
+
+                          targetTypes.forEach((targetType, colIndex) => {
+                            const count = droneTargetCounts[rowIndex][colIndex];
+                            const reliabilitySum = droneTargetReliabilitySums[rowIndex][colIndex];
+                            const reliabilityCount = droneTargetReliabilityCounts[rowIndex][colIndex];
+                            const averageReliability = reliabilityCount > 0 ? (reliabilitySum / reliabilityCount).toFixed(2) : 'N/A';
+                            reviewWindow.document.write(`<td>${count} (${averageReliability}%)</td>`);
+                          });
+
+                          reviewWindow.document.write('</tr>');
+                        });
+
+                        reviewWindow.document.write('</table>');
+                      }
+
+                      // Create the detailed table
+                      reviewWindow.document.write('<h2>Detailed detection information</h2>');
+                      reviewWindow.document.write('<table>');
+                      reviewWindow.document.write('<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th><th>Drone\'s recommendation</th><th>Actual object</th><th>User response to: "Object was a target"</th><th>Re-categorized object</th><th>Was the detection reassigned?</th>');
+                      if (isSpecialDetection) {
+                        reviewWindow.document.write('<th>Decision quality</th>');
+                      } else {
+                        reviewWindow.document.write('<th>Score</th><th>Decision quality</th>');
+                      }
+                      reviewWindow.document.write('</tr>');
+
+                      let currentDetectionNumber = 0;
+                      let isCurrentDetectionEven = false;
+
+                      ratings.forEach((rating, index) => {
+                        // Check for redetection using both conditions
+                        const isRedetection = (rating.detectedObjectInfo && rating.detectedObjectInfo.isRedetection) ||
+                                              (rating.detectedObjectInfo && rating.detectedObjectInfo.redetection);
+
+                        // Determine the row class
+                        let rowClass;
+                        if (!isRedetection) {
+                          currentDetectionNumber++;
+                          isCurrentDetectionEven = !isCurrentDetectionEven;
+                        }
+                        rowClass = isCurrentDetectionEven ? 'detection-row' : 'redetection-row';
+
+                        reviewWindow.document.write(`<tr class="${rowClass}">`);
+                        // Determine the details to show
+                        let objectRecommendation, detailsToShow;
+                        if (isRedetection) {
+                          objectRecommendation = rating.redetectionText1 || rating.detectedObjectInfo.text1 || '';
+                          detailsToShow = `Lighting condition: ${rating.redetectionText2 || rating.detectedObjectInfo.text2 || ''}<br><br>
+                                           Object recognition reliability: ${rating.reliabilityPercentage || rating.detectedObjectInfo.reliabilityPercentage || ''}%`;
+                        } else {
+                          const detectionInfo = rating.detectedObjectInfo || {};
+                          objectRecommendation = detectionInfo.text1 || '';
+                          detailsToShow = `Lighting condition: ${detectionInfo.text2 || ''} <br><br>
+                                           Object recognition reliability: ${rating.reliabilityPercentage || detectionInfo.reliabilityPercentage || ''}%`;
+                        }
+
+                        // Determine what to display in each column
+                        const detectionNumber = isRedetection ? 'Redetection' : (rating.detectedObjectInfo?.detectionNumber || '');
+                        const detectingDrone = rating.detectedObjectInfo?.droneId || '';
+
+                        // Determine the true object for both original detections and redetections
+                        const trueObject = isRedetection ? (rating.redetectionText1 || rating.detectedObjectInfo?.text1 || '') : (rating.detectedObjectInfo?.text1 || '');
+
+                        const initialScore = rating.initialScore || 0;
+                        const reassignmentScore = rating.reassignmentScore || 0;
+                        const redetectionInitialScore = rating.redetectionInitialScore || 0;
+                        const totalScore = initialScore + reassignmentScore + redetectionInitialScore;
+
+                        // Write the row
+                        reviewWindow.document.write(`
+                          <td>${detectionNumber}</td>
+                          <td>${detectingDrone}</td>
+                          <td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td>
+                          <td>${detailsToShow}</td>
+                          <td>${objectRecommendation}</td>
+                          <td>${trueObject}</td>
+                          <td>${rating.response || ''}</td>
+                          <td>${rating.userReobject || ''}</td>
+                          <td>${rating.reassignResponse || ''}</td>
+                        `);
+
+                        // Handle Score and Decision Quality columns
+                        if (isRedetection) {
+                          reviewWindow.document.write('<td></td><td></td>');
+                        } else {
+                          const decisionQuality = getDecisionQuality(totalScore, false);
+                          if (isSpecialDetection) {
+                            reviewWindow.document.write(`<td>${decisionQuality}</td>`);
+                          } else {
+                            reviewWindow.document.write(`<td>${totalScore.toFixed(2)}</td><td>${decisionQuality}</td>`);
+                          }
+                        }
+
+                        reviewWindow.document.write('</tr>');
+                      });
+
+                      reviewWindow.document.write('</table>');
+         }
+
+         reviewWindow.document.write('</body></html>');
+         reviewWindow.document.close();
+       }
+
+       function showPopupMessage(message, duration) {
+         // Create a new div element for the pop-up
+         const popup = document.createElement('div');
+         popup.textContent = message;
+         popup.style.cssText = `
+           position: fixed;
+           top: 50%;
+           left: 50%;
+           transform: translate(-50%, -50%);
+           background-color: white;
+           color: black;
+           padding: 20px;
+           border-radius: 5px;
+           z-index: 1000;
+           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+           // font-family: Arial, sans-serif;
+           // font-size: 16px;
+           text-align: center;
+         `;
+
+         // Add the pop-up to the document body
+         document.body.appendChild(popup);
+
+         // Remove the pop-up after the specified duration
+         setTimeout(() => {
+           document.body.removeChild(popup);
+         }, duration);
+       }
+
+       // let reviewTabCounter = 0;
+       let lastReviewedDetection = 0;
+       let pendingReview = false;
+
+       // Event listener for confirm ratings for given round of detection
+       document.getElementById('confirmButton').addEventListener('click', function() {
+         saveRatings();
+
+         // Check if this is a redetection
+         if (reassignedDroneId) {
+           pendingReview = true;
+         } else {
+           // If it's not a redetection, check if we need to show the review tab
+           checkAndShowReviewTab();
+         }
+
+         // Pop-up message for when sletections and ratings are saved set to time out after 3 sec
+         showPopupMessage("Drone ratings and selections saved for the current detection", 2000);
+
+         // Calculate the total score
+         const totalScore = ratings.reduce((sum, rating) => {
+           const initialScore = rating.initialScore || 0;
+           const reassignmentScore = rating.reassignmentScore || 0;
+           //const redetectionInitialScore = rating.redetectionInitialScore || 0;
+           //return sum + initialScore + reassignmentScore + redetectionInitialScore;
+           return sum + initialScore + reassignmentScore;
+         }, 0);
+
+         // Update the final score
+         lastConfirmedScore = totalScore;
+         document.getElementById('scoreDisplay').textContent = `Current Score: ${lastConfirmedScore.toFixed(2)}`;
+
+         // Reset variables for next detection
+         isReassignment = false;
+         originalReliability = null;
+
+         // Find all pop-up elements
+         const popups = document.querySelectorAll('.object-detected-popup');
+         // Loop through and remove each pop-up
+         popups.forEach(function(popup) {
+           if (popup.parentNode) {
+             popup.parentNode.removeChild(popup);
+           }
+           // Call the callback function if it exists
+           if (typeof popup.callback === "function") {
+             popup.callback();
+           }
+         });
+         // Revert the drone's symbol back to the original symbol
+         pointGraphics.forEach(function(droneGraphic) {
+           if (droneGraphic.originalSymbol) {
+             droneGraphic.symbol = droneGraphic.originalSymbol;
+             view.graphics.remove(droneGraphic);
+             view.graphics.add(droneGraphic);
+             delete droneGraphic.originalSymbol; // Clean up the property
+           }
+         });
+
+         // Reset the button states
+         const buttonIds = ['startsearchbutton', 'stopsearchbutton', 'yesBtn', 'noBtn', 'accept-recommendation', 'reject-recommendation'];
+         buttonIds.forEach(function(buttonId) {
+           const button = document.getElementById(buttonId);
+           button.style.backgroundColor = ''; // Reset the background color
+         });
+
+         // Use the reassignedDroneId as the activeDroneId
+         let activeDroneId = reassignedDroneId; // This is set when the user reassigns a drone
+         if (activeDroneId) {
+           let activeDroneInfo = dronePathsTrack[activeDroneId];
+           let imagingType = activeDroneInfo.imagingType;
+           let reliability = activeDroneInfo.reliability;
+
+           // Hide the "Re-assign task" section
+           document.getElementById('resassignTaskSection').style.display = 'none';
+
+           showRedetectedObjectPopup(activeDroneId, imagingType, reliability, function() {
+             reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
+             document.getElementById('resassignTaskSection').style.display = 'block'; // Show the "Re-assign task" section
+
+             // Check if we need to show the review tab after redetection
+             if (pendingReview) {
+               checkAndShowReviewTab();
+               pendingReview = false;
+             }
+           });
+
+           // Reset the Yes and No button states
+           const buttonIds = ['yesBtn', 'noBtn'];
+           buttonIds.forEach(function(buttonId) {
+             const button = document.getElementById(buttonId);
+             button.style.backgroundColor = ''; // Reset the background color
+           });
+
+         } else {
+           console.error('No drone has been reassigned yet.');
+           document.getElementById('resassignTaskSection').style.display = 'block';
+         }
+
+         // Hide the Initial drone assignment
+         document.getElementById('droneSelectionForm').style.display = 'none';
+         // Hide the reassignment options
+         document.getElementById('reassignToDroneSection').style.display = 'none';
+         // Show the quadrant display
+         document.getElementById('droneQuadrantDisplay').style.display = 'block';
+         // Hide the recategorization of drone recommendation
+         document.getElementById('recategorizeObject').style.display = 'none';
+         // Update the display with the current drone assignments
+         updateQuadrantDisplay();
+       });
+
+       function checkAndShowReviewTab() {
+         if ((detectionCounter === 6 || detectionCounter === 11 || detectionCounter === 16 || detectionCounter === 21) && detectionCounter > lastReviewedDetection) {
+           openReviewTab();
+           lastReviewedDetection = detectionCounter;
+         }
+       }
+
+       // Event listener for Exporting to CSV button
+       document.getElementById('exportButton').addEventListener('click', exportToCSV);
+
+       let detScore = 0;
+
+       let originalReliability = null;
+       let isReassignment = false;
+
+       document.getElementById('accept-recommendation').addEventListener('click', function() {
+         userResponse = 'Accept';
+         document.getElementById('sel_obj').value = '';
+         document.getElementById('recategorizeObject').style.display = 'none';
+         this.style.backgroundColor = 'green';
+
+         document.getElementById('reject-recommendation').style.backgroundColor = '';
+
+         const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+                           (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+         const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+
+         const result = calculateScore(isCorrect, reliability);
+         let initialScore = result.initialScore;
+         let scoreEarned = initialScore;
+         if (isReassignment) {
+           scoreEarned += reassignmentScore + redetectionInitialScore;
+         }
+
+         tempScore += scoreEarned;
+         detScore = scoreEarned;
+         initScore = initialScore;
+
+         console.log('Accept clicked - tempScore:', tempScore, 'round score:', detScore, 'scoreEarned:', scoreEarned, 'initialScore:', initialScore, 'reassignment score', reassignmentScore, 'redetection initial score', redetectionInitialScore);
+       });
+
+       document.getElementById('reject-recommendation').addEventListener('click', function() {
+         userResponse = 'Reject';
+         document.getElementById('recategorizeObject').style.display = 'block';
+         this.style.backgroundColor = 'red';
+
+         document.getElementById('accept-recommendation').style.backgroundColor = '';
+
+         const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+                           (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+         const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+
+         const result = calculateScore(isCorrect, reliability);
+         let initialScore = result.initialScore;
+         let scoreEarned = initialScore;
+         if (isReassignment) {
+           scoreEarned += reassignmentScore + redetectionInitialScore;
+         } else {
+           scoreEarned += (reassignmentScore || 0);
+         }
+
+         tempScore += scoreEarned;
+         detScore = scoreEarned;
+         initScore = initialScore;
+         console.log('Reject clicked - tempScore:', tempScore, 'round score:', detScore, 'scoreEarned:', scoreEarned, 'initialScore:', initialScore, 'reassignment score', reassignmentScore, 'redetection initial score', redetectionInitialScore);
+       });
+
+
+       // Get references to the score display and toggle button
+       const scoreDisplay = document.getElementById('scoreDisplay');
+       const toggleScoreBtn = document.getElementById('toggleScoreBtn');
+
+       // Add click event listener to the toggle button
+       toggleScoreBtn.addEventListener('click', function() {
+         if (scoreDisplay.style.display === 'none') {
+           scoreDisplay.style.display = 'flex';
+         } else {
+           scoreDisplay.style.display = 'none';
+         }
+       });
+
+       //Event listener for reviewing trial data
+       document.getElementById('reviewButton').addEventListener('click', openReviewTab);
+
+
+         const configButton = document.getElementById('configButton');
+         const configPopup = document.getElementById('configPopup');
+         const centralizedBtn = document.getElementById('centralizedBtn');
+         const sharedBtn = document.getElementById('sharedBtn');
+
+         // Show popup when Configuration button is clicked
+         configButton.addEventListener('click', function() {
+           configPopup.style.display = 'block';
+         });
+
+         // Handle Centralized button click
+         centralizedBtn.addEventListener('click', function() {
+           console.log('Centralized configuration selected');
+           configPopup.style.display = 'none';
+           // Add functionality for centralized configuration here later
+         });
+
+         // Handle Shared button click
+         sharedBtn.addEventListener('click', function() {
+           console.log('Shared configuration selected');
+           configPopup.style.display = 'none';
+           // Add functionality for shared configuration here later
+         });
+
+         // Close popup when clicking outside
+         window.addEventListener('click', function(event) {
+           if (event.target == configPopup) {
+             configPopup.style.display = 'none';
+           }
+         });
+
+       // places the initial drone-assignment widget in the top right corner of the view
+       view.ui.add("startExpBtn", "top-right");
+
+     // places the initial drone-assignment widget in the top right corner of the view
+     view.ui.add("droneSelectionForm", "top-right");
+
+     // places the drone-control widget in the top right corner of the view
+     view.ui.add("droneControl", "top-right");
+
+     // places the drone-control widget in the top right corner of the view
+     view.ui.add("objectRecommendation", "top-right");
+
+     // places the drone-ratings widget in the bottom of the view
+     view.ui.add("droneRatings", "top-left");
+
+     // places the current drone-assignment widget in the top right corner of the view
+     view.ui.add("droneQuadrantDisplay", "top-right");
+
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("saveAndExport", "bottom-left");
+
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("endTrial", "bottom-right");
+
+     // places the save and export buttons in the bottom right corner of the view
+     view.ui.add("reviewTrial", "bottom-right");
+
+     // Add the legend div to the viewDiv
+     view.ui.add(legendDiv, "top-left");
+
+     // Add the score to the viewDiv
+     view.ui.add(scoreDisplay, "top-left");
+
+     // Add the score button to the viewDiv
+     view.ui.add(toggleScoreBtn, "top-left");
+
+     // Add the score button to the viewDiv
+     view.ui.add(AutonomousAgent, "top-right");
+
+         });
+
+         </script>
+
+       </head>
+
+       <body>
+              <div id="viewDiv"></div>
+
+              <button id="toggleScoreBtn" class="toggle-score-btn">Score</button>
+              <div id="scoreDisplay">Current Score: 0.00</div>
+
+              <button id="startExpBtn" class="start-exp-button">Experiment brief</button>
+
+              <div id="popup" class="popup">
+                <div class="popup-content">
+                  <!-- <span class="close">&times;</span> -->
+                  <p>You are tasked with correctly identifying objects with the help of an autonomous agent and four autonomous drones. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras. The drones detect objects with varying levels of object detection reliability.</p>
+                  <button id="closePopupBtn">Close</button>
+                </div>
+              </div>
+
+              <form id="droneSelectionForm">
+                 <h4 class="main-heading">Initial Drone assignment</h4>
+                 <div>
+                <label for="quadrant1">Quadrant 1:</label>
+                <select id="quadrant1" name="quadrant1">
+                  <option value="ThermalAlpha" selected>ThermalAlpha</option>
+                  <option value="ThermalBeta">ThermalBeta</option>
+                  <option value="InfraredGamma">InfraredGamma</option>
+                  <option value="InfraredDelta">InfraredDelta</option>
+                </select>
+              </div>
+              <div>
+                <label for="quadrant2">Quadrant 2:</label>
+                <select id="quadrant2" name="quadrant2">
+                  <option value="ThermalAlpha">ThermalAlpha</option>
+                  <option value="ThermalBeta" selected>ThermalBeta</option>
+                  <option value="InfraredGamma">InfraredGamma</option>
+                  <option value="InfraredDelta">InfraredDelta</option>
+                </select>
+              </div>
+              <div>
+                <label for="quadrant3">Quadrant 3:</label>
+                <select id="quadrant3" name="quadrant3">
+                  <option value="ThermalAlpha">ThermalAlpha</option>
+                  <option value="ThermalBeta">ThermalBeta</option>
+                  <option value="InfraredGamma" selected>InfraredGamma</option>
+                  <option value="InfraredDelta">InfraredDelta</option>
+                </select>
+              </div>
+              <div>
+                <label for="quadrant4">Quadrant 4:</label>
+                <select id="quadrant4" name="quadrant4">
+                  <option value="ThermalAlpha">ThermalAlpha</option>
+                  <option value="ThermalBeta">ThermalBeta</option>
+                  <option value="InfraredGamma">InfraredGamma</option>
+                  <option value="InfraredDelta" selected>InfraredDelta</option>
+                </select>
+              </div>
+                <input id="submitBtn" type="submit" value="Submit">
+              </form>
+
+              <div id="droneQuadrantDisplay">
+                <!-- <hr> -->
+                <h4 class="main-heading">Current Drone assignment</h4>
+                   <!-- <hr> -->
+              </div>
+
+              <div id="AutonomousAgent" class="AutoAgent-container">
+                <div style="display: flex; align-items: center;">
+                  <h4 >Autonomous Agent:</h4>
+                  <button id="configButton" class="config-button">Configuration</button>
+                </div>
+              </div>
+                    <!-- Popup for configuration -->
+                    <div id="configPopup" class="config-popup">
+                      <div class="popup-content">
+                        <p>Please choose the configuration of the autonomous agent</p>
+                        <div class="popup-buttons">
+                          <button id="centralizedBtn">Centralized</button>
+                          <button id="sharedBtn">Shared</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+              <div id="droneControl" class="droneControl-container">
+                  <!-- <h4 class="drone-motion">Drone Control Tools</h4> -->
+                  <!-- <div> -->
+                    <label ><b>Object Search:</b> </label><input type="button" class="start-button" value="Start" id="startsearchbutton"><input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
+                  </div>
+                 <!-- <hr> -->
+
+                  <!-- <div>
+                  <h4 class="detection-info">Object detection</h4>
+                    <p id="current-drone">Current drone:</p>
+                    <p id="lighting-illumination">Lighting/Illumination:</p>
+                    <p id="object-detected">Object detected:</p>
+                  </div> -->
+              <div id="objectRecommendation" class="objectRecommendation-container">
+              <b class="detection-statement">Detected object is a target:</b>
+                    <!-- <div> -->
+                    <input type="button" class="yes-button" value="Accept" id="accept-recommendation" />
+                    <input type="button" class="no-button" value="Reject" id="reject-recommendation" />
+                  <!-- </div>
+                  </div> -->
+
+                  <div id="recategorizeObject" style="display:none">
+                    <label >Re-categorize object: </label> <select id="sel_obj">
+                      <option value="living target">Living target</option>
+                      <option value="non-living target">Non-living target</option>
+                      <option value="living distractor">Living distractor</option>
+                      <option value="non-living distractor">Non-living distractor</option>
+                    </select>
+                  </div>
+                    <hr>
+
+                    <!-- <div>
+                    <h4 class="detection-info">Task assignment</h4>
+                    </div> -->
+                    <div id="resassignTaskSection">
+                      <label >Re-assign task:</label>
+                      <input type="button" class="yes-button" value="Yes" id="yesBtn" />
+                      <input type="button" class="no-button" value="No" id="noBtn" />
+                    </div>
+                    <div id="reassignToDroneSection" style="display:none;">
+                      <label >Re-assign task to: </label>
+                      <select id="sel_drone">
+                        <option value="ThermalAlpha">ThermalAlpha</option>
+                        <option value="ThermalBeta">ThermalBeta</option>
+                        <option value="InfraredGamma">InfraredGamma</option>
+                        <option value="InfraredDelta">InfraredDelta</option>
+                      </select>
+                      <input type="button" id="reassignBtn" value="Reassign/Swap" />
+                    </div>
+                  </div>
+
+                    <div id="saveAndExport" class="saveExport-container">
+                    <!-- <h4 class="Save-and-export-ratings">Confirm selections/Ratings</h4> -->
+                    <div>
+                      <!-- <label for="confirmButton">Confirm Ratings </label> -->
+                      <label >Confirm selections and ratings </label>
+                      <button id="confirmButton">Confirm</button>
+                    </div>
+                    <!-- <hr> -->
+                    <div id="endTrial" class="endTrial-container">
+                      <!-- <label for="endTrial">Export to CSV and end trial</label> -->
+                      <button id="exportButton">End Trial</button>
+                    </div>
+
+              <!-- change label class for each drone type -->
+              <div id="droneRatings" class="droneRatings-container">
+                <!-- <hr> -->
+                <p class="list-heading">Rank the drones in the order of their <b> competence </b> for the current detection:</p>
+                <div class="droneRatings-container">
+                <!-- <hr> -->
+                <!-- <label><strong> ThermalAlpha: </strong></label> -->
+                <div class="slider-group">
+                      <label for="competenceRange1">ThermalAlpha: </label>
+                      <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange1" list="tickmarks1">
+                      <div class="competence-slider-container">
+                      <datalist id="tickmarks1">
+                        <option value="1" label="1st"></option>
+                        <option value="2" label="2nd"></option>
+                        <option value="3" label="3rd"></option>
+                        <option value="4" label="4th"></option>
+                      </datalist>
+                      <!-- <span id="competenceValue1">3</span> -->
+                    </div>
+                    <div class="slider-group">
+                      <label for="competenceRange2">ThermalBeta: </label>
+                      <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange2" list="tickmarks2">
+                      <div class="competence-slider-container">
+                      <datalist id="tickmarks2">
+                        <option value="1" label="1st"></option>
+                        <option value="2" label="2nd"></option>
+                        <option value="3" label="3rd"></option>
+                        <option value="4" label="4th"></option>
+                      </datalist>
+                      <!-- <span id="competenceValue2">3</span> -->
+                    </div>
+                    <div class="slider-group">
+                      <label for="competenceRange3">InfraredGamma: </label>
+                      <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange3" list="tickmarks3">
+                      <div class="competence-slider-container">
+                      <datalist id="tickmarks3">
+                        <option value="1" label="1st"></option>
+                        <option value="2" label="2nd"></option>
+                        <option value="3" label="3rd"></option>
+                        <option value="4" label="4th"></option>
+                      </datalist>
+                      <!-- <span id="competenceValue3">3</span> -->
+                    </div>
+                    <div class="slider-group">
+                      <label for="competenceRange4">InfraredDelta: </label>
+                      <input type="range" min="1" max="4" value="3" class="competence-slider" id="competenceRange4" list="tickmarks4">
+                      <div class="competence-slider-container">
+                      <datalist id="tickmarks4">
+                        <option value="1" label="1st"></option>
+                        <option value="2" label="2nd"></option>
+                        <option value="3" label="3rd"></option>
+                        <option value="4" label="4th"></option>
+                      </datalist>
+                      <!-- <span id="competenceValue4">3</span> -->
+                    </div>
+                </div>
+                <hr>
+                <div>
+                <p class="list-heading">Rate your <b> trust </b> in each drones recommendation if it were to detect the current object under same conditions:</p>
+                <div class="trust-slider-group">
+                    <label for="trustRange1">ThermalAlpha:</label>
+                    <input type="range" min="1" max="10" value="3" class="slider trust-slider" id="trustRange1">
+                    <span id="trustValue1" class="slider-value">3</span>
+                </div>
+                <div class="trust-slider-group">
+                    <label for="trustRange2">ThermalBeta:</label>
+                    <input type="range" min="1" max="10" value="3" class="slider trust-slider" id="trustRange2">
+                    <span id="trustValue2" class="slider-value">3</span>
+                </div>
+                <div class="trust-slider-group">
+                    <label for="trustRange3">InfraredGamma:</label>
+                    <input type="range" min="1" max="10" value="3" class="slider trust-slider" id="trustRange3">
+                    <span id="trustValue3" class="slider-value">3</span>
+                </div>
+                <div class="trust-slider-group">
+                    <label for="trustRange4">InfraredDelta:</label>
+                    <input type="range" min="1" max="10" value="3" class="slider trust-slider" id="trustRange4">
+                    <span id="trustValue4" class="slider-value">3</span>
+                </div>
+
+
+              <div id="reviewTrial" class="reviewTrial-container">
+                <!-- <label for="endTrial">Export to CSV and end trial</label> -->
+                <button id="reviewButton">Review</button>
+              </div>
+
+       </body>
+       </html>

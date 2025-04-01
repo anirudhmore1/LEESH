@@ -1,92 +1,55 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html>
 <head>
-  <title>LEESH Projects</title>
+    <title>SAR Web Application</title>
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.png' %}">
     <style>
-        header {
-          text-align: center;
+        .icon-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 50px;
         }
-        body {
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          min-height: 100vh;
-          margin: 0;
+        .icon-item {
+            text-align: center;
+            width: 150px;
         }
-
-        .content {
-          flex: 1;
+        .icon-item img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
         }
-        .image-container {
-          text-align: center;
-        }
-
-        .image-container img {
-          display: block;
-          margin: 0 auto;
-        }
-
-        .image-title {
-          text-align: center;
-        }
-
-        .image-group {
-          display: flex;
-        }
-
-        .image-group div {
-          flex: 1;
-          margin: 5px;
-        }
-
-        footer {
-          background-color: #f5f5f5;
-          padding: 20px;
-          text-align: center;
+        .icon-name {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-  <header>
-    <h1>LEESH Projects</h1>
-  </header>
+    <h1 style="text-align: center;">Welcome to the SAR Web Application</h1>
 
-    <div class="content">
-            <!-- <div class="image-group">
-            <div class="image-container">
-                <a href="{% url 'leeshwebinit' %}" target="_blank">
-                    <img src="{% static 'img/demopage/SAR2D.png' %}" alt="2D UI Simulation" height="150">
-                </a>
-                <div class="image-title">
-                  <p><a href="{% url 'leeshwebinit' %}" target="_blank">TCIN</a></p>
-                </div>
-            </div> -->
-
-            <div class="image-container">
-                <a href="{% url 'demoinit' %}" target="_blank">
-                    <img src="{% static 'img/demopage/SAR2DExp.png' %}" alt="Study one -- Trust" height="150">
-                </a>
-                <div class="image-title">
-                    <p><a href="{% url 'demoinit' %}" target="_blank">Study one -- TCIN</a></p>
-                </div>
-            </div>
-
-
+    <div class="icon-grid">
+        <!-- First icon -->
+        <div class="icon-item">
+            <a href="{% url 'demo1Exp' %}">
+                <img src="{% static 'img/demopage/Exp1Icon.png' %}" alt="demo1Exp">
+                <div class="icon-name">Experiment 1</div>
+            </a>
         </div>
 
+        <!-- Second icon -->
+        <div class="icon-item">
+            <a href="{% url 'demo2Exp' %}">
+                <img src="{% static 'img/demopage/Exp2icon.png' %}" alt="demo2Exp">
+                <div class="icon-name">Experiment 2</div>
+            </a>
+        </div>
 
-      </div>
-
-  <footer>
-    <div>
-      <p>Contact Information:</p>
-      <p>Email: anirudh1@vt.edu</p>
+        <!-- Add more icons as needed -->
     </div>
-
-    <div>
-      <p>&copy; 2024 SCEL. All rights reserved.</p>
-    </div>
-  </footer>
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 10px; background-color: #f5f5f5; border-top: 1px solid #ddd;">
+    <p>&copy; 2025 Anirudh More, SCEL. All Rights Reserved.</p>
+</footer>
 </body>
 </html>

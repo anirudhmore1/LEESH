@@ -17,62 +17,11 @@ urlpatterns = [
     path('',TemplateView.as_view(template_name="demo_landingpage.html")), #landing page
     path('leeshwebinit', TaskGenerationView.as_view(),name='leeshwebinit'),
 
-    path('demoinit',TemplateView.as_view(template_name="demo.html"), name="demoinit"), #TCIN simulation
+    path('demo1Exp',TemplateView.as_view(template_name="demo.html"), name="demo1Exp"), #TCIN Exp 1simulation
 
-    path('sarweb3D', TaskGenerationView3D.as_view(),name='sarweb3D'),
-    path('sarweb3DDemo', TaskGenerationView3DDemo.as_view(),name='sarweb3DDemo'),
+    path('demo2Exp',TemplateView.as_view(template_name="demo_Exp2.html"), name="demo2Exp"), #TCIN Exp 2 Leadership simulation
 
-    re_path(r'^experiment/task/$', TaskassignmentExperimentView.as_view(),name='experiment'),
-    re_path(r'^experiment/task/(?P<participantid>\w+)/$',TaskassignmentExperimentView.as_view(),name="experiment"),
-    re_path(r'^experiment/task/(?P<participantid>\w+)/(?P<participantindex>\w+)/$',TaskassignmentExperimentView.as_view(),name="experiment"),
-
-    path('experiment/consentform',ConsentFormView.as_view(),name='consentform'),
-    path('experiment/consentform_action', ConsentFormView.FormToDB),
-
-    path('experiment/demos',DemogrphicsView.as_view(),name="demos"),
-    re_path(r'^experiment/demos/(?P<participantid>\w+)/(?P<participantindex>\w+)/$',DemogrphicsView.as_view(),name="demos"),
-    re_path(r'^experiment/demos/\w+/\w+/action$', DemogrphicsView.FormToDB,name="demos"),
-
-    path('experiment/survey_postexperiment',SurveyPostEFormView.as_view(),name="survey_postexperiment"),
-    re_path(r'^experiment/survey_postexperiment/\w+/action$', SurveyPostEFormView.FormToDB,name="survey_postexperiment"),
-    re_path(r'^experiment/survey_postexperiment/(?P<participantid>\w+)/$',SurveyPostEFormView.as_view(),name="survey_postexperiment"),
-
-    path('experiment/survey_postexp_webapp',WebapplicationFormView.as_view(),name="survey_postexp_webapp"),
-    re_path(r'^experiment/survey_postexp_webapp/(?P<participantid>\w+)/$',WebapplicationFormView.as_view(),name="survey_postexp_webapp"),
-    re_path(r'^experiment/survey_postexp_webapp/\w+/action$', WebapplicationFormView.FormToDB,name="survey_postexp_webapp"),
-    path('rating_action', WebapplicationFormView.FormToDB),
-    re_path(r'^experiment/survey_postexp_webapp/\w+/rating_action$',WebapplicationFormView.FormToDB,name="rating_action"),
-
-    path('experiment/exp_thanks',TemplateView.as_view(template_name="app3/exp_thanks.html"),name="exp_thanks"),
-
-    path('experiment/consentform3D',ConsentFormView3D.as_view(),name='consentform3D'),
-    path('experiment/consentform3D_ISE3614',ConsentFormView3D_ISE3614.as_view(),name='consentform3D_ISE3614'),
-    path('experiment/consentform3D_action', ConsentFormView3D.FormToDB),
-
-    path('experiment/demos3D',ConsentFormView3D.as_view(),name="demos3D"),
-    re_path(r'^experiment/demos3D/(?P<participantid>\w+)/(?P<participantindex>\w+)/$',DemogrphicsView3D.as_view(),name="demos3D"),
-    re_path(r'^experiment/demos3D/\w+/\w+/action$', DemogrphicsView3D.FormToDB,name="demos3D"),
-    path('experiment/survey_postexperiment3D',SurveyPostEFormView3D.as_view(),name="survey_postexperiment3D"),
-    re_path(r'^experiment/survey_postexperiment3D/\w+/action$', SurveyPostEFormView3D.FormToDB,name="survey_postexperiment3D"),
-    re_path(r'^experiment/survey_postexperiment3D/(?P<participantid>\w+)/$',SurveyPostEFormView3D.as_view(),name="survey_postexperiment3D"),
-
-    path('questionnaireform3D',QuestionnaireFormView3D.as_view(),name="questionnaireform3D"),
-    re_path(r'^questionnaireform3D/(?P<participant_id>\w+)/(?P<task_id>\w+)/(?P<scene_id>\w+)/$',QuestionnaireFormView3D.as_view(),name="questionnaireform3D"),
-    path('questionnaire_action3D', QuestionnaireFormView3D.FormToDB),
-    re_path(r'^questionnaireform3D/\w+/\w+/\w+/questionnaire_action3D$',QuestionnaireFormView3D.FormToDB,name="questionnaire_action3D"),
-
-    path('posttrainingform3D',PostTrainingFormView3D.as_view(),name="posttrainingform3D"),
-    re_path(r'^posttrainingform3D/(?P<participant_id>\w+)/(?P<task_id>\w+)/(?P<scene_id>\w+)/$',PostTrainingFormView3D.as_view(),name="posttrainingform3D"),
-    path('posttraining_action3D', PostTrainingFormView3D.FormToDB),
-    re_path(r'^posttrainingform3D/\w+/\w+/\w+/posttraining_action3D$',PostTrainingFormView3D.FormToDB,name="posttraining_action3D"),
-    path('takeabreak/',TemplateView.as_view(template_name="app3/takeabreak.html")),
-
-    re_path(r'^experiment/task3D/$', TaskassignmentExperimentView3D.as_view(),name='experiment3D'),
-    re_path(r'^experiment/task3D/(?P<participantid>\w+)/$',TaskassignmentExperimentView3D.as_view(),name="experiment3D"),
-    re_path(r'^experiment/task3D/(?P<participantid>\w+)/(?P<participantindex>\w+)/$',TaskassignmentExperimentView3D.as_view(),name="experiment3D"),
-    re_path(r'^updateexperimentdata3D$', TaskassignmentExperimentView3D.updateExperimentData,name='updateexperimentdata3D'),
-    re_path(r'^SaveExperimentdatatoDBDataStorage$', TaskassignmentExperimentView3D.SaveExperimentdatatoDBDataStorage,name='SaveExperimentdatatoDBDataStorage'),
-
+# probably not required # Keep any API routes that might be needed by the experiments
     path('downloaddata', DownloadDataView.as_view(),name='downloaddata'),
     path('downloaddatadetails',TemplateView.as_view(template_name="app3/downloaddata_details.html"),name='downloaddata'),
 
