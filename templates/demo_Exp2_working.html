@@ -124,7 +124,42 @@
     .popup-buttons button:hover {
       background-color: #e0e0e0;
     }
-
+    #agentRecommendation {
+      position: fixed;
+      top: 190px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
+    #agentRatings {
+      position: fixed;
+      top: 280px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
+    #agentReassignmentRecommendation {
+      position: fixed;
+      top: 425px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
+    #agentReassignmentRatings {
+      position: fixed;
+      top: 600px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
     #objectRecommendation {
         position: fixed;
         top: 840px;
@@ -2073,9 +2108,18 @@
 
         document.body.appendChild(popup);
 
-        //store image URL of detected object
+        // Show agent recommendation and rating controls
+        document.getElementById('agentRecommendation').style.display = 'block';
+        document.getElementById('agentObjectType').textContent = text1;
+        document.getElementById('agentRatings').style.display = 'block';
+
+        // Store image URL of detected object
         detectedImages.push(imageUrl);
         console.log("Detected image:", imageUrl);
+
+        //store image URL of detected object
+        //detectedImages.push(imageUrl);
+        //console.log("Detected image:", imageUrl);
 
         dragElement(document.body);
       }
@@ -2456,6 +2500,23 @@
 
       originalReliability = lastDetectedObjectInfo.reliabilityPercentage;
       isReassignment = true;
+
+      // Show agent's reassignment recommendation
+      document.getElementById('agentReassignmentRecommendation').style.display = 'block';
+      document.getElementById('agentReassignmentRatings').style.display = 'block';
+
+      // Generate recommendations based on drone performance
+      // This is a simple example -  make this more sophisticated //// Have to change this
+      const drones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
+      const recommendations = ['Low', 'Medium', 'High', 'Medium']; // Example values
+
+      // Randomize recommendations to simulate agent intelligence
+      recommendations.sort(() => Math.random() - 0.5);
+
+      // Update recommendation display
+      drones.forEach((drone, index) => {
+        document.getElementById('rec' + drone).textContent = recommendations[index];
+      });
     });
 
     document.getElementById('noBtn').addEventListener('click', function() {
@@ -2463,6 +2524,8 @@
       userReassignResponse = 'No';
       this.style.backgroundColor = 'red';
       document.getElementById('yesBtn').style.backgroundColor = '';
+      document.getElementById('agentReassignmentRecommendation').style.display = 'none';
+      document.getElementById('agentReassignmentRatings').style.display = 'none';
 
       isReassignment = false;
       originalReliability = null;
@@ -3003,7 +3066,7 @@
            checkAndShowReviewTab();
          }
 
-         // Pop-up message for when sletections and ratings are saved set to time out after 3 sec
+         // Pop-up message for when sletections and ratings are saved set to time out after 2 sec
          showPopupMessage("Drone ratings and selections saved for the current detection", 2000);
 
          // Calculate the total score
@@ -3035,6 +3098,7 @@
              popup.callback();
            }
          });
+
          // Revert the drone's symbol back to the original symbol
          pointGraphics.forEach(function(droneGraphic) {
            if (droneGraphic.originalSymbol) {
@@ -3062,9 +3126,27 @@
            // Hide the "Re-assign task" section
            document.getElementById('resassignTaskSection').style.display = 'none';
 
+           // Reset agent rating sliders to default value (5)
+           document.getElementById('agentCompetenceRange').value = 5;
+           document.getElementById('agentCompetenceValue').textContent = '5';
+           document.getElementById('agentTrustRange').value = 5;
+           document.getElementById('agentTrustValue').textContent = '5';
+
+           // Reset agent reassignment rating sliders to default value (5)
+           document.getElementById('agentReassignCompetenceRange').value = 5;
+           document.getElementById('agentReassignCompetenceValue').textContent = '5';
+           document.getElementById('agentReassignTrustRange').value = 5;
+           document.getElementById('agentReassignTrustValue').textContent = '5';
+
+           // First show the redetection popup
            showRedetectedObjectPopup(activeDroneId, imagingType, reliability, function() {
              reassignedDroneId = ''; // Reset reassignedDroneId after the pop-up is closed
              document.getElementById('resassignTaskSection').style.display = 'block'; // Show the "Re-assign task" section
+
+             // Hide the agent components when the redetection popup is closed
+             document.getElementById('agentObjectType').textContent = '';
+             document.getElementById('agentRecommendation').style.display = 'none';
+             document.getElementById('agentRatings').style.display = 'none';
 
              // Check if we need to show the review tab after redetection
              if (pendingReview) {
@@ -3072,6 +3154,20 @@
                pendingReview = false;
              }
            });
+
+           // After showing the redetection popup, display the agent recommendation
+           setTimeout(function() {
+             // Display autonomous agent recommendation for the redetected object
+             document.getElementById('agentRecommendation').style.display = 'block';
+             document.getElementById('agentObjectType').textContent = lastDetectedObjectInfo.text1;
+
+             // Show agent ratings panel for the redetection
+             document.getElementById('agentRatings').style.display = 'block';
+
+             // Make sure reassignment components stay hidden for redetection
+             document.getElementById('agentReassignmentRecommendation').style.display = 'none';
+             document.getElementById('agentReassignmentRatings').style.display = 'none';
+           }, 100); // Small delay to ensure popup is created first
 
            // Reset the Yes and No button states
            const buttonIds = ['yesBtn', 'noBtn'];
@@ -3081,6 +3177,13 @@
            });
 
          } else {
+           // If there's no redetection, hide all agent components
+           document.getElementById('agentObjectType').textContent = '';
+           document.getElementById('agentRecommendation').style.display = 'none';
+           document.getElementById('agentRatings').style.display = 'none';
+           document.getElementById('agentReassignmentRecommendation').style.display = 'none';
+           document.getElementById('agentReassignmentRatings').style.display = 'none';
+
            console.error('No drone has been reassigned yet.');
            document.getElementById('resassignTaskSection').style.display = 'block';
          }
@@ -3093,6 +3196,7 @@
          document.getElementById('droneQuadrantDisplay').style.display = 'block';
          // Hide the recategorization of drone recommendation
          document.getElementById('recategorizeObject').style.display = 'none';
+
          // Update the display with the current drone assignments
          updateQuadrantDisplay();
        });
@@ -3196,7 +3300,15 @@
          centralizedBtn.addEventListener('click', function() {
            console.log('Centralized configuration selected');
            configPopup.style.display = 'none';
-           // Add functionality for centralized configuration here later
+
+           // Set up the autonomous agent for centralized configuration
+           document.getElementById('AutonomousAgent').innerHTML += '<p><b>Centralized</b> configuration active</p>';
+
+           // Hide all agent UI elements initially
+           document.getElementById('agentRecommendation').style.display = 'none';
+           document.getElementById('agentRatings').style.display = 'none';
+           document.getElementById('agentReassignmentRecommendation').style.display = 'none';
+           document.getElementById('agentReassignmentRatings').style.display = 'none';
          });
 
          // Handle Shared button click
@@ -3211,6 +3323,24 @@
            if (event.target == configPopup) {
              configPopup.style.display = 'none';
            }
+         });
+
+         // Update agent rating values when sliders change
+         document.getElementById('agentCompetenceRange').addEventListener('input', function() {
+           document.getElementById('agentCompetenceValue').textContent = this.value;
+         });
+
+         document.getElementById('agentTrustRange').addEventListener('input', function() {
+           document.getElementById('agentTrustValue').textContent = this.value;
+         });
+
+         // Update agent reassignment rating values when sliders change
+         document.getElementById('agentReassignCompetenceRange').addEventListener('input', function() {
+           document.getElementById('agentReassignCompetenceValue').textContent = this.value;
+         });
+
+         document.getElementById('agentReassignTrustRange').addEventListener('input', function() {
+           document.getElementById('agentReassignTrustValue').textContent = this.value;
          });
 
        // places the initial drone-assignment widget in the top right corner of the view
@@ -3249,8 +3379,15 @@
      // Add the score button to the viewDiv
      view.ui.add(toggleScoreBtn, "top-left");
 
-     // Add the score button to the viewDiv
+     // Add the Auto Config UI
      view.ui.add(AutonomousAgent, "top-right");
+
+     // Add the Auto Agent Reassignment Recommendation
+     view.ui.add(agentReassignmentRecommendation, "bottom-right");
+
+     view.ui.add(agentRatings, "top-right");
+     view.ui.add(agentRecommendation, "top-right");
+     view.ui.add(agentReassignmentRatings, "top-right");
 
          });
 
@@ -3326,6 +3463,10 @@
                   <h4 >Autonomous Agent:</h4>
                   <button id="configButton" class="config-button">Configuration</button>
                 </div>
+
+                <div id="agentRecommendation" style="display: none;">
+                  <p><b>Object Type Recommendation:</b> <span id="agentObjectType"></span></p>
+                </div>
               </div>
                     <!-- Popup for configuration -->
                     <div id="configPopup" class="config-popup">
@@ -3337,6 +3478,16 @@
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  <div id="agentReassignmentRecommendation" style="display: none;">
+                    <p><b>Recommended reassignment:</b></p>
+                    <ul id="droneRecommendationList">
+                      <li>ThermalAlpha: <span id="recThermalAlpha">Low</span></li>
+                      <li>ThermalBeta: <span id="recThermalBeta">Medium</span></li>
+                      <li>InfraredGamma: <span id="recInfraredGamma">High</span></li>
+                      <li>InfraredDelta: <span id="recInfraredDelta">Medium</span></li>
+                    </ul>
                   </div>
 
               <div id="droneControl" class="droneControl-container">
@@ -3483,6 +3634,33 @@
                     <span id="trustValue4" class="slider-value">3</span>
                 </div>
 
+                <div id="agentRatings" style="display: none;">
+                  <p><b>Rate autonomous agent recommendation:</b></p>
+                  <div class="trust-slider-group">
+                    <label for="agentCompetenceRange">Competence:</label>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="agentCompetenceRange">
+                    <span id="agentCompetenceValue" class="slider-value">5</span>
+                  </div>
+                  <div class="trust-slider-group">
+                    <label for="agentTrustRange">Trust:</label>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="agentTrustRange">
+                    <span id="agentTrustValue" class="slider-value">5</span>
+                  </div>
+                </div>
+
+                <div id="agentReassignmentRatings" style="display: none;">
+                  <p><b>Rate autonomous agent reassignment recommendation:</b></p>
+                  <div class="trust-slider-group">
+                    <label for="agentReassignCompetenceRange">Competence:</label>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="agentReassignCompetenceRange">
+                    <span id="agentReassignCompetenceValue" class="slider-value">5</span>
+                  </div>
+                  <div class="trust-slider-group">
+                    <label for="agentReassignTrustRange">Trust:</label>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="agentReassignTrustRange">
+                    <span id="agentReassignTrustValue" class="slider-value">5</span>
+                  </div>
+                </div>
 
               <div id="reviewTrial" class="reviewTrial-container">
                 <!-- <label for="endTrial">Export to CSV and end trial</label> -->

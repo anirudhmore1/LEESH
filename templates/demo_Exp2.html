@@ -301,7 +301,6 @@
       width: 200px;
       margin: 0;
     }
-
     #legendDiv {
       position: absolute;
       top: -10px;
@@ -392,6 +391,44 @@
     .toggle-score-btn:hover {
       background-color: #e0e0e0;
     }
+    #leadershipClaim {
+      position: fixed;
+      top: 140px;
+      right: 0;
+      width: 280px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
+
+    .leadership-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .claim-button, .grant-button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .claim-button:hover, .grant-button:hover {
+      background-color: #e0e0e0;
+    }
+
+    #agentLeadershipStatus {
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    #currentLeader {
+      text-align: center;
+      margin-top: 10px;
+      padding: 5px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+    }
+
 
   </style>
 
@@ -2108,10 +2145,36 @@
 
         document.body.appendChild(popup);
 
-        // Show agent recommendation and rating controls
-        document.getElementById('agentRecommendation').style.display = 'block';
-        document.getElementById('agentObjectType').textContent = text1;
-        document.getElementById('agentRatings').style.display = 'block';
+        // If in shared configuration, show leadership claim UI
+        if (currentConfiguration === 'shared') {
+          document.getElementById('leadershipControls').style.display = 'block';
+
+          // Determine agent's leadership action based on lighting condition
+          agentLeadershipAction = text2.toLowerCase().includes('low') ? 'grant' : 'claim';
+
+          // Update agent leadership status in UI
+          const agentStatusElement = document.getElementById('agentLeadershipStatus');
+          if (agentLeadershipAction === 'claim') {
+            agentStatusElement.textContent = 'Agent is claiming leadership';
+            agentStatusElement.style.color = 'blue';
+          } else {
+            agentStatusElement.textContent = 'Agent is granting leadership';
+            agentStatusElement.style.color = 'green';
+          }
+
+          // Reset human leadership action
+          humanLeadershipAction = null;
+          document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
+          document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
+
+          // Hide leader display until both make choices
+          document.getElementById('currentLeader').textContent = 'Waiting for leadership decision...';
+        } else {
+          // In centralized configuration, show agent recommendation as before
+          document.getElementById('agentRecommendation').style.display = 'block';
+          document.getElementById('agentObjectType').textContent = text1;
+          document.getElementById('agentRatings').style.display = 'block';
+        }
 
         // Store image URL of detected object
         detectedImages.push(imageUrl);
@@ -2503,21 +2566,48 @@
 
       // Show agent's reassignment recommendation
       document.getElementById('agentReassignmentRecommendation').style.display = 'block';
+
+      // If in shared configuration with agent as leader, disable the reassign button
+      if (currentConfiguration === 'shared' && currentLeader === 'agent') {
+        document.getElementById('reassignBtn').disabled = true;
+
+        // Hide the drone recommendation list
+        const droneRecommendationList = document.getElementById('droneRecommendationList');
+        if (droneRecommendationList) {
+          droneRecommendationList.style.display = 'none';
+        }        
+
+        // Show pending message
+        const reassignmentElement = document.createElement('p');
+        reassignmentElement.innerHTML = 'Reassignment logic pending<br>Human rating of reassignment recommendation';
+
+        // Check if the element already exists to avoid duplicates
+        const existingReassignment = document.getElementById('pendingReassignmentElement');
+        if (existingReassignment) {
+          existingReassignment.remove();
+        }
+
+        reassignmentElement.id = 'pendingReassignmentElement';
+        document.getElementById('agentReassignmentRecommendation').appendChild(reassignmentElement);
+      } else {
+        document.getElementById('reassignBtn').disabled = false;
+
+        // Generate recommendations as before
+        const drones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
+        const recommendations = ['Low', 'Medium', 'High', 'Medium']; // Example values
+
+        // Randomize recommendations to simulate agent intelligence
+        recommendations.sort(() => Math.random() - 0.5);
+
+        // Update recommendation display
+        drones.forEach((drone, index) => {
+          document.getElementById('rec' + drone).textContent = recommendations[index];
+        });
+      }
+
       document.getElementById('agentReassignmentRatings').style.display = 'block';
-
-      // Generate recommendations based on drone performance
-      // This is a simple example -  make this more sophisticated //// Have to change this
-      const drones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
-      const recommendations = ['Low', 'Medium', 'High', 'Medium']; // Example values
-
-      // Randomize recommendations to simulate agent intelligence
-      recommendations.sort(() => Math.random() - 0.5);
-
-      // Update recommendation display
-      drones.forEach((drone, index) => {
-        document.getElementById('rec' + drone).textContent = recommendations[index];
-      });
     });
+
 
     document.getElementById('noBtn').addEventListener('click', function() {
       document.getElementById('reassignToDroneSection').style.display = 'none';
@@ -3228,6 +3318,25 @@
                            (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
          const reliability = lastDetectedObjectInfo.reliabilityPercentage;
 
+         // If in shared configuration with agent as leader, show agent's decision
+         if (currentConfiguration === 'shared' && currentLeader === 'agent') {
+           document.getElementById('agentRecommendation').style.display = 'block';
+           document.getElementById('agentObjectType').textContent = lastDetectedObjectInfo.text1;
+
+           // Show human's rating
+           const humanRatingElement = document.createElement('p');
+           humanRatingElement.innerHTML = `<b>Human recommendation:</b> ${isCorrect ? 'Correct' : 'Incorrect'}`;
+
+           // Check if the element already exists to avoid duplicates
+           const existingRating = document.getElementById('humanRatingElement');
+           if (existingRating) {
+             existingRating.remove();
+           }
+
+           humanRatingElement.id = 'humanRatingElement';
+           document.getElementById('agentRecommendation').appendChild(humanRatingElement);
+         }
+
          const result = calculateScore(isCorrect, reliability);
          let initialScore = result.initialScore;
          let scoreEarned = initialScore;
@@ -3252,6 +3361,25 @@
          const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
                            (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
          const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+
+         // If in shared configuration with agent as leader, show agent's decision
+         if (currentConfiguration === 'shared' && currentLeader === 'agent') {
+           document.getElementById('agentRecommendation').style.display = 'block';
+           document.getElementById('agentObjectType').textContent = lastDetectedObjectInfo.text1;
+
+           // Show human's rating
+           const humanRatingElement = document.createElement('p');
+           humanRatingElement.innerHTML = `<b>Human recommendation:</b> ${isCorrect ? 'Correct' : 'Incorrect'}`;
+
+           // Check if the element already exists to avoid duplicates
+           const existingRating = document.getElementById('humanRatingElement');
+           if (existingRating) {
+             existingRating.remove();
+           }
+
+           humanRatingElement.id = 'humanRatingElement';
+           document.getElementById('agentRecommendation').appendChild(humanRatingElement);
+         }
 
          const result = calculateScore(isCorrect, reliability);
          let initialScore = result.initialScore;
@@ -3301,8 +3429,14 @@
            console.log('Centralized configuration selected');
            configPopup.style.display = 'none';
 
+           // Set configuration type
+           currentConfiguration = 'centralized';
+
            // Set up the autonomous agent for centralized configuration
-           document.getElementById('AutonomousAgent').innerHTML += '<p><b>Centralized</b> configuration active</p>';
+           document.getElementById('agentConfigStatus').innerHTML = '<p><b>Centralized</b> configuration active</p>';
+
+           // Hide leadership controls
+           document.getElementById('leadershipControls').style.display = 'none';
 
            // Hide all agent UI elements initially
            document.getElementById('agentRecommendation').style.display = 'none';
@@ -3311,12 +3445,137 @@
            document.getElementById('agentReassignmentRatings').style.display = 'none';
          });
 
+         // Global variables for leadership management
+         let currentConfiguration = null;
+         let currentLeader = null;
+         let humanLeadershipAction = null;
+         let agentLeadershipAction = null;
+         let leadershipToggleCount = 0;
+
          // Handle Shared button click
          sharedBtn.addEventListener('click', function() {
            console.log('Shared configuration selected');
            configPopup.style.display = 'none';
-           // Add functionality for shared configuration here later
+           // Set configuration type
+           currentConfiguration = 'shared';
+
+           // Set up the autonomous agent for shared configuration
+           document.getElementById('agentConfigStatus').innerHTML = '<p><b>Shared</b> configuration active</p>';
+
+           // Hide leadership controls initially (shown on detection)
+           document.getElementById('leadershipControls').style.display = 'none';
+
+           // Hide all agent UI elements initially
+           document.getElementById('agentRecommendation').style.display = 'none';
+           document.getElementById('agentRatings').style.display = 'none';
+           document.getElementById('agentReassignmentRecommendation').style.display = 'none';
+           document.getElementById('agentReassignmentRatings').style.display = 'none';
          });
+
+         // Leadership claim button event listeners
+         document.getElementById('claimLeadershipBtn').addEventListener('click', function() {
+           humanLeadershipAction = 'claim';
+           this.style.backgroundColor = 'green';
+           document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
+           determineLeadership();
+         });
+
+         document.getElementById('grantLeadershipBtn').addEventListener('click', function() {
+           humanLeadershipAction = 'grant';
+           this.style.backgroundColor = 'green';
+           document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
+           determineLeadership();
+         });
+
+         // Function to determine leadership based on human and agent actions
+         function determineLeadership() {
+           if (!humanLeadershipAction || !agentLeadershipAction) {
+             return; // Wait until both have made their choices
+           }
+
+           if (humanLeadershipAction === 'claim' && agentLeadershipAction === 'grant') {
+             currentLeader = 'human';
+           } else if (humanLeadershipAction === 'grant' && agentLeadershipAction === 'claim') {
+             currentLeader = 'agent';
+           } else if (humanLeadershipAction === agentLeadershipAction) {
+             // Both claim or both grant - alternate leadership
+             leadershipToggleCount++;
+             currentLeader = leadershipToggleCount % 2 === 0 ? 'human' : 'agent';
+           }
+
+           // Update UI to show current leader
+           document.getElementById('currentLeader').textContent = `Current Leader: ${currentLeader === 'human' ? 'Human' : 'Autonomous Agent'}`;
+
+           // Configure UI based on leader
+           configureUIForLeader(currentLeader);
+         }
+
+         // Function to configure UI based on who is the leader
+         function configureUIForLeader(leader) {
+           // Get the agent recommendation title element
+           const agentRecommendationTitle = document.querySelector('#agentRecommendation p b');
+
+           // Get the agent rating title element
+           const agentRatingTitle = document.querySelector('#agentRatings p b');
+
+           // Remove any existing human rating element to start fresh
+           const existingHumanRating = document.getElementById('humanRatingElement');
+           if (existingHumanRating) {
+             existingHumanRating.remove();
+           }
+
+           if (leader === 'human') {
+             // Human is leader - similar to centralized configuration
+             document.getElementById('reassignBtn').disabled = false;
+
+             // Display object recommendation panel
+             document.getElementById('agentRecommendation').style.display = 'block';
+             document.getElementById('agentObjectType').textContent = lastDetectedObjectInfo.text1;
+
+             // Set the title to "Object Type Recommendation"
+             if (agentRecommendationTitle) {
+               agentRecommendationTitle.textContent = 'Object Type Recommendation:';
+             }
+
+             // Show agent ratings panel
+             document.getElementById('agentRatings').style.display = 'block';
+
+           } else {
+             // Agent is leader - modified behavior
+             document.getElementById('reassignBtn').disabled = true;
+
+             // Display agent's classification decision
+             document.getElementById('agentRecommendation').style.display = 'block';
+             document.getElementById('agentObjectType').textContent = lastDetectedObjectInfo.text1;
+
+             // Change the title to "Agent classification decision"
+             if (agentRecommendationTitle) {
+               agentRecommendationTitle.textContent = 'Agent classification decision:';
+             }
+
+             // Change the rating title to "Rate autonomous agent decision"
+             if (agentRatingTitle) {
+               agentRatingTitle.textContent = 'Rate autonomous agent decision:';
+             }
+
+             // Show agent ratings panel
+             document.getElementById('agentRatings').style.display = 'block';
+
+             // If the human has already made an object recommendation, show the human's rating
+             if (userResponse) {
+               const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+                                 (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+
+               // Display human's rating
+               const humanRatingElement = document.getElementById('humanRatingElement') || document.createElement('p');
+               humanRatingElement.id = 'humanRatingElement';
+               humanRatingElement.innerHTML = `<b>Human recommendation:</b> ${isCorrect ? 'Correct' : 'Incorrect'}`;
+
+               // Add to the agent recommendation panel if not already there
+               document.getElementById('agentRecommendation').appendChild(humanRatingElement);
+             }
+           }
+         }
 
          // Close popup when clicking outside
          window.addEventListener('click', function(event) {
@@ -3460,8 +3719,19 @@
 
               <div id="AutonomousAgent" class="AutoAgent-container">
                 <div style="display: flex; align-items: center;">
-                  <h4 >Autonomous Agent:</h4>
+                  <h4>Autonomous Agent:</h4>
                   <button id="configButton" class="config-button">Configuration</button>
+                </div>
+
+                <div id="agentConfigStatus"></div>
+
+                <div id="leadershipControls" style="display: none; margin-top: 10px;">
+                  <div id="agentLeadershipStatus"></div>
+                  <div class="leadership-buttons">
+                    <input type="button" class="claim-button" value="Claim Leadership" id="claimLeadershipBtn" />
+                    <input type="button" class="grant-button" value="Grant Leadership" id="grantLeadershipBtn" />
+                  </div>
+                  <div id="currentLeader" style="margin-top: 10px; font-weight: bold;"></div>
                 </div>
 
                 <div id="agentRecommendation" style="display: none;">
