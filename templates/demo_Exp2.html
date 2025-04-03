@@ -75,7 +75,7 @@
       position: fixed;
       top: 60px;
       right: 0;
-      width: 280px;
+      width: 293px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -128,7 +128,7 @@
       position: fixed;
       top: 190px;
       right: 0;
-      width: 280px;
+      width: 293px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -137,7 +137,7 @@
       position: fixed;
       top: 280px;
       right: 0;
-      width: 280px;
+      width: 293px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -146,7 +146,7 @@
       position: fixed;
       top: 425px;
       right: 0;
-      width: 280px;
+      width: 293px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
@@ -155,10 +155,22 @@
       position: fixed;
       top: 600px;
       right: 0;
-      width: 280px;
+      width: 293px;
       height: auto;
       background: rgba(255,255,255, 0.9);
       padding: 5px;
+    }
+    .shared-config #agentRecommendation {
+      top: 300px; /* Increased to accommodate leadership controls */
+    }
+    .shared-config #agentRatings {
+      top: 410px; /* Adjusted for new agentRecommendation position */
+    }
+    .shared-config #agentReassignmentRecommendation {
+      top: 555px; /* Adjusted for new agentRatings position */
+    }
+    .shared-config #agentReassignmentRatings {
+      top: 730px; /* Adjusted for new agentReassignmentRecommendation position */
     }
     #objectRecommendation {
         position: fixed;
@@ -2230,16 +2242,6 @@
         }, 0.35 * 1000); // Delay in milliseconds (0.35 seconds per movement)
       }
 
-      // function handleRedetection(newDroneId) {
-      //   const newReliability = calculateReliabilityPercentage(newDroneId, lastDetectedObjectInfo);
-      //   const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
-      //                     (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
-      //
-      //   reassignmentScore = calculateScore(isCorrect, newReliability, true, originalReliability);
-      //   redetectionInitialScore = calculateScore(isCorrect, newReliability);
-      //   console.log('Reassignment score:', reassignmentScore);
-      //   console.log('Redetection initial score:', redetectionInitialScore);
-      // }
       function handleRedetection(newDroneId) {
         const newReliability = calculateReliabilityPercentage(newDroneId, lastDetectedObjectInfo);
         const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
@@ -2463,16 +2465,6 @@
 
      dragElement(document.body);
 
-     // setTimeout(() => {
-     //   document.body.removeChild(popup);
-     //   if (typeof callback === "function") {
-     //     callback(); // Call the callback function to reset reassignedDroneId
-     //   }
-     // }, 10000);
-
-     // // Update the drone control UI with the name of the drone that detected the object
-     // updateDroneControlUI(droneName, imageText1, imageText2);
-
      // Store the callback to be called later
      const originalCallback = callback;
      popup.callback = function() {
@@ -2504,12 +2496,6 @@
      popup.style.display = "none";
    }
 
-   // // When the user clicks outside of the popup, close it
-   // window.onclick = function(event) {
-   //   if (event.target == popup) {
-   //     popup.style.display = "none";
-   //   }
-   // }
       // Event listener for the Start Search button
       document.getElementById('startsearchbutton').addEventListener('click', function() {
         isAnimating = true;
@@ -2575,7 +2561,7 @@
         const droneRecommendationList = document.getElementById('droneRecommendationList');
         if (droneRecommendationList) {
           droneRecommendationList.style.display = 'none';
-        }        
+        }
 
         // Show pending message
         const reassignmentElement = document.createElement('p');
@@ -3154,6 +3140,21 @@
          } else {
            // If it's not a redetection, check if we need to show the review tab
            checkAndShowReviewTab();
+
+           // Only reset leadership controls if it's not a reassignment
+           if (currentConfiguration === 'shared') {
+             // Reset leadership controls
+             document.getElementById('leadershipControls').style.display = 'none';
+             document.getElementById('agentLeadershipStatus').textContent = '';
+             document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
+             document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
+             document.getElementById('currentLeader').textContent = '';
+
+             // Reset leadership variables
+             humanLeadershipAction = null;
+             agentLeadershipAction = null;
+             currentLeader = null;
+           }
          }
 
          // Pop-up message for when sletections and ratings are saved set to time out after 2 sec
@@ -3237,6 +3238,21 @@
              document.getElementById('agentObjectType').textContent = '';
              document.getElementById('agentRecommendation').style.display = 'none';
              document.getElementById('agentRatings').style.display = 'none';
+
+             // Reset leadership controls after redetection is completed
+             if (currentConfiguration === 'shared') {
+               // Reset leadership controls
+               document.getElementById('leadershipControls').style.display = 'none';
+               document.getElementById('agentLeadershipStatus').textContent = '';
+               document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
+               document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
+               document.getElementById('currentLeader').textContent = '';
+
+               // Reset leadership variables
+               humanLeadershipAction = null;
+               agentLeadershipAction = null;
+               currentLeader = null;
+             }
 
              // Check if we need to show the review tab after redetection
              if (pendingReview) {
@@ -3435,6 +3451,9 @@
            // Set up the autonomous agent for centralized configuration
            document.getElementById('agentConfigStatus').innerHTML = '<p><b>Centralized</b> configuration active</p>';
 
+           // Remove shared configuration class if it exists
+           document.body.classList.remove('shared-config');
+
            // Hide leadership controls
            document.getElementById('leadershipControls').style.display = 'none';
 
@@ -3461,6 +3480,9 @@
 
            // Set up the autonomous agent for shared configuration
            document.getElementById('agentConfigStatus').innerHTML = '<p><b>Shared</b> configuration active</p>';
+
+           // Add shared configuration class to body
+           document.body.classList.add('shared-config');
 
            // Hide leadership controls initially (shown on detection)
            document.getElementById('leadershipControls').style.display = 'none';
