@@ -2541,6 +2541,7 @@
         updateQuadrantDisplay();
     });
 
+    // Event listener for Yes button in reassign section
     document.getElementById('yesBtn').addEventListener('click', function() {
       document.getElementById('reassignToDroneSection').style.display = 'block';
       userReassignResponse = 'Yes';
@@ -2556,45 +2557,78 @@
       // If in shared configuration with agent as leader, disable the reassign button
       if (currentConfiguration === 'shared' && currentLeader === 'agent') {
         document.getElementById('reassignBtn').disabled = true;
+        document.getElementById('droneRecommendationList').style.display = 'none';
 
-        // Hide the drone recommendation list
-        const droneRecommendationList = document.getElementById('droneRecommendationList');
-        if (droneRecommendationList) {
-          droneRecommendationList.style.display = 'none';
-        }
-
-        // Show pending message
         const reassignmentElement = document.createElement('p');
         reassignmentElement.innerHTML = 'Reassignment logic pending<br>Human rating of reassignment recommendation';
-
-        // Check if the element already exists to avoid duplicates
-        const existingReassignment = document.getElementById('pendingReassignmentElement');
-        if (existingReassignment) {
-          existingReassignment.remove();
-        }
-
         reassignmentElement.id = 'pendingReassignmentElement';
+
+        const existingReassignment = document.getElementById('pendingReassignmentElement');
+        if (existingReassignment) existingReassignment.remove();
+
         document.getElementById('agentReassignmentRecommendation').appendChild(reassignmentElement);
       } else {
         document.getElementById('reassignBtn').disabled = false;
+        document.getElementById('droneRecommendationList').style.display = 'block';
 
-        // Generate recommendations as before
-        const drones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
-        const recommendations = ['Low', 'Medium', 'High', 'Medium']; // Example values
+        const detectingDrone = lastDetectedObjectInfo.droneId;
+        const objectType = lastDetectedObjectInfo.text1;
+        // Format lighting condition exactly as in calculateReliabilityPercentage
+        const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
+                                 lastDetectedObjectInfo.text2.slice(1).toLowerCase();
 
-        // Randomize recommendations to simulate agent intelligence
-        recommendations.sort(() => Math.random() - 0.5);
+        const allDrones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
+        const otherDrones = allDrones.filter(drone => drone !== detectingDrone);
 
-        // Update recommendation display
-        drones.forEach((drone, index) => {
-          document.getElementById('rec' + drone).textContent = recommendations[index];
+        const droneTypes = {
+          'ThermalAlpha': { type: 'thermal', reliability: 'high' },
+          'ThermalBeta': { type: 'thermal', reliability: 'low' },
+          'InfraredGamma': { type: 'nswir', reliability: 'high' },
+          'InfraredDelta': { type: 'nswir', reliability: 'low' }
+        };
+
+
+            otherDrones.forEach(drone => {
+              const droneInfo = droneTypes[drone];
+              let description = 'Decent'; // Default value
+
+              try {
+                // Access reliabilityRankings with properly formatted keys
+                const rank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
+
+                // Convert rank to descriptive word
+                if (rank === 1) {
+                  description = 'Good';
+                } else if (rank === 2) {
+                  description = 'Decent';
+                } else {
+                  description = 'Bad';
+                }
+
+                console.log(`Drone: ${drone}, Rank: ${rank}, Description: ${description}`);
+              } catch (e) {
+                console.error(`Error getting rank for ${drone}:`, e);
+                console.error(`Object type: ${objectType}, Lighting: ${lightingCondition}`);
+              }
+
+              const element = document.getElementById('rec' + drone);
+              if (element) {
+                element.textContent = description;
+                element.parentElement.style.display = 'block'; // Ensure the list item is visible
+              }
+            });
+
+            // Hide only the list item for the detecting drone
+            const detectingDroneElement = document.getElementById('rec' + detectingDrone);
+            if (detectingDroneElement && detectingDroneElement.parentElement) {
+              detectingDroneElement.parentElement.style.display = 'none';
+            }
+          }
+
+          document.getElementById('agentReassignmentRatings').style.display = 'block';
         });
-      }
 
-      document.getElementById('agentReassignmentRatings').style.display = 'block';
-    });
-
-
+    // Event listener for Yes button in reassign section
     document.getElementById('noBtn').addEventListener('click', function() {
       document.getElementById('reassignToDroneSection').style.display = 'none';
       userReassignResponse = 'No';
