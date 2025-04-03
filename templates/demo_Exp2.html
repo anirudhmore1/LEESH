@@ -2587,36 +2587,47 @@
           'InfraredDelta': { type: 'nswir', reliability: 'low' }
         };
 
+        otherDrones.forEach(drone => {
+          const droneInfo = droneTypes[drone];
+          let description = 'Decent'; // Default value
 
-            otherDrones.forEach(drone => {
-              const droneInfo = droneTypes[drone];
-              let description = 'Decent'; // Default value
+          try {
+            const rank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
 
-              try {
-                // Access reliabilityRankings with properly formatted keys
-                const rank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
+            // Calculate current reliability percentage
+            const currentReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
 
-                // Convert rank to descriptive word
-                if (rank === 1) {
-                  description = 'Good';
-                } else if (rank === 2) {
-                  description = 'Decent';
-                } else {
-                  description = 'Bad';
-                }
+            // If current reliability is already high (>85%), all recommendations are bad
+            if (currentReliability > 85) {
+              description = 'Bad';
+            } else {
+              // Calculate potential reliability percentage for this drone
+              const potentialReliability = calculateReliabilityPercentage(drone, {text1: objectType, text2: lightingCondition});
 
-                console.log(`Drone: ${drone}, Rank: ${rank}, Description: ${description}`);
-              } catch (e) {
-                console.error(`Error getting rank for ${drone}:`, e);
-                console.error(`Object type: ${objectType}, Lighting: ${lightingCondition}`);
+              // Calculate the percentage increase
+              const reliabilityIncrease = ((potentialReliability - currentReliability) / currentReliability) * 100;
+
+              // Determine description based on rank and reliability increase
+              if (rank === 1 && reliabilityIncrease >= 10) {
+                description = 'Good';
+              } else if ((rank === 1 || rank === 2) && reliabilityIncrease > 5) {
+                description = 'Decent';
+              } else {
+                description = 'Bad';
               }
+            }
 
-              const element = document.getElementById('rec' + drone);
-              if (element) {
-                element.textContent = description;
-                element.parentElement.style.display = 'block'; // Ensure the list item is visible
-              }
-            });
+            console.log(`Drone: ${drone}, Rank: ${rank}, Current Reliability: ${currentReliability}, Description: ${description}`);
+          } catch (e) {
+            console.error(`Error calculating description for ${drone}:`, e);
+          }
+
+          const element = document.getElementById('rec' + drone);
+          if (element) {
+            element.textContent = description;
+            element.parentElement.style.display = 'block';
+          }
+        });
 
             // Hide only the list item for the detecting drone
             const detectingDroneElement = document.getElementById('rec' + detectingDrone);
