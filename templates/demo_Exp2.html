@@ -62,15 +62,6 @@
     #closePopupBtn:hover {
       background-color: #555;
     }
-    #droneControl {
-      position: fixed;
-      top: 212px;
-      left: 0;
-      height: auto;
-      background: rgba(255,255,255, 0.9);
-      width: 300px;
-      padding: 1px;
-    }
     #AutonomousAgent{
       position: fixed;
       top: 60px;
@@ -81,8 +72,8 @@
       padding: 5px;
     }
     .config-button {
-      margin-left: 10px;
-      padding: 5px 10px;
+      margin-left: 5px;
+      padding: 5px;
       background-color: #f0f0f0;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -123,6 +114,25 @@
     }
     .popup-buttons button:hover {
       background-color: #e0e0e0;
+    }
+    #agentConfigStatus {
+      display: inline-block;
+      vertical-align: left;
+    }
+    #agentConfigStatus p {
+      margin: 0;
+      margin-left: -145px;
+    }
+    #droneControlInAgent {
+      margin-top: 13px;
+      margin-bottom: 1px;
+      padding: 5px;
+      border-top: 1px solid #ccc;
+    }
+    #droneControlInAgent input[type="button"] {
+      margin-left: 5px;
+      padding: 3px;
+      cursor: pointer;
     }
     #agentRecommendation {
       position: fixed;
@@ -3636,8 +3646,15 @@
            // Set configuration type
            currentConfiguration = 'centralized';
 
+           // Hide the configuration button
+           document.getElementById('configButton').style.display = 'none';
+
            // Set up the autonomous agent for centralized configuration
-           document.getElementById('agentConfigStatus').innerHTML = '<p><b>Centralized</b> configuration active</p>';
+           document.getElementById('agentConfigStatus').innerHTML = '<p><b>Centralized</b></p>';
+
+           // Move the agentConfigStatus to where the button was
+           const agentHeader = document.querySelector('#AutonomousAgent div');
+           agentHeader.appendChild(document.getElementById('agentConfigStatus'));
 
            // Remove shared configuration class if it exists
            document.body.classList.remove('shared-config');
@@ -3663,11 +3680,19 @@
          sharedBtn.addEventListener('click', function() {
            console.log('Shared configuration selected');
            configPopup.style.display = 'none';
+
            // Set configuration type
            currentConfiguration = 'shared';
 
+           // Hide the configuration button
+           document.getElementById('configButton').style.display = 'none';
+
            // Set up the autonomous agent for shared configuration
-           document.getElementById('agentConfigStatus').innerHTML = '<p><b>Shared</b> configuration active</p>';
+           document.getElementById('agentConfigStatus').innerHTML = '<p><b>Shared</b></p>';
+
+           // Move the agentConfigStatus to where the button was
+           const agentHeader = document.querySelector('#AutonomousAgent div');
+           agentHeader.appendChild(document.getElementById('agentConfigStatus'));
 
            // Add shared configuration class to body
            document.body.classList.add('shared-config');
@@ -3889,7 +3914,7 @@
      view.ui.add("droneSelectionForm", "top-right");
 
      // places the drone-control widget in the top right corner of the view
-     view.ui.add("droneControl", "top-right");
+    // view.ui.add("droneControl", "top-right");
 
      // places the drone-control widget in the top right corner of the view
      view.ui.add("objectRecommendation", "top-right");
@@ -3998,12 +4023,19 @@
               </div>
 
               <div id="AutonomousAgent" class="AutoAgent-container">
-                <div style="display: flex; align-items: center;">
-                  <h4>Autonomous Agent:</h4>
-                  <button id="configButton" class="config-button">Configuration</button>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center;">
+                    <h4 style="margin: 0; margin-right: 10px;">Autonomous Agent:</h4>
+                    <button id="configButton" class="config-button">Configuration</button>
+                  </div>
+                  <div id="agentConfigStatus" style="margin-left: 10px;"></div>
                 </div>
 
-                <div id="agentConfigStatus"></div>
+                <div id="droneControlInAgent" class="droneControl-container" style="margin-top: 10px;">
+                  <label><b>Object Search:</b> </label>
+                  <input type="button" class="start-button" value="Start" id="startsearchbutton">
+                  <input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
+                </div>
 
                 <div id="leadershipControls" style="display: none; margin-top: 10px;">
                   <div id="agentLeadershipStatus"></div>
@@ -4039,13 +4071,6 @@
                       <li>InfraredDelta: <span id="recInfraredDelta">Medium</span></li>
                     </ul>
                   </div>
-
-              <div id="droneControl" class="droneControl-container">
-                  <!-- <h4 class="drone-motion">Drone Control Tools</h4> -->
-                  <!-- <div> -->
-                    <label ><b>Object Search:</b> </label><input type="button" class="start-button" value="Start" id="startsearchbutton"><input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
-                  </div>
-                 <!-- <hr> -->
 
                   <!-- <div>
                   <h4 class="detection-info">Object detection</h4>
