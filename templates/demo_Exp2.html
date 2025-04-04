@@ -2177,9 +2177,11 @@
           // Update agent leadership status in UI
           const agentStatusElement = document.getElementById('agentLeadershipStatus');
           if (agentLeadershipAction === 'claim') {
+            agentStatusElement.style.borderTop = "1px solid #ccc";
             agentStatusElement.textContent = 'Agent is claiming leadership';
             agentStatusElement.style.color = 'blue';
           } else {
+            agentStatusElement.style.borderTop = "1px solid #ccc";
             agentStatusElement.textContent = 'Agent is granting leadership';
             agentStatusElement.style.color = 'green';
           }
@@ -2552,7 +2554,6 @@
     });
 
     // Event listener for Yes button in reassign section
-    // Event listener for Yes button in reassign section
     document.getElementById('yesBtn').addEventListener('click', function() {
       document.getElementById('reassignToDroneSection').style.display = 'block';
       userReassignResponse = 'Yes';
@@ -2570,6 +2571,9 @@
           // Agent-led shared configuration
           document.getElementById('reassignBtn').disabled = true;
           document.getElementById('droneRecommendationList').style.display = 'none';
+
+          // Hide the "Autonomous Agent reassignment ranking:" text
+          document.querySelector('#agentReassignmentRecommendation > p').style.display = 'none';
 
           // Create element to display the decision
           const reassignmentElement = document.createElement('p');
@@ -2602,7 +2606,13 @@
         } else {
           // Human-led shared configuration - only show recommendations list
           document.getElementById('reassignBtn').disabled = false;
+          document.querySelector('#agentReassignmentRecommendation > p').style.display = 'block';
           document.getElementById('droneRecommendationList').style.display = 'block';
+
+          const pendingReassignmentElement = document.getElementById('pendingReassignmentElement');
+          if (pendingReassignmentElement) {
+            pendingReassignmentElement.style.display = 'none';
+          }
 
           const detectingDrone = lastDetectedObjectInfo.droneId;
           const objectType = lastDetectedObjectInfo.text1;
@@ -3495,6 +3505,11 @@
          // Hide the recategorization of drone recommendation
          document.getElementById('recategorizeObject').style.display = 'none';
 
+         const existingHumanRating = document.getElementById('humanRatingElement');
+         if (existingHumanRating) {
+           existingHumanRating.remove();
+         }
+
          // Update the display with the current drone assignments
          updateQuadrantDisplay();
        });
@@ -3712,6 +3727,8 @@
            humanLeadershipAction = 'claim';
            this.style.backgroundColor = 'green';
            document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
+           document.getElementById('agentLeadershipStatus').textContent = ''; // Clear the agent status text
+           document.getElementById('agentLeadershipStatus').style.borderTop = 'none'; // Remove the border
            determineLeadership();
          });
 
@@ -3719,6 +3736,8 @@
            humanLeadershipAction = 'grant';
            this.style.backgroundColor = 'green';
            document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
+           document.getElementById('agentLeadershipStatus').textContent = ''; // Clear the agent status text
+           document.getElementById('agentLeadershipStatus').style.borderTop = 'none'; // Remove the border
            determineLeadership();
          });
 
@@ -3823,6 +3842,9 @@
            // Get the agent rating title element
            const agentRatingTitle = document.querySelector('#agentRatings p b');
 
+           // Get the agent rating title element
+           const agentReassignmentRatingTitle = document.querySelector('#agentReassignmentRatings p b');
+
            // Remove any existing human rating element to start fresh
            const existingHumanRating = document.getElementById('humanRatingElement');
            if (existingHumanRating) {
@@ -3839,11 +3861,21 @@
 
              // Set the title to "Object Type Recommendation"
              if (agentRecommendationTitle) {
-               agentRecommendationTitle.textContent = 'Object Type Recommendation:';
+               agentRecommendationTitle.textContent = 'Autonomous Agent Object Recommendation:';
              }
 
              // Show agent ratings panel
              document.getElementById('agentRatings').style.display = 'block';
+
+             // Change the rating title to "Rate autonomous agent decision"
+             if (agentRatingTitle) {
+               agentRatingTitle.textContent = 'Rate autonomous agent object recommendation:';
+             }
+
+             if (agentReassignmentRatingTitle) {
+               agentReassignmentRatingTitle.textContent = 'Rate autonomous agent reassignment ranking:';
+             }
+
 
            } else {
              // Agent is leader - modified behavior
@@ -3855,12 +3887,17 @@
 
              // Change the title to "Agent classification decision"
              if (agentRecommendationTitle) {
-               agentRecommendationTitle.textContent = 'Agent classification decision:';
+               agentRecommendationTitle.textContent = 'Autonomous Agent Object classification:';
              }
 
              // Change the rating title to "Rate autonomous agent decision"
              if (agentRatingTitle) {
-               agentRatingTitle.textContent = 'Rate autonomous agent decision:';
+               agentRatingTitle.textContent = 'Rate autonomous agent object classification:';
+             }
+
+             // Change the rating title to "Rate autonomous agent decision"
+             if (agentReassignmentRatingTitle) {
+               agentReassignmentRatingTitle.textContent = 'Rate autonomous agent reassignment decision:';
              }
 
              // Show agent ratings panel
@@ -4047,7 +4084,7 @@
                 </div>
 
                 <div id="agentRecommendation" style="display: none;">
-                  <p><b>Object Type Recommendation:</b> <span id="agentObjectType"></span></p>
+                  <p><b>Autonomous Agent Object Classification:</b> <span id="agentObjectType"></span></p>
                 </div>
               </div>
                     <!-- Popup for configuration -->
@@ -4063,7 +4100,7 @@
                   </div>
 
                   <div id="agentReassignmentRecommendation" style="display: none;">
-                    <p><b>Recommended reassignment:</b></p>
+                    <p><b>Autonomous Agent reassignment ranking:</b></p>
                     <ul id="droneRecommendationList">
                       <li>ThermalAlpha: <span id="recThermalAlpha">Low</span></li>
                       <li>ThermalBeta: <span id="recThermalBeta">Medium</span></li>
@@ -4210,7 +4247,7 @@
                 </div>
 
                 <div id="agentRatings" style="display: none;">
-                  <p><b>Rate autonomous agent recommendation:</b></p>
+                  <p><b>Rate autonomous agent object classification:</b></p>
                   <div class="trust-slider-group">
                     <label for="agentCompetenceRange">Competence:</label>
                     <input type="range" min="1" max="10" value="5" class="slider" id="agentCompetenceRange">
@@ -4224,7 +4261,7 @@
                 </div>
 
                 <div id="agentReassignmentRatings" style="display: none;">
-                  <p><b>Rate autonomous agent reassignment recommendation:</b></p>
+                  <p><b>Rate autonomous agent reassignment ranking:</b></p>
                   <div class="trust-slider-group">
                     <label for="agentReassignCompetenceRange">Competence:</label>
                     <input type="range" min="1" max="10" value="5" class="slider" id="agentReassignCompetenceRange">
