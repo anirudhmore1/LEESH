@@ -2542,6 +2542,7 @@
     });
 
     // Event listener for Yes button in reassign section
+    // Event listener for Yes button in reassign section
     document.getElementById('yesBtn').addEventListener('click', function() {
       document.getElementById('reassignToDroneSection').style.display = 'block';
       userReassignResponse = 'Yes';
@@ -2554,26 +2555,116 @@
       // Show agent's reassignment recommendation
       document.getElementById('agentReassignmentRecommendation').style.display = 'block';
 
-      // If in shared configuration with agent as leader, disable the reassign button
-      if (currentConfiguration === 'shared' && currentLeader === 'agent') {
-        document.getElementById('reassignBtn').disabled = true;
-        document.getElementById('droneRecommendationList').style.display = 'none';
+      if (currentConfiguration === 'shared') {
+        if (currentLeader === 'agent') {
+          // Agent-led shared configuration
+          document.getElementById('reassignBtn').disabled = true;
+          document.getElementById('droneRecommendationList').style.display = 'none';
 
-        const reassignmentElement = document.createElement('p');
-        reassignmentElement.innerHTML = 'Reassignment logic pending<br>Human rating of reassignment recommendation';
-        reassignmentElement.id = 'pendingReassignmentElement';
+          // Create element to display the decision
+          const reassignmentElement = document.createElement('p');
 
-        const existingReassignment = document.getElementById('pendingReassignmentElement');
-        if (existingReassignment) existingReassignment.remove();
+          if (agentReassignmentDecision) {
+            if (agentReassignmentDecision.shouldReassign && agentReassignmentDecision.bestDrone) {
+              reassignmentElement.innerHTML = `<b>Agent's decision:</b> Reassign to ${agentReassignmentDecision.bestDrone}<br>
+                Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
+                Expected reliability: ${agentReassignmentDecision.newReliability.toFixed(1)}%<br>
+                Improvement: ${agentReassignmentDecision.reliabilityIncrease.toFixed(1)}%`;
 
-        document.getElementById('agentReassignmentRecommendation').appendChild(reassignmentElement);
+              // Set the reassigned drone ID for later use
+              reassignedDroneId = agentReassignmentDecision.bestDrone;
+            } else {
+              reassignmentElement.innerHTML = `<b>Agent's decision:</b> No reassignment needed<br>
+                Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
+                Current rank: ${agentReassignmentDecision.currentRank}`;
+            }
+          } else {
+            reassignmentElement.innerHTML = "Agent has not made a reassignment decision yet.";
+          }
+
+          reassignmentElement.id = 'pendingReassignmentElement';
+
+          // Remove existing element if it exists
+          const existingReassignment = document.getElementById('pendingReassignmentElement');
+          if (existingReassignment) existingReassignment.remove();
+
+          document.getElementById('agentReassignmentRecommendation').appendChild(reassignmentElement);
+        } else {
+          // Human-led shared configuration - only show recommendations list
+          document.getElementById('reassignBtn').disabled = false;
+          document.getElementById('droneRecommendationList').style.display = 'block';
+
+          const detectingDrone = lastDetectedObjectInfo.droneId;
+          const objectType = lastDetectedObjectInfo.text1;
+          const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
+                                   lastDetectedObjectInfo.text2.slice(1).toLowerCase();
+
+          const allDrones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
+          const otherDrones = allDrones.filter(drone => drone !== detectingDrone);
+
+          const droneTypes = {
+            'ThermalAlpha': { type: 'thermal', reliability: 'high' },
+            'ThermalBeta': { type: 'thermal', reliability: 'low' },
+            'InfraredGamma': { type: 'nswir', reliability: 'high' },
+            'InfraredDelta': { type: 'nswir', reliability: 'low' }
+          };
+
+          otherDrones.forEach(drone => {
+            const droneInfo = droneTypes[drone];
+            let description = 'Decent'; // Default value
+
+            try {
+              const rank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
+
+              // Calculate current reliability percentage
+              const currentReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
+
+              // If current reliability is already high (>85%), all recommendations are bad
+              if (currentReliability > 85) {
+                description = 'Bad';
+              } else {
+                // Calculate potential reliability percentage for this drone
+                const potentialReliability = calculateReliabilityPercentage(drone, {text1: objectType, text2: lightingCondition});
+
+                // Calculate the percentage increase
+                const reliabilityIncrease = ((potentialReliability - currentReliability) / currentReliability) * 100;
+
+                // Determine description based on rank and reliability increase
+                if (rank === 1 && reliabilityIncrease >= 10) {
+                  description = 'Good';
+                } else if ((rank === 1 || rank === 2) && reliabilityIncrease > 5) {
+                  description = 'Decent';
+                } else {
+                  description = 'Bad';
+                }
+              }
+
+              console.log(`Drone: ${drone}, Rank: ${rank}, Current Reliability: ${currentReliability}, Description: ${description}`);
+            } catch (e) {
+              console.error(`Error calculating description for ${drone}:`, e);
+            }
+
+            const element = document.getElementById('rec' + drone);
+            if (element) {
+              element.textContent = description;
+              element.parentElement.style.display = 'block';
+            }
+          });
+
+          // Hide only the list item for the detecting drone
+          const detectingDroneElement = document.getElementById('rec' + detectingDrone);
+          if (detectingDroneElement && detectingDroneElement.parentElement) {
+            detectingDroneElement.parentElement.style.display = 'none';
+          }
+        }
       } else {
+        // Centralized configuration - same as human-led
         document.getElementById('reassignBtn').disabled = false;
         document.getElementById('droneRecommendationList').style.display = 'block';
 
+        // Same code as human-led configuration...
         const detectingDrone = lastDetectedObjectInfo.droneId;
         const objectType = lastDetectedObjectInfo.text1;
-        // Format lighting condition exactly as in calculateReliabilityPercentage
         const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
                                  lastDetectedObjectInfo.text2.slice(1).toLowerCase();
 
@@ -2629,35 +2720,81 @@
           }
         });
 
-            // Hide only the list item for the detecting drone
-            const detectingDroneElement = document.getElementById('rec' + detectingDrone);
-            if (detectingDroneElement && detectingDroneElement.parentElement) {
-              detectingDroneElement.parentElement.style.display = 'none';
-            }
-          }
+        // Hide only the list item for the detecting drone
+        const detectingDroneElement = document.getElementById('rec' + detectingDrone);
+        if (detectingDroneElement && detectingDroneElement.parentElement) {
+          detectingDroneElement.parentElement.style.display = 'none';
+        }
+      }
 
-          document.getElementById('agentReassignmentRatings').style.display = 'block';
-        });
+      document.getElementById('agentReassignmentRatings').style.display = 'block';
+    });
 
-    // Event listener for Yes button in reassign section
+    // Event listener for No button in reassign section
     document.getElementById('noBtn').addEventListener('click', function() {
       document.getElementById('reassignToDroneSection').style.display = 'none';
       userReassignResponse = 'No';
       this.style.backgroundColor = 'red';
       document.getElementById('yesBtn').style.backgroundColor = '';
-      document.getElementById('agentReassignmentRecommendation').style.display = 'none';
-      document.getElementById('agentReassignmentRatings').style.display = 'none';
 
-      isReassignment = false;
-      originalReliability = null;
+      // If in shared configuration with agent as leader
+      if (currentConfiguration === 'shared' && currentLeader === 'agent') {
+        // Show the recommendation panel to display the agent's decision
+        document.getElementById('agentReassignmentRecommendation').style.display = 'block';
+        document.getElementById('droneRecommendationList').style.display = 'none';
 
-      // Calculate score for non-reassignment
-      const reliability = lastDetectedObjectInfo.reliabilityPercentage;
-      let scoreEarned = reliability;
-      tempScore += scoreEarned;
-      reassignmentScore = scoreEarned;
-      console.log('non-reassignment score', reassignmentScore);
+        // Create element to display the decision
+        const reassignmentElement = document.createElement('p');
+
+        if (agentReassignmentDecision) {
+          if (agentReassignmentDecision.shouldReassign && agentReassignmentDecision.bestDrone) {
+            reassignmentElement.innerHTML = `<b>Agent's decision:</b> Reassign to ${agentReassignmentDecision.bestDrone}<br>
+              Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
+              Expected reliability: ${agentReassignmentDecision.newReliability.toFixed(1)}%<br>
+              Improvement: ${agentReassignmentDecision.reliabilityIncrease.toFixed(1)}%`;
+
+            // Set the reassigned drone ID for later use - THIS IS THE KEY CHANGE
+            reassignedDroneId = agentReassignmentDecision.bestDrone;
+            isReassignment = true; // Set to true since agent is reassigning
+          } else {
+            reassignmentElement.innerHTML = `<b>Agent's decision:</b> No reassignment needed<br>
+              Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
+              Current rank: ${agentReassignmentDecision.currentRank}`;
+
+            isReassignment = false;
+            originalReliability = null;
+          }
+        } else {
+          reassignmentElement.innerHTML = "Agent has not made a reassignment decision yet.";
+          isReassignment = false;
+          originalReliability = null;
+        }
+
+        reassignmentElement.id = 'pendingReassignmentElement';
+
+        // Remove existing element if it exists
+        const existingReassignment = document.getElementById('pendingReassignmentElement');
+        if (existingReassignment) existingReassignment.remove();
+
+        document.getElementById('agentReassignmentRecommendation').appendChild(reassignmentElement);
+        document.getElementById('agentReassignmentRatings').style.display = 'block';
+      } else {
+        // Original code for human-led or centralized configuration
+        document.getElementById('agentReassignmentRecommendation').style.display = 'none';
+        document.getElementById('agentReassignmentRatings').style.display = 'none';
+
+        isReassignment = false;
+        originalReliability = null;
+
+        // Calculate score for non-reassignment
+        const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+        let scoreEarned = reliability;
+        tempScore += scoreEarned;
+        reassignmentScore = scoreEarned;
+        console.log('non-reassignment score', reassignmentScore);
+      }
     });
+
 
       function showReassignPopup(message, duration) {
         const popup = document.createElement('div');
@@ -3396,6 +3533,9 @@
 
            humanRatingElement.id = 'humanRatingElement';
            document.getElementById('agentRecommendation').appendChild(humanRatingElement);
+
+           // Determine agent's reassignment decision
+           agentReassignmentDecision = determineAgentReassignment();
          }
 
          const result = calculateScore(isCorrect, reliability);
@@ -3440,6 +3580,9 @@
 
            humanRatingElement.id = 'humanRatingElement';
            document.getElementById('agentRecommendation').appendChild(humanRatingElement);
+
+           // Determine agent's reassignment decision
+           agentReassignmentDecision = determineAgentReassignment();
          }
 
          const result = calculateScore(isCorrect, reliability);
@@ -3575,6 +3718,76 @@
 
            // Configure UI based on leader
            configureUIForLeader(currentLeader);
+         }
+
+         let agentReassignmentDecision = null;
+
+         // function for AutonomousAgent o determine if reassignment is needed
+         function determineAgentReassignment() {
+           const detectingDrone = lastDetectedObjectInfo.droneId;
+           const objectType = lastDetectedObjectInfo.text1;
+           const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
+                                    lastDetectedObjectInfo.text2.slice(1).toLowerCase();
+
+           // Get current reliability and rank
+           const currentReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
+
+           // If current reliability is already high (>85%), don't reassign
+           if (currentReliability >= 85) {
+             return {
+               shouldReassign: false,
+               bestDrone: null,
+               currentReliability: currentReliability,
+               newReliability: currentReliability,
+               reliabilityIncrease: 0,
+               currentRank: 0
+             };
+           }
+
+           // Get drone info to determine current rank
+           const droneTypes = {
+             'ThermalAlpha': { type: 'thermal', reliability: 'high' },
+             'ThermalBeta': { type: 'thermal', reliability: 'low' },
+             'InfraredGamma': { type: 'nswir', reliability: 'high' },
+             'InfraredDelta': { type: 'nswir', reliability: 'low' }
+           };
+
+           const droneInfo = droneTypes[detectingDrone];
+           const currentRank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
+
+           // Find the best drone (rank 1) for this object type and lighting condition
+           let bestDrone = null;
+           let bestReliability = 0;
+
+           const allDrones = ['ThermalAlpha', 'ThermalBeta', 'InfraredGamma', 'InfraredDelta'];
+           const otherDrones = allDrones.filter(drone => drone !== detectingDrone);
+
+           otherDrones.forEach(drone => {
+             const info = droneTypes[drone];
+             const rank = reliabilityRankings[info.type][info.reliability][objectType][lightingCondition];
+             const reliability = calculateReliabilityPercentage(drone, {text1: objectType, text2: lightingCondition});
+
+             if (rank === 1 && reliability > bestReliability) {
+               bestDrone = drone;
+               bestReliability = reliability;
+             }
+           });
+
+           // Calculate reliability increase if reassigned to best drone
+           const reliabilityIncrease = bestReliability > 0 ?
+             ((bestReliability - currentReliability) / currentReliability) * 100 : 0;
+
+           // Decision logic: reassign if current rank is 3rd or 4th OR reliability increases by 10% or more
+           const shouldReassign = currentRank >= 3 || reliabilityIncrease >= 10;
+
+           return {
+             shouldReassign: shouldReassign,
+             bestDrone: bestDrone,
+             currentReliability: currentReliability,
+             newReliability: bestReliability,
+             reliabilityIncrease: reliabilityIncrease,
+             currentRank: currentRank
+           };
          }
 
          // Function to configure UI based on who is the leader
