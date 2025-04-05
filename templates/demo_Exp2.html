@@ -171,16 +171,28 @@
       padding: 5px;
     }
     .shared-config #agentRecommendation {
-      top: 300px; /* Increased to accommodate leadership controls */
+      top: 260px; /* Increased to accommodate leadership controls */
     }
     .shared-config #agentRatings {
-      top: 410px; /* Adjusted for new agentRecommendation position */
+      top: 380px; /* Adjusted for new agentRecommendation position */
     }
     .shared-config #agentReassignmentRecommendation {
-      top: 555px; /* Adjusted for new agentRatings position */
+      top: 540px; /* Adjusted for new agentRatings position */
     }
     .shared-config #agentReassignmentRatings {
-      top: 730px; /* Adjusted for new agentReassignmentRecommendation position */
+      top: 775px; /* Adjusted for new agentReassignmentRecommendation position */
+    }
+    #humanReassignmentRating {
+      position: fixed;
+      top: 665px;
+      right: 0;
+      width: 293px;
+      height: auto;
+      background: rgba(255,255,255, 0.9);
+      padding: 5px;
+    }
+    .shared-config #humanReassignmentRating {
+      top: 800px; /* Position below agentReassignmentRatings */
     }
     #objectRecommendation {
         position: fixed;
@@ -265,7 +277,7 @@
       border: 0;
       height: 1px;
       background: #ccc; /* Light grey line */
-      margin: 10px 0; /* Spacing above and below the line */
+      margin-bottom: 0px; /* Spacing above and below the line */
     }
     .competence-slider {
       /* appearance: none; /* removes browser-specific styling */
@@ -2177,11 +2189,11 @@
           // Update agent leadership status in UI
           const agentStatusElement = document.getElementById('agentLeadershipStatus');
           if (agentLeadershipAction === 'claim') {
-            agentStatusElement.style.borderTop = "1px solid #ccc";
+            //agentStatusElement.style.borderTop = "1px solid #ccc";
             agentStatusElement.textContent = 'Agent is claiming leadership';
             agentStatusElement.style.color = 'blue';
           } else {
-            agentStatusElement.style.borderTop = "1px solid #ccc";
+            //agentStatusElement.style.borderTop = "1px solid #ccc";
             agentStatusElement.textContent = 'Agent is granting leadership';
             agentStatusElement.style.color = 'green';
           }
@@ -2575,13 +2587,32 @@
           // Hide the "Autonomous Agent reassignment ranking:" text
           document.querySelector('#agentReassignmentRecommendation > p').style.display = 'none';
 
+          // Hide the reassign button and add a recommend button
+          document.getElementById('reassignBtn').style.display = 'none';
+
+          // Check if recommend button already exists
+          if (!document.getElementById('recommendBtn')) {
+            const recommendBtn = document.createElement('input');
+            recommendBtn.type = 'button';
+            recommendBtn.id = 'recommendBtn';
+            recommendBtn.value = 'Recommend';
+            recommendBtn.className = 'recommend-button';
+            recommendBtn.addEventListener('click', rateHumanReassignment);
+
+            // Insert the recommend button where the reassign button was
+            const reassignBtn = document.getElementById('reassignBtn');
+            reassignBtn.parentNode.insertBefore(recommendBtn, reassignBtn);
+          } else {
+            document.getElementById('recommendBtn').style.display = 'inline';
+          }
+
           // Create element to display the decision
           const reassignmentElement = document.createElement('p');
 
           if (agentReassignmentDecision) {
             if (agentReassignmentDecision.shouldReassign && agentReassignmentDecision.bestDrone) {
               reassignmentElement.innerHTML = `<b>Agent's decision:</b> Reassign to ${agentReassignmentDecision.bestDrone}<br>
-                Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
+                ${false ? `Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>` : ''}
                 Expected reliability: ${agentReassignmentDecision.newReliability.toFixed(1)}%<br>
                 Improvement: ${agentReassignmentDecision.reliabilityIncrease.toFixed(1)}%`;
 
@@ -2590,7 +2621,7 @@
             } else {
               reassignmentElement.innerHTML = `<b>Agent's decision:</b> No reassignment needed<br>
                 Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
-                Current rank: ${agentReassignmentDecision.currentRank}`;
+                ${false ? `Current rank: ${agentReassignmentDecision.currentRank}` : ''}`;
             }
           } else {
             reassignmentElement.innerHTML = "Agent has not made a reassignment decision yet.";
@@ -2606,6 +2637,12 @@
         } else {
           // Human-led shared configuration - only show recommendations list
           document.getElementById('reassignBtn').disabled = false;
+          document.getElementById('reassignBtn').style.display = 'inline';
+
+          if (document.getElementById('recommendBtn')) {
+            document.getElementById('recommendBtn').style.display = 'none';
+          }
+
           document.querySelector('#agentReassignmentRecommendation > p').style.display = 'block';
           document.getElementById('droneRecommendationList').style.display = 'block';
 
@@ -2680,9 +2717,13 @@
       } else {
         // Centralized configuration - same as human-led
         document.getElementById('reassignBtn').disabled = false;
+        document.getElementById('reassignBtn').style.display = 'inline';
+        if (document.getElementById('recommendBtn')) {
+          document.getElementById('recommendBtn').style.display = 'none';
+        }
+
         document.getElementById('droneRecommendationList').style.display = 'block';
 
-        // Same code as human-led configuration...
         const detectingDrone = lastDetectedObjectInfo.droneId;
         const objectType = lastDetectedObjectInfo.text1;
         const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
@@ -2769,7 +2810,7 @@
         if (agentReassignmentDecision) {
           if (agentReassignmentDecision.shouldReassign && agentReassignmentDecision.bestDrone) {
             reassignmentElement.innerHTML = `<b>Agent's decision:</b> Reassign to ${agentReassignmentDecision.bestDrone}<br>
-              Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
+              ${false ? `Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>` : ''}
               Expected reliability: ${agentReassignmentDecision.newReliability.toFixed(1)}%<br>
               Improvement: ${agentReassignmentDecision.reliabilityIncrease.toFixed(1)}%`;
 
@@ -2779,7 +2820,7 @@
           } else {
             reassignmentElement.innerHTML = `<b>Agent's decision:</b> No reassignment needed<br>
               Current reliability: ${agentReassignmentDecision.currentReliability.toFixed(1)}%<br>
-              Current rank: ${agentReassignmentDecision.currentRank}`;
+              ${false ? `Current rank: ${agentReassignmentDecision.currentRank}` : ''}`;
 
             isReassignment = false;
             originalReliability = null;
@@ -2797,6 +2838,10 @@
         if (existingReassignment) existingReassignment.remove();
 
         document.getElementById('agentReassignmentRecommendation').appendChild(reassignmentElement);
+
+        // Rate the human's decision not to reassign
+        rateHumanNoReassignment();
+
         document.getElementById('agentReassignmentRatings').style.display = 'block';
       } else {
         // Original code for human-led or centralized configuration
@@ -3359,6 +3404,8 @@
            }
          }
 
+         document.getElementById('humanReassignmentRating').style.display = 'none';
+
          // Pop-up message for when sletections and ratings are saved set to time out after 2 sec
          showPopupMessage("Drone ratings and selections saved for the current detection", 2000);
 
@@ -3919,6 +3966,153 @@
            }
          }
 
+         // Function to rate human reassignment recommendation
+         function rateHumanReassignment() {
+           if (currentConfiguration !== 'shared' || currentLeader !== 'agent') {
+             return; // Only applicable for agent-led shared configuration
+           }
+
+           const selectedDrone = document.getElementById('sel_drone').value;
+           const detectingDrone = lastDetectedObjectInfo.droneId;
+
+           if (selectedDrone === detectingDrone) {
+             document.getElementById('humanReassignmentFeedback').innerHTML =
+               "<p><b>Poor choice:</b> You selected the same drone that's currently detecting.</p>";
+             return;
+           }
+
+           const objectType = lastDetectedObjectInfo.text1;
+           const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
+                                    lastDetectedObjectInfo.text2.slice(1).toLowerCase();
+
+           // Get drone info
+           const droneTypes = {
+             'ThermalAlpha': { type: 'thermal', reliability: 'high' },
+             'ThermalBeta': { type: 'thermal', reliability: 'low' },
+             'InfraredGamma': { type: 'nswir', reliability: 'high' },
+             'InfraredDelta': { type: 'nswir', reliability: 'low' }
+           };
+
+           const droneInfo = droneTypes[selectedDrone];
+           const rank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
+
+           // Calculate current and potential reliability
+           const currentReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
+           const potentialReliability = calculateReliabilityPercentage(selectedDrone, {text1: objectType, text2: lightingCondition});
+           const reliabilityIncrease = ((potentialReliability - currentReliability) / currentReliability) * 100;
+
+           // Determine rating based on agent's decision and human's choice
+           let rating, description;
+
+           // First check if agent thinks reassignment is needed at all
+           if (!agentReassignmentDecision.shouldReassign) {
+             // Agent doesn't think reassignment is needed
+             if (reliabilityIncrease > 0) {
+               rating = "Unnecessary choice";
+               description = "Current reliability is sufficient.";
+             } else {
+               rating = "Poor choice";
+               description = "This drone would not improve detection.";
+             }
+           } else {
+             // Agent thinks reassignment is needed
+             if (rank === 1 && reliabilityIncrease >= 10) {
+               rating = "Good choice";
+               description = "of drone.";
+             } else if (rank === 1 || (rank === 2 && reliabilityIncrease > 5)) {
+               rating = "Decent choice";
+               description = "of drone.";
+             } else if (reliabilityIncrease > 0) {
+               rating = "Bad Choice";
+               description = "of drone.";
+             } else {
+               rating = "Worst choice";
+               description = "of drone.";
+             }
+           }
+
+           // Compare with agent's choice
+           let comparisonText = "";
+           if (agentReassignmentDecision && agentReassignmentDecision.bestDrone) {
+             if (selectedDrone === agentReassignmentDecision.bestDrone) {
+               comparisonText = "Your choice matches the agent's recommendation.";
+             } else {
+               comparisonText = `The agent recommended ${agentReassignmentDecision.bestDrone} instead.`;
+             }
+           }
+
+           // Display the feedback
+           document.getElementById('humanReassignmentFeedback').innerHTML =
+             `<p><b>${rating} </b> ${description}</p>
+              ${false ? `<p>Reliability change: ${reliabilityIncrease.toFixed(1)}%</p>` : ''}
+              ${false ? `<p>${comparisonText}</p>` : ''}`;//commented out
+
+           // Show the rating panel
+           document.getElementById('humanReassignmentRating').style.display = 'block';
+         }
+
+         // Function to rate human's recommendatio to not reassign
+         function rateHumanNoReassignment() {
+           if (currentConfiguration !== 'shared' || currentLeader !== 'agent') {
+             return; // Only applicable for agent-led shared configuration
+           }
+
+           const detectingDrone = lastDetectedObjectInfo.droneId;
+           const objectType = lastDetectedObjectInfo.text1;
+           const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
+                                    lastDetectedObjectInfo.text2.slice(1).toLowerCase();
+
+           // Calculate current reliability
+           const currentReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
+
+           // Get current rank
+           const droneTypes = {
+             'ThermalAlpha': { type: 'thermal', reliability: 'high' },
+             'ThermalBeta': { type: 'thermal', reliability: 'low' },
+             'InfraredGamma': { type: 'nswir', reliability: 'high' },
+             'InfraredDelta': { type: 'nswir', reliability: 'low' }
+           };
+
+           const droneInfo = droneTypes[detectingDrone];
+           const currentRank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
+
+           // Determine rating based on agent's decision and human's choice
+           let rating, description;
+
+           if (!agentReassignmentDecision.shouldReassign) {
+             // Agent also doesn't think reassignment is needed
+             rating = "Good choice";
+             description = "Current reliability is sufficient.";
+           } else {
+             // Agent thinks reassignment is needed
+             if (currentReliability >= 85) {
+               rating = "Decent choice";
+               description = "Current reliability is high.";
+             } else if (currentRank <= 2) {
+               rating = "Decent choice";
+               description = "Current drone is reasonably suited, though reassignment could improve detection.";
+             } else {
+               rating = "Bad choice";
+               description = "Reassignment could significantly improve detection.";
+             }
+           }
+
+           // Create or get the human reassignment feedback element
+           let humanReassignmentFeedback = document.getElementById('humanReassignmentFeedback');
+           if (!humanReassignmentFeedback) {
+             humanReassignmentFeedback = document.createElement('div');
+             humanReassignmentFeedback.id = 'humanReassignmentFeedback';
+             document.getElementById('humanReassignmentRating').appendChild(humanReassignmentFeedback);
+           }
+
+           // Display the feedback
+           humanReassignmentFeedback.innerHTML = `<p><b>${rating}:</b> ${description}</p>`;
+
+           // Show the rating panel
+           document.getElementById('humanReassignmentRating').style.display = 'block';
+         }
+
+
          // Close popup when clicking outside
          window.addEventListener('click', function(event) {
            if (event.target == configPopup) {
@@ -3989,6 +4183,7 @@
      view.ui.add(agentRatings, "top-right");
      view.ui.add(agentRecommendation, "top-right");
      view.ui.add(agentReassignmentRatings, "top-right");
+     view.ui.add(humanReassignmentRating, "bottom-right");
 
          });
 
@@ -4072,9 +4267,10 @@
                   <label><b>Object Search:</b> </label>
                   <input type="button" class="start-button" value="Start" id="startsearchbutton">
                   <input type="button" class="stop-button" value="Stop" id="stopsearchbutton">
+                  <hr>
                 </div>
 
-                <div id="leadershipControls" style="display: none; margin-top: 10px;">
+                <div id="leadershipControls" style="display: none;">
                   <div id="agentLeadershipStatus"></div>
                   <div class="leadership-buttons">
                     <input type="button" class="claim-button" value="Claim Leadership" id="claimLeadershipBtn" />
@@ -4272,6 +4468,11 @@
                     <input type="range" min="1" max="10" value="5" class="slider" id="agentReassignTrustRange">
                     <span id="agentReassignTrustValue" class="slider-value">5</span>
                   </div>
+                </div>
+
+                <div id="humanReassignmentRating" style="display: none; position: fixed; top: 665px; right: 0; width: 293px; height: auto; background: rgba(255,255,255, 0.9); padding: 5px;">
+                  <p><b>Agents rating of human recommendation:</b></p>
+                  <div id="humanReassignmentFeedback"></div>
                 </div>
 
               <div id="reviewTrial" class="reviewTrial-container">
