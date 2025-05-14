@@ -2184,15 +2184,7 @@
           document.getElementById('leadershipControls').style.display = 'block';
 
           // Determine agent's leadership action based on lighting condition
-          const lighting = text2.toLowerCase();
-          if (lighting.includes('low')) {
-            agentLeadershipAction = 'grant';
-          } else if (lighting.includes('high')) {
-            agentLeadershipAction = 'claim';
-          } else {
-            // For medium lighting, 50% chance to claim or grant
-            agentLeadershipAction = Math.random() < 0.5 ? 'claim' : 'grant';
-          }
+          agentLeadershipAction = text2.toLowerCase().includes('low') ? 'grant' : 'claim';
 
           // Update agent leadership status in UI
           const agentStatusElement = document.getElementById('agentLeadershipStatus');
@@ -2223,6 +2215,10 @@
         // Store image URL of detected object
         detectedImages.push(imageUrl);
         console.log("Detected image:", imageUrl);
+
+        //store image URL of detected object
+        //detectedImages.push(imageUrl);
+        //console.log("Detected image:", imageUrl);
 
         dragElement(document.body);
       }
