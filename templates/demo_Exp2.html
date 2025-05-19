@@ -1733,36 +1733,39 @@
 
       function calculateScore(isCorrect, reliability, isReassignment = false, originalReliability = null) {
         let score = 0;
-        const reliabilityNumber = reliability / 100; // Convert percentage to decimal
+        const reliabilityNumber = reliability / 100;
 
         if (isCorrect) {
           score = reliabilityNumber * 100;
         } else {
           score = -(1 - reliabilityNumber) * 100;
         }
+        console.log('Initial score (object classification):', score);
 
-        console.log('Initial score:', score);
-
+        let reassignmentBonus = 0; // Initialize reassignmentBonus
         if (isReassignment) {
-          const originalReliabilityNumber = originalReliability / 100;
-          let reassignmentBonus = 0;
-          if (reliabilityNumber > originalReliabilityNumber) {
-            reassignmentBonus = (reliabilityNumber - originalReliabilityNumber) * 50; // Improvement Bonus
+          // Ensure originalReliability is a number and not null
+          if (originalReliability !== null && typeof originalReliability === 'number') {
+            const originalReliabilityNumber = originalReliability / 100;
+            if (reliabilityNumber > originalReliabilityNumber) {
+              reassignmentBonus = (reliabilityNumber - originalReliabilityNumber) * 50; // Improvement Bonus
+            } else {
+              reassignmentBonus = -(originalReliabilityNumber - reliabilityNumber) * 50; // Penalty for Unnecessary/Worse Reassignment
+            }
+
+            // Consider if this penalty applies if the AGENT made the choice
+            if (originalReliability > 70) {
+              console.log('Original reliability > 70, applying penalty for reassigning high reliability drone.');
+              reassignmentBonus -= 25;
+            }
+            console.log('Original reliability for reassignment:', originalReliability);
+            console.log('New reliability after reassignment:', reliability);
+            console.log('Reassignment bonus/penalty:', reassignmentBonus);
           } else {
-            reassignmentBonus = -(originalReliabilityNumber - reliabilityNumber) * 50; // Penalty for Unnecessary Reassignment
+            console.warn('isReassignment is true, but originalReliability is invalid:', originalReliability);
           }
-
-          if (originalReliability > 70) {
-            reassignmentBonus -= 25; // Penalty for reassignment when reliability was greater than 80%
-          }
-          console.log('original reliability', originalReliability);
-          console.log('new reliability', reliability);
-
-          console.log('Reassignment bonus/penalty:', reassignmentBonus);
-          return { initialScore: score, reassignmentBonus: reassignmentBonus };
         }
-
-        return { initialScore: score, reassignmentBonus: 0 };
+        return { initialScore: score, reassignmentBonus: reassignmentBonus };
       }
 
       function getDecisionQuality(score, isRedetection = false) {
@@ -2576,8 +2579,16 @@
       this.style.backgroundColor = 'green';
       document.getElementById('noBtn').style.backgroundColor = '';
 
-      originalReliability = lastDetectedObjectInfo.reliabilityPercentage;
-      isReassignment = true;
+      // Set default for human-led/centralized, Agent-led will be determined later
+      if (!(currentConfiguration === 'shared' && currentLeader === 'agent')) {
+        originalReliability = lastDetectedObjectInfo.reliabilityPercentage;
+        isReassignment = true; // Human is initiating a potential reassignment
+      } else {
+        isReassignment = false;
+        originalReliability = null;
+        reassignmentScore = 0;
+        redetectionInitialScore = 0;
+      }
 
       // Show agent's reassignment recommendation
       document.getElementById('agentReassignmentRecommendation').style.display = 'block';
@@ -2627,12 +2638,21 @@
               };
 
               // Get the reassigned drone if there is one
-              const reassignedDrone = agentReassignmentDecision && agentReassignmentDecision.shouldReassign ?
-                agentReassignmentDecision.bestDrone : null;
+              const agentDecidedToReassign = agentReassignmentDecision && agentReassignmentDecision.shouldReassign;
+              const agentBestDrone = agentDecidedToReassign ? agentReassignmentDecision.bestDrone : null;
 
               // If agent decided to reassign, set the reassignedDroneId
-              if (reassignedDrone) {
-                reassignedDroneId = reassignedDrone;
+              if (agentDecidedToReassign && agentBestDrone) {
+                isReassignment = true; // For scoring this round
+                originalReliability = agentReassignmentDecision.currentReliability; // For scoring
+                handleRedetection(agentBestDrone); // Calculate reassignment/redetection scores
+                reassignedDroneId = agentBestDrone; // For confirmButton's redetection UI flow
+              } else {
+                isReassignment = false; // Agent not reassigning
+                originalReliability = null;
+                reassignedDroneId = ''; // No UI redetection flow for confirmButton
+                reassignmentScore = initScore; // Ensure no reassignment score
+                redetectionInitialScore = 0; // Ensure no redetection score
               }
 
               otherDrones.forEach(drone => {
@@ -2666,7 +2686,7 @@
                   }
 
                   // Add "Reassigned to" text if this is the drone the agent chose
-                  if (drone === reassignedDrone) {
+                  if (drone === agentBestDrone) {
                     description = `Reassigned to - ${description}`;
                   }
 
@@ -2695,8 +2715,8 @@
             });
 
             // Insert the recommend button where the reassign button was
-            const reassignBtn = document.getElementById('reassignBtn');
-            reassignBtn.parentNode.insertBefore(recommendBtn, reassignBtn);
+            const reassignBtnEl = document.getElementById('reassignBtn');
+            reassignBtn.parentNode.insertBefore(recommendBtn, reassignBtnEl);
           } else {
             document.getElementById('recommendBtn').style.display = 'inline';
           }
@@ -2888,16 +2908,21 @@
         };
 
         // Get the reassigned drone if there is one
-        const reassignedDrone = agentReassignmentDecision && agentReassignmentDecision.shouldReassign ?
-          agentReassignmentDecision.bestDrone : null;
+        const agentDecidedToReassign = agentReassignmentDecision && agentReassignmentDecision.shouldReassign;
+        const agentBestDrone = agentDecidedToReassign ? agentReassignmentDecision.bestDrone : null;
 
         // If agent decided to reassign, set the reassignedDroneId
-        if (reassignedDrone) {
-          reassignedDroneId = reassignedDrone;
-          isReassignment = true;
+        if (agentDecidedToReassign && agentBestDrone) {
+          isReassignment = true; // For scoring this round
+          originalReliability = agentReassignmentDecision.currentReliability; // For scoring
+          handleRedetection(agentBestDrone); // Calculate reassignment/redetection scores
+          reassignedDroneId = agentBestDrone; // For confirmButton's redetection UI flow
         } else {
-          isReassignment = false;
+          isReassignment = false; // Agent not reassigning
           originalReliability = null;
+          reassignedDroneId = ''; // No UI redetection flow for confirmButton
+          reassignmentScore = initScore; // Ensure no reassignment score
+          redetectionInitialScore = 0; // Ensure no redetection score
         }
 
         otherDrones.forEach(drone => {
@@ -2931,7 +2956,7 @@
             }
 
             // Add "Reassigned to" text if this is the drone the agent chose
-            if (drone === reassignedDrone) {
+            if (drone === agentBestDrone) {
               description = `Reassigned to - ${description}`;
             }
 
@@ -2964,6 +2989,9 @@
         isReassignment = false;
         originalReliability = null;
 
+        reassignmentScore = 0;
+        redetectionInitialScore = 0;
+
         // Calculate score for non-reassignment
         const reliability = lastDetectedObjectInfo.reliabilityPercentage;
         let scoreEarned = reliability;
@@ -2972,7 +3000,6 @@
         console.log('non-reassignment score', reassignmentScore);
       }
     });
-
 
       function showReassignPopup(message, duration) {
         const popup = document.createElement('div');
@@ -3066,7 +3093,11 @@
        let redetectionInitialScore = 0;
 
        function saveRatings() {
-         let scoreEarned = detScore;
+         let calculatedDetScore = initScore;
+         if (isReassignment) { // This isReassignment flag is now critical and set by yes/no/recommend handlers
+             calculatedDetScore += (reassignmentScore || 0) + (redetectionInitialScore || 0);
+         }
+         let scoreEarned = calculatedDetScore; // Use locally calculated based on current flags
          scoreEarned = parseFloat(scoreEarned.toFixed(2));
          console.log('score earned', scoreEarned);
 
@@ -3100,7 +3131,8 @@
            initialScore: initScore,
            reassignmentScore: reassignmentScore,
            redetectionInitialScore: redetectionInitialScore || 0,
-           scoreEarned: scoreEarned
+           scoreEarned: scoreEarned,
+           decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : 'human'
          };
 
          if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
@@ -3148,8 +3180,8 @@
            reassignmentScore = 0;
            redetectionInitialScore = 0;
            detScore = 0;
-           isReassignment = false;
-           originalReliability = null;
+           //isReassignment = false;
+           //originalReliability = null;
            resetSliders();
        }
 
@@ -3492,6 +3524,13 @@
 
        // Event listener for confirm ratings for given round of detection
        document.getElementById('confirmButton').addEventListener('click', function() {
+         // If in agent-led shared config and agent decided to reassign, set flags
+         if (currentConfiguration === 'shared' && currentLeader === 'agent' &&
+               agentReassignmentDecision && agentReassignmentDecision.shouldReassign && agentReassignmentDecision.bestDrone) {
+           isReassignment = true;
+           originalReliability = agentReassignmentDecision.currentReliability;
+         }
+
          saveRatings();
 
          // Check if this is a redetection
@@ -3526,9 +3565,9 @@
          const totalScore = ratings.reduce((sum, rating) => {
            const initialScore = rating.initialScore || 0;
            const reassignmentScore = rating.reassignmentScore || 0;
-           //const redetectionInitialScore = rating.redetectionInitialScore || 0;
-           //return sum + initialScore + reassignmentScore + redetectionInitialScore;
-           return sum + initialScore + reassignmentScore;
+           const redetectionInitialScore = rating.redetectionInitialScore || 0;
+           return sum + initialScore + reassignmentScore + redetectionInitialScore;
+           //return sum + initialScore + reassignmentScore;
          }, 0);
 
          // Update the final score
@@ -3981,8 +4020,8 @@
            const reliabilityIncrease = bestReliability > 0 ?
              ((bestReliability - currentReliability) / currentReliability) * 100 : 0;
 
-           // Decision logic: reassign if current rank is 3rd or 4th OR reliability increases by 10% or more
-           const shouldReassign = currentRank >= 3 || reliabilityIncrease >= 10;
+           // Decision logic: reassign if current rank is 3rd or 4th OR reliability increases by 15% or more
+           const shouldReassign = currentRank >= 3 || reliabilityIncrease >= 15;
 
            return {
              shouldReassign: shouldReassign,
