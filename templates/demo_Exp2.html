@@ -2275,14 +2275,15 @@
 
       function handleRedetection(newDroneId) {
         const newReliability = calculateReliabilityPercentage(newDroneId, lastDetectedObjectInfo);
-        const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
-                          (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+        //const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+                        //  (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
 
-        const result = calculateScore(isCorrect, newReliability, true, originalReliability);
+        const result = calculateScore(true, newReliability, true, originalReliability);
         reassignmentScore = result.reassignmentBonus;
-        redetectionInitialScore = result.initialScore;
+        //redetectionInitialScore = result.initialScore;
+        redetectionInitialScore = 0;
         console.log('Reassignment score:', reassignmentScore);
-        console.log('Redetection initial score:', redetectionInitialScore);
+        //console.log('Redetection initial score:', redetectionInitialScore);
       }
 
    // Object detection task reassignment to another drone
@@ -3093,13 +3094,16 @@
        let redetectionInitialScore = 0;
 
        function saveRatings() {
-         let calculatedDetScore = initScore;
-         if (isReassignment) { // This isReassignment flag is now critical and set by yes/no/recommend handlers
-             calculatedDetScore += (reassignmentScore || 0) + (redetectionInitialScore || 0);
+         let scoreForThisEvent;
+
+         if (lastDetectedObjectInfo && lastDetectedObjectInfo.isRedetection) {
+           scoreForThisEvent = initScore; // initScore was set by A/R of the redetected object.
+         } else {
+           scoreForThisEvent = (initScore || 0) + (reassignmentScore || 0);
          }
-         let scoreEarned = calculatedDetScore; // Use locally calculated based on current flags
-         scoreEarned = parseFloat(scoreEarned.toFixed(2));
-         console.log('score earned', scoreEarned);
+
+         let scoreEarned = parseFloat(scoreForThisEvent.toFixed(2));
+         console.log('Saving rating for event. initScore:', initScore, 'reassignmentScore (global, for this event if applicable):', reassignmentScore, 'Calculated scoreEarned:', scoreEarned);
 
            // Retrieve the current ratings for each drone
            let currentRatings = [];
@@ -3118,27 +3122,28 @@
            }
 
            // Retrieve the reliability percentage for the detected object
-           const reliabilityPercentage = lastDetectedObjectInfo.reliabilityPercentage;
+           const reliabilityPercentage = lastDetectedObjectInfo ? lastDetectedObjectInfo.reliabilityPercentage : 0;
+           const detectedObjectInfoCopy = lastDetectedObjectInfo ? JSON.parse(JSON.stringify(lastDetectedObjectInfo)) : {};
 
          let ratingObject = {
            ratings: currentRatings,
            response: userResponse,
            reassignResponse: userReassignResponse,
            userReobject: userReobject,
-           detectedObjectInfo: lastDetectedObjectInfo,
+           detectedObjectInfo: detectedObjectInfoCopy,
            reassignedDroneId: reassignedDroneId,
            reliabilityPercentage: reliabilityPercentage,
            initialScore: initScore,
-           reassignmentScore: reassignmentScore,
-           redetectionInitialScore: redetectionInitialScore || 0,
+           reassignmentScore: (detectedObjectInfoCopy && detectedObjectInfoCopy.isRedetection) ? 0 : (reassignmentScore || 0),
+           redetectionInitialScore: 0,
            scoreEarned: scoreEarned,
            decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : 'human'
          };
 
-         if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
-           ratingObject.redetectionText1 = lastDetectedObjectInfo.text1;
-           ratingObject.redetectionText2 = lastDetectedObjectInfo.text2;
-         }
+        // if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
+          // ratingObject.redetectionText1 = lastDetectedObjectInfo.text1;
+          // ratingObject.redetectionText2 = lastDetectedObjectInfo.text2;
+         //}
 
          ratings.push(ratingObject);
          // console.log('updated ratings', ratings);
@@ -3290,19 +3295,33 @@
          `);
          reviewWindow.document.write('</style></head><body>');
 
-         const totalScore = ratings.reduce((sum, rating) => {
-           const initialScore = rating.initialScore || 0;
-           const reassignmentScore = rating.reassignmentScore || 0;
-           //const redetectionInitialScore = rating.redetectionInitialScore || 0;
-           //return sum + initialScore + reassignmentScore + redetectionInitialScore;
-           return sum + initialScore + reassignmentScore;
-         }, 0);
+         let cumulativeTotalScore = 0;
+         ratings.forEach((rating, index) => {
+           const isThisRatingARedetectionEvent = (rating.detectedObjectInfo && rating.detectedObjectInfo.isRedetection);
 
-         console.log('total score', totalScore);
+           if (!isThisRatingARedetectionEvent) { // Only sum scores for initial detection events
+             let scoreInitialClassification = rating.initialScore || 0;
+             let scoreReassignmentAction = rating.reassignmentScore || 0;
+             let scoreFromActualRedetectionClassification = 0;
 
-         // cumulative score display
-         reviewWindow.document.write(`<div class="score-display">Total score: ${totalScore.toFixed(2)}</div>`);
+             // Check if this initial detection led to a reassignment and has a subsequent redetection event
+             const didThisEventLeadToReassignment = rating.reassignedDroneId || rating.reassignResponse === 'Yes';
 
+             if (didThisEventLeadToReassignment && (index + 1 < ratings.length)) {
+               const nextRating = ratings[index + 1];
+               // Verify the next rating is indeed the corresponding redetection event
+               if (nextRating.detectedObjectInfo && nextRating.detectedObjectInfo.isRedetection &&
+                   nextRating.detectedObjectInfo.droneId === rating.reassignedDroneId) { // Simple link check
+                 scoreFromActualRedetectionClassification = nextRating.initialScore || 0;
+               }
+             }
+             cumulativeTotalScore += scoreInitialClassification + scoreReassignmentAction + scoreFromActualRedetectionClassification;
+           }
+           // Note: The initialScore of a redetection event itself is now incorporated into its preceding initial event's sum.
+         });
+
+         console.log('ReviewTab: Cumulative total score calculated as:', cumulativeTotalScore);
+         reviewWindow.document.write(`<div class="score-display">Total score: ${cumulativeTotalScore.toFixed(2)}</div>`);
          // Check if it's a special detection number (6, 11, 16)
          const isSpecialDetection = [6, 11, 16].includes(detectionCounter);
 
@@ -3417,12 +3436,11 @@
 
                       ratings.forEach((rating, index) => {
                         // Check for redetection using both conditions
-                        const isRedetection = (rating.detectedObjectInfo && rating.detectedObjectInfo.isRedetection) ||
-                                              (rating.detectedObjectInfo && rating.detectedObjectInfo.redetection);
+                        const isThisRatingARedetectionEvent = (rating.detectedObjectInfo && rating.detectedObjectInfo.isRedetection);
 
                         // Determine the row class
                         let rowClass;
-                        if (!isRedetection) {
+                        if (!isThisRatingARedetectionEvent) {
                           currentDetectionNumber++;
                           isCurrentDetectionEven = !isCurrentDetectionEven;
                         }
@@ -3430,34 +3448,50 @@
 
                         reviewWindow.document.write(`<tr class="${rowClass}">`);
                         // Determine the details to show
-                        let objectRecommendation, detailsToShow;
-                        if (isRedetection) {
+                        let objectRecommendation, detailsToShow, trueObject;
+                        const detectionInfo = rating.detectedObjectInfo || {}; // Ensure detectionInfo is defined
+
+                        if (isThisRatingARedetectionEvent) {
                           objectRecommendation = rating.redetectionText1 || rating.detectedObjectInfo.text1 || '';
                           detailsToShow = `Lighting condition: ${rating.redetectionText2 || rating.detectedObjectInfo.text2 || ''}<br><br>
                                            Object recognition reliability: ${rating.reliabilityPercentage || rating.detectedObjectInfo.reliabilityPercentage || ''}%`;
+                          trueObject = objectRecommendation;
                         } else {
                           const detectionInfo = rating.detectedObjectInfo || {};
                           objectRecommendation = detectionInfo.text1 || '';
                           detailsToShow = `Lighting condition: ${detectionInfo.text2 || ''} <br><br>
                                            Object recognition reliability: ${rating.reliabilityPercentage || detectionInfo.reliabilityPercentage || ''}%`;
+                          trueObject = objectRecommendation;
                         }
 
                         // Determine what to display in each column
-                        const detectionNumber = isRedetection ? 'Redetection' : (rating.detectedObjectInfo?.detectionNumber || '');
-                        const detectingDrone = rating.detectedObjectInfo?.droneId || '';
+                        const detectionNumberDisplay = isThisRatingARedetectionEvent ? 'Redetection' : (rating.detectedObjectInfo?.detectionNumber || '');
+                        const detectingDroneDisplay = rating.detectedObjectInfo?.droneId || '';
 
-                        // Determine the true object for both original detections and redetections
-                        const trueObject = isRedetection ? (rating.redetectionText1 || rating.detectedObjectInfo?.text1 || '') : (rating.detectedObjectInfo?.text1 || '');
+                        let scoreForThisRowInTable;
+                        if (isThisRatingARedetectionEvent) {
+                            scoreForThisRowInTable = null; // A redetection event's score is its classification score.
+                        } else {
+                          let scoreInitialClassification = rating.initialScore || 0;
+                          let scoreReassignmentAction = rating.reassignmentScore || 0;
+                          let scoreFromActualRedetectionClassification = 0;
 
-                        const initialScore = rating.initialScore || 0;
-                        const reassignmentScore = rating.reassignmentScore || 0;
-                        const redetectionInitialScore = rating.redetectionInitialScore || 0;
-                        const totalScore = initialScore + reassignmentScore + redetectionInitialScore;
+                          const didThisEventLeadToReassignment = rating.reassignedDroneId || rating.reassignResponse === 'Yes';
+
+                          if (didThisEventLeadToReassignment && (index + 1 < ratings.length)) {
+                            const nextRating = ratings[index + 1];
+                            if (nextRating.detectedObjectInfo && nextRating.detectedObjectInfo.isRedetection &&
+                                nextRating.detectedObjectInfo.droneId === rating.reassignedDroneId) {
+                              scoreFromActualRedetectionClassification = nextRating.initialScore || 0;
+                            }
+                          }
+                          scoreForThisRowInTable = scoreInitialClassification + scoreReassignmentAction + scoreFromActualRedetectionClassification;
+                        }
 
                         // Write the row
                         reviewWindow.document.write(`
-                          <td>${detectionNumber}</td>
-                          <td>${detectingDrone}</td>
+                          <td>${detectionNumberDisplay}</td>
+                          <td>${detectingDroneDisplay}</td>
                           <td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td>
                           <td>${detailsToShow}</td>
                           <td>${objectRecommendation}</td>
@@ -3468,14 +3502,14 @@
                         `);
 
                         // Handle Score and Decision Quality columns
-                        if (isRedetection) {
+                        if (isThisRatingARedetectionEvent || scoreForThisRowInTable === null) {
                           reviewWindow.document.write('<td></td><td></td>');
                         } else {
-                          const decisionQuality = getDecisionQuality(totalScore, false);
+                          const decisionQuality = getDecisionQuality(scoreForThisRowInTable, false);
                           if (isSpecialDetection) {
                             reviewWindow.document.write(`<td>${decisionQuality}</td>`);
                           } else {
-                            reviewWindow.document.write(`<td>${totalScore.toFixed(2)}</td><td>${decisionQuality}</td>`);
+                            reviewWindow.document.write(`<td>${scoreForThisRowInTable.toFixed(2)}</td><td>${decisionQuality}</td>`);
                           }
                         }
 
@@ -3562,16 +3596,35 @@
          showPopupMessage("Drone ratings and selections saved for the current detection", 2000);
 
          // Calculate the total score
-         const totalScore = ratings.reduce((sum, rating) => {
-           const initialScore = rating.initialScore || 0;
-           const reassignmentScore = rating.reassignmentScore || 0;
-           const redetectionInitialScore = rating.redetectionInitialScore || 0;
-           return sum + initialScore + reassignmentScore + redetectionInitialScore;
-           //return sum + initialScore + reassignmentScore;
-         }, 0);
+           let newCumulativeTotalScore = 0;
+           ratings.forEach((rating, index) => {
+             const isThisRatingARedetectionEvent = (rating.detectedObjectInfo && rating.detectedObjectInfo.isRedetection);
+
+             // Only sum scores for initial detection events for the cumulative total display logic
+             // if redetection scores are meant to be incorporated into the initial event's display.
+             if (!isThisRatingARedetectionEvent) {
+               let scoreInitialClassification = rating.initialScore || 0;
+               let scoreReassignmentAction = rating.reassignmentScore || 0;
+               let scoreFromActualRedetectionClassification = 0;
+
+               // Check if this initial detection led to a reassignment and has a subsequent redetection event
+               const didThisEventLeadToReassignment = rating.reassignedDroneId || rating.reassignResponse === 'Yes';
+
+               if (didThisEventLeadToReassignment && (index + 1 < ratings.length)) {
+                 const nextRating = ratings[index + 1];
+                 // Verify the next rating is indeed the corresponding redetection event
+                 if (nextRating.detectedObjectInfo && nextRating.detectedObjectInfo.isRedetection &&
+                     nextRating.detectedObjectInfo.droneId === rating.reassignedDroneId) {
+                   scoreFromActualRedetectionClassification = nextRating.initialScore || 0;
+                 }
+               }
+               newCumulativeTotalScore += scoreInitialClassification + scoreReassignmentAction + scoreFromActualRedetectionClassification;
+             }
+
+           });
 
          // Update the final score
-         lastConfirmedScore = totalScore;
+         lastConfirmedScore = newCumulativeTotalScore;
          document.getElementById('scoreDisplay').textContent = `Current Score: ${lastConfirmedScore.toFixed(2)}`;
 
          // Reset variables for next detection
@@ -3736,9 +3789,17 @@
 
          document.getElementById('reject-recommendation').style.backgroundColor = '';
 
-         const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
-                           (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
-         const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+         const currentObjectType = lastDetectedObjectInfo.text1;
+         const currentReliability = lastDetectedObjectInfo.reliabilityPercentage;
+
+         const isCorrect = (currentObjectType.includes('target') && userResponse === 'Accept') ||
+                           (currentObjectType.includes('distractor') && userResponse === 'Reject');
+         //const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+
+         const result = calculateScore(isCorrect, currentReliability, false, null);
+         initScore = result.initialScore;
+         detScore = initScore;
+         console.log(`Accept clicked. Classification initScore for this event: ${initScore}`);
 
          // If in shared configuration with agent as leader, show agent's decision
          if (currentConfiguration === 'shared' && currentLeader === 'agent') {
@@ -3762,30 +3823,49 @@
            agentReassignmentDecision = determineAgentReassignment();
          }
 
-         const result = calculateScore(isCorrect, reliability);
-         let initialScore = result.initialScore;
-         let scoreEarned = initialScore;
-         if (isReassignment) {
-           scoreEarned += reassignmentScore + redetectionInitialScore;
-         }
+         //const result = calculateScore(isCorrect, reliability);
+         //let initialScore = result.initialScore;
+         //let scoreEarned = initialScore;
+         //if (isReassignment) {
+           //scoreEarned += reassignmentScore + redetectionInitialScore;
+         //}
 
-         tempScore += scoreEarned;
-         detScore = scoreEarned;
-         initScore = initialScore;
+         //tempScore += scoreEarned;
+         //detScore = scoreEarned;
+         //initScore = initialScore;
 
-         console.log('Accept clicked - tempScore:', tempScore, 'round score:', detScore, 'scoreEarned:', scoreEarned, 'initialScore:', initialScore, 'reassignment score', reassignmentScore, 'redetection initial score', redetectionInitialScore);
+         //console.log('Accept clicked - tempScore:', tempScore, 'round score:', detScore, 'scoreEarned:', scoreEarned, 'initialScore:', initialScore, 'reassignment score', reassignmentScore, 'redetection initial score', redetectionInitialScore);
        });
 
        document.getElementById('reject-recommendation').addEventListener('click', function() {
          userResponse = 'Reject';
          document.getElementById('recategorizeObject').style.display = 'block';
          this.style.backgroundColor = 'red';
-
          document.getElementById('accept-recommendation').style.backgroundColor = '';
 
-         const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
-                           (lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
-         const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+         const currentObjectType = lastDetectedObjectInfo.text1;
+         const currentReliability = lastDetectedObjectInfo.reliabilityPercentage;
+
+         const isCorrect = (currentObjectType.includes('target') && userResponse === 'Accept') || // This logic is for 'Accept', should be 'Reject' for target
+                           (currentObjectType.includes('distractor') && userResponse === 'Reject');
+         //const isCorrect = (lastDetectedObjectType.includes('target') && userResponse === 'Accept') ||
+                           //(lastDetectedObjectType.includes('distractor') && userResponse === 'Reject');
+         //const reliability = lastDetectedObjectInfo.reliabilityPercentage;
+         const isActuallyTarget = currentObjectType.includes('target');
+         const isCorrectFinal = (isActuallyTarget && userResponse === 'Reject') ? false : // Rejected a target
+                                (!isActuallyTarget && userResponse === 'Accept') ? false :
+                                (isActuallyTarget && userResponse === 'Accept') ? true :  // Accepted a target
+                                (!isActuallyTarget && userResponse === 'Reject') ? true : false; // Rejected a distractor
+
+
+                                  // Simplified `isCorrect` based on the common pattern:
+         const simplifiedIsCorrect = (currentObjectType.includes('target') && userResponse === 'Accept') || (currentObjectType.includes('distractor') && userResponse === 'Reject');
+
+         const result = calculateScore(simplifiedIsCorrect, currentReliability, false, null);
+         initScore = result.initialScore; // Score for classifying the current object.
+         detScore = initScore;
+
+         console.log(`Reject clicked. Classification initScore for this event: ${initScore}`);
 
          // If in shared configuration with agent as leader, show agent's decision
          if (currentConfiguration === 'shared' && currentLeader === 'agent') {
@@ -3809,19 +3889,19 @@
            agentReassignmentDecision = determineAgentReassignment();
          }
 
-         const result = calculateScore(isCorrect, reliability);
-         let initialScore = result.initialScore;
-         let scoreEarned = initialScore;
-         if (isReassignment) {
-           scoreEarned += reassignmentScore + redetectionInitialScore;
-         } else {
-           scoreEarned += (reassignmentScore || 0);
-         }
+         //const result = calculateScore(isCorrect, reliability);
+         //let initialScore = result.initialScore;
+         //let scoreEarned = initialScore;
+         //if (isReassignment) {
+           //scoreEarned += reassignmentScore + redetectionInitialScore;
+         //} else {
+           //scoreEarned += (reassignmentScore || 0);
+         //}
 
-         tempScore += scoreEarned;
-         detScore = scoreEarned;
-         initScore = initialScore;
-         console.log('Reject clicked - tempScore:', tempScore, 'round score:', detScore, 'scoreEarned:', scoreEarned, 'initialScore:', initialScore, 'reassignment score', reassignmentScore, 'redetection initial score', redetectionInitialScore);
+         //tempScore += scoreEarned;
+         //detScore = scoreEarned;
+         //initScore = initialScore;
+         //console.log('Reject clicked - tempScore:', tempScore, 'round score:', detScore, 'scoreEarned:', scoreEarned, 'initialScore:', initialScore, 'reassignment score', reassignmentScore, 'redetection initial score', redetectionInitialScore);
        });
 
 
