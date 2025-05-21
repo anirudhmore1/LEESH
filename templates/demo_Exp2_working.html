@@ -3137,7 +3137,9 @@
            reassignmentScore: (detectedObjectInfoCopy && detectedObjectInfoCopy.isRedetection) ? 0 : (reassignmentScore || 0),
            redetectionInitialScore: 0,
            scoreEarned: scoreEarned,
-           decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : 'human'
+           decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : 'human',
+           humanLeadershipActionTaken: humanLeadershipAction || 'N/A', // Human's choice
+           agentLeadershipActionTaken: agentLeadershipAction || 'N/A'  // Agent's choice
          };
 
         // if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
@@ -3193,6 +3195,13 @@
        function exportToCSV() {
            let csvContent = "data:text/csv;charset=utf-8,";
 
+           let configurationToExport = "Not Set";
+           if (currentConfiguration) {
+               configurationToExport = currentConfiguration.charAt(0).toUpperCase() + currentConfiguration.slice(1);
+           }
+           // Configuration as the first line, followed by two newlines for separation
+           csvContent += `Current Agent Configuration:,${configurationToExport}\n\n`;
+
            // Check if there is a reassignment timestamp to include
            if (reassignmentTimestamp) {
                // Add a separator and headers for the reassignment timestamp
@@ -3201,35 +3210,62 @@
                csvContent += `${reassignmentTimestamp}\n\n`;
            }
 
-           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Object detected, Lighting, Reliability %, User Response to recommendation, Re-categorized Object, Task Reassigned, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
+           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Human Leadership, Agent Leadership, Detection Leader, Object detected, Lighting, Reliability %, User Response to recommendation, Re-categorized Object, User Reassignment Response, Actual Reassignment, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
-               entry.ratings.forEach((rating, ratingIndex) => {
-                   // Include the user response to object detection and reassigment only on the first drone rating of each session
-                   if (ratingIndex === 0) {
-                       const detectionInfo = entry.detectedObjectInfo || {};
-                       // Concatenate longitude and latitude into a single string
-                       const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
-                       const text1 = detectionInfo.text1 || '';
-                       const text2 = detectionInfo.text2 || '';
-                       const timestamp = detectionInfo.timestamp || '';
-                       const detectingDrone = detectionInfo.droneId || ''; // Get the detecting drone's ID
-                       const reliabilityPercentage = entry.reliabilityPercentage || '';
+             const isRedetectionEvent = entry.detectedObjectInfo && entry.detectedObjectInfo.isRedetection;
 
-                       // Check if this is a redetection event and include text1 and text2 for redetection
-                       if (entry.redetectionText1 && entry.redetectionText2) {
-                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${entry.redetectionText1}","${entry.redetectionText2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
-                       } else {
-                           csvContent += `"${timestamp}","${locationString}","${detectingDrone}","${text1}","${text2}",${reliabilityPercentage},${entry.response},${entry.userReobject},"${entry.reassignResponse}","${entry.reassignedDroneId}",${rating.drone},${rating.trust},${rating.competence}\n`;
-                       }
-                   } else {
-                       csvContent += `,,,,,,,,,,${rating.drone},${rating.trust},${rating.competence}\n`;
-                   }
-               });
-               // Add a separator between sessions if needed
-               if (sessionIndex < ratings.length - 1) {
-                   csvContent += "\n";
-               }
-           });
+             entry.ratings.forEach((droneRating, droneRatingIndex) => { // droneRating refers to the trust/competence for one drone
+                 if (droneRatingIndex === 0) { // Only write full event details for the first drone rating
+                     const detectionInfo = entry.detectedObjectInfo || {};
+                     const locationString = detectionInfo.location ? `${detectionInfo.location.longitude},${detectionInfo.location.latitude}` : '';
+                     let text1 = detectionInfo.text1 || ''; // Object detected
+                     let text2 = detectionInfo.text2 || ''; // Lighting condition
+                     const timestamp = detectionInfo.timestamp || '';
+                     const detectingDrone = detectionInfo.droneId || '';
+                     const reliabilityPercentage = entry.reliabilityPercentage || '';
+
+                     // Leadership actions and leader (primarily for initial detection events)
+                     const humanActionCSV = !isRedetectionEvent ? (entry.humanLeadershipActionTaken || 'N/A') : '';
+                     const agentActionCSV = !isRedetectionEvent ? (entry.agentLeadershipActionTaken || 'N/A') : '';
+                     const detectionLeaderCSV = !isRedetectionEvent ? (entry.decisionSource ? (entry.decisionSource.charAt(0).toUpperCase() + entry.decisionSource.slice(1)) : 'N/A') : '';
+
+                     let userReassignResponseCSV = '';
+                     let actualReassignmentCSV = ''; // For "Actual Reassignment"
+
+                     if (!isRedetectionEvent) { // These reassignment details apply to initial detections
+                         userReassignResponseCSV = entry.reassignResponse || ''; // Human's direct Yes/No
+
+                         // Determine "Actual Reassignment"
+                         if (entry.reassignedDroneId) {
+                             actualReassignmentCSV = 'Yes';
+                         } else {
+                             actualReassignmentCSV = 'No';
+                         }
+                     }
+
+                     const reassignedDroneCSV = entry.reassignedDroneId || ''; // The drone it was actually reassigned to
+
+                     // Handle specific display for redetection events' object/lighting if necessary
+                     if (isRedetectionEvent) {
+                         text1 = entry.redetectionText1 || detectionInfo.text1 || '';
+                         text2 = entry.redetectionText2 || detectionInfo.text2 || '';
+                     }
+
+                     csvContent += `"${timestamp}","${locationString}","${detectingDrone}",` +
+                                   `"${humanActionCSV}","${agentActionCSV}","${detectionLeaderCSV}",` +
+                                   `"${text1}","${text2}",${reliabilityPercentage},` +
+                                   `"${entry.response || ''}","${entry.userReobject || ''}",` +
+                                   `"${userReassignResponseCSV}","${actualReassignmentCSV}",` + // New and modified columns
+                                   `"${reassignedDroneCSV}",` +
+                                   `${droneRating.drone},${droneRating.trust},${droneRating.competence}\n`;
+                 } else {
+                     csvContent += `,,,,,,,,,,,,,,${droneRating.drone},${droneRating.trust},${droneRating.competence}\n`;
+                 }
+             });
+             if (sessionIndex < ratings.length - 1) {
+                 csvContent += "\n"; // Separator
+             }
+         });
 
            var encodedUri = encodeURI(csvContent);
            var link = document.createElement("a");
@@ -3292,6 +3328,13 @@
              margin-bottom: 20px;
            }
 
+           .config-display {
+             font-size: 25px;
+             margin-bottom: 10px;
+             font-weight: bold;
+             text-align: left;
+           }
+
          `);
          reviewWindow.document.write('</style></head><body>');
 
@@ -3322,12 +3365,21 @@
 
          console.log('ReviewTab: Cumulative total score calculated as:', cumulativeTotalScore);
          reviewWindow.document.write(`<div class="score-display">Total score: ${cumulativeTotalScore.toFixed(2)}</div>`);
+
+         // Display Agent config
+         let configurationToDisplay = "Not Set";
+         if (currentConfiguration) {
+           // Capitalize the first letter of the configuration for better display
+           configurationToDisplay = currentConfiguration.charAt(0).toUpperCase() + currentConfiguration.slice(1);
+         }
+         reviewWindow.document.write(`<div class="config-display">Current Agent Configuration: ${configurationToDisplay}</div>`);
+
          // Check if it's a special detection number (6, 11, 16)
          const isSpecialDetection = [6, 11, 16].includes(detectionCounter);
 
-         if (!isSpecialDetection) {
-           reviewWindow.document.write('<h1>Detection data</h1>');
-         }
+         //if (!isSpecialDetection) {
+           //reviewWindow.document.write('<h1>Object Detection data</h1>');
+         //}
 
          if (ratings.length === 0) {
            reviewWindow.document.write('<p>No ratings data available.</p>');
@@ -3423,13 +3475,28 @@
                       // Create the detailed table
                       reviewWindow.document.write('<h2>Detailed detection information</h2>');
                       reviewWindow.document.write('<table>');
-                      reviewWindow.document.write('<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th><th>Drone\'s recommendation</th><th>Actual object</th><th>User response to: "Object was a target"</th><th>Re-categorized object</th><th>Was the detection reassigned?</th>');
-                      if (isSpecialDetection) {
-                        reviewWindow.document.write('<th>Decision quality</th>');
-                      } else {
-                        reviewWindow.document.write('<th>Score</th><th>Decision quality</th>');
+
+                      let headerRowHtml = '<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th><th>Drone\'s recommendation</th><th>Actual object</th>';
+
+                      if (currentConfiguration === 'shared') {
+                        headerRowHtml += '<th>Your leadership action</th><th>Agent leadership action</th><th>Detection Leader</th>';
                       }
-                      reviewWindow.document.write('</tr>');
+
+                      headerRowHtml += '<th>User response to: "Object was a target"</th><th>Re-categorized object</th>';
+
+                      if (currentConfiguration === 'shared') {
+                        headerRowHtml += '<th>User response to reassigning</th><th>Was the detection reassigned? (Actual)</th>';
+                      } else { // Centralized
+                        headerRowHtml += '<th>Was the detection reassigned?</th>';
+                      }
+
+                      if (isSpecialDetection) {
+                        headerRowHtml += '<th>Decision quality</th>';
+                      } else {
+                        headerRowHtml += '<th>Score</th><th>Decision quality</th>';
+                      }
+                      headerRowHtml += '</tr>';
+                      reviewWindow.document.write(headerRowHtml);
 
                       let currentDetectionNumber = 0;
                       let isCurrentDetectionEven = false;
@@ -3445,8 +3512,8 @@
                           isCurrentDetectionEven = !isCurrentDetectionEven;
                         }
                         rowClass = isCurrentDetectionEven ? 'detection-row' : 'redetection-row';
-
                         reviewWindow.document.write(`<tr class="${rowClass}">`);
+
                         // Determine the details to show
                         let objectRecommendation, detailsToShow, trueObject;
                         const detectionInfo = rating.detectedObjectInfo || {}; // Ensure detectionInfo is defined
@@ -3457,7 +3524,7 @@
                                            Object recognition reliability: ${rating.reliabilityPercentage || rating.detectedObjectInfo.reliabilityPercentage || ''}%`;
                           trueObject = objectRecommendation;
                         } else {
-                          const detectionInfo = rating.detectedObjectInfo || {};
+                          //const detectionInfo = rating.detectedObjectInfo || {};
                           objectRecommendation = detectionInfo.text1 || '';
                           detailsToShow = `Lighting condition: ${detectionInfo.text2 || ''} <br><br>
                                            Object recognition reliability: ${rating.reliabilityPercentage || detectionInfo.reliabilityPercentage || ''}%`;
@@ -3467,6 +3534,53 @@
                         // Determine what to display in each column
                         const detectionNumberDisplay = isThisRatingARedetectionEvent ? 'Redetection' : (rating.detectedObjectInfo?.detectionNumber || '');
                         const detectingDroneDisplay = rating.detectedObjectInfo?.droneId || '';
+
+                        // Write the row
+                        reviewWindow.document.write(`
+                          <td>${detectionNumberDisplay}</td>
+                          <td>${detectingDroneDisplay}</td>
+                          <td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td>
+                          <td>${detailsToShow}</td>
+                          <td>${objectRecommendation}</td>
+                          <td>${trueObject}</td>
+                        `);
+
+                        if (currentConfiguration === 'shared') {
+                          const humanAction = !isThisRatingARedetectionEvent ? (rating.humanLeadershipActionTaken || 'N/A') : '';
+                          const agentAction = !isThisRatingARedetectionEvent ? (rating.agentLeadershipActionTaken || 'N/A') : '';
+                          const detectionLeader = !isThisRatingARedetectionEvent ? (rating.decisionSource ? (rating.decisionSource.charAt(0).toUpperCase() + rating.decisionSource.slice(1)) : 'N/A') : '';
+                          reviewWindow.document.write(`
+                            <td>${humanAction}</td>
+                            <td>${agentAction}</td>
+                            <td>${detectionLeader}</td>
+                          `);
+                        }
+                        reviewWindow.document.write(`
+                          <td>${rating.response || ''}</td>
+                          <td>${rating.userReobject || ''}</td>
+                        `);
+
+                        if (currentConfiguration === 'shared') {
+                          const userReassignResponseDisplay = !isThisRatingARedetectionEvent ? (rating.reassignResponse || '') : '';
+                          let actualReassignmentHappened = ''; // Default to empty for redetection rows
+                          if (!isThisRatingARedetectionEvent) {
+                              if (rating.reassignedDroneId) {
+                                  actualReassignmentHappened = 'Yes';
+                              } else {
+                                  actualReassignmentHappened = 'No'; // Only show Yes/No for initial detections
+                              }
+                          }
+                          reviewWindow.document.write(`
+                            <td>${userReassignResponseDisplay}</td>
+                            <td>${actualReassignmentHappened}</td>
+                          `);
+                        } else { // Centralized
+                          let wasReassignedCentralized = ''; // Default to empty for redetection rows
+                          if (!isThisRatingARedetectionEvent) {
+                              wasReassignedCentralized = rating.reassignResponse || '';
+                          }
+                          reviewWindow.document.write(`<td>${wasReassignedCentralized}</td>`);
+                        }
 
                         let scoreForThisRowInTable;
                         if (isThisRatingARedetectionEvent) {
@@ -3487,20 +3601,6 @@
                           }
                           scoreForThisRowInTable = scoreInitialClassification + scoreReassignmentAction + scoreFromActualRedetectionClassification;
                         }
-
-                        // Write the row
-                        reviewWindow.document.write(`
-                          <td>${detectionNumberDisplay}</td>
-                          <td>${detectingDroneDisplay}</td>
-                          <td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td>
-                          <td>${detailsToShow}</td>
-                          <td>${objectRecommendation}</td>
-                          <td>${trueObject}</td>
-                          <td>${rating.response || ''}</td>
-                          <td>${rating.userReobject || ''}</td>
-                          <td>${rating.reassignResponse || ''}</td>
-                        `);
-
                         // Handle Score and Decision Quality columns
                         if (isThisRatingARedetectionEvent || scoreForThisRowInTable === null) {
                           reviewWindow.document.write('<td></td><td></td>');
