@@ -3119,7 +3119,10 @@
        function saveRatings() {
          let scoreForThisEvent;
 
-         if (lastDetectedObjectInfo && lastDetectedObjectInfo.isRedetection) {
+         const isCurrentEventRedetection = lastDetectedObjectInfo && lastDetectedObjectInfo.isRedetection;
+
+
+         if (isCurrentEventRedetection) {
            scoreForThisEvent = initScore; // initScore was set by A/R of the redetected object.
          } else {
            scoreForThisEvent = (initScore || 0) + (reassignmentScore || 0);
@@ -3138,8 +3141,27 @@
 
            const agentCompetence = document.getElementById('agentCompetenceRange').value;
            const agentTrust = document.getElementById('agentTrustRange').value;
-           const agentReassignCompetence = document.getElementById('agentReassignCompetenceRange').value;
-           const agentReassignTrust = document.getElementById('agentReassignTrustRange').value;
+
+           // Initialize agent reassignment ratings to blank
+           let agentReassignCompetenceValue = '';
+           let agentReassignTrustValue = '';
+
+           if (!isCurrentEventRedetection) {
+             // Check if the agent reassignment ratings panel was visible for this event.
+             const agentReassignRatingsPanel = document.getElementById('agentReassignmentRatings');
+
+             if (agentReassignRatingsPanel && agentReassignRatingsPanel.style.display === 'block') {
+                 if (currentConfiguration === 'shared' && currentLeader === 'agent') {
+                     agentReassignCompetenceValue = document.getElementById('agentReassignCompetenceRange').value;
+                     agentReassignTrustValue = document.getElementById('agentReassignTrustRange').value;
+                 } else if (currentConfiguration === 'centralized' || (currentConfiguration === 'shared' && currentLeader === 'human')) {
+                     if (userReassignResponse === 'Yes') {
+                         agentReassignCompetenceValue = document.getElementById('agentReassignCompetenceRange').value;
+                         agentReassignTrustValue = document.getElementById('agentReassignTrustRange').value;
+                     }
+                 }
+             }
+           }
 
            // Retrieve the recategorized object from the select element
            let userReobject = document.getElementById('sel_obj').value;
@@ -3165,13 +3187,13 @@
            reassignmentScore: (detectedObjectInfoCopy && detectedObjectInfoCopy.isRedetection) ? 0 : (reassignmentScore || 0),
            redetectionInitialScore: 0,
            scoreEarned: scoreEarned,
-           decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : 'human',
+           decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : (currentConfiguration === 'shared' && currentLeader === 'human') ? 'human' : 'human',
            humanLeadershipActionTaken: humanLeadershipAction || 'N/A', // Human's choice
            agentLeadershipActionTaken: agentLeadershipAction || 'N/A',  // Agent's choice
            agentRatingCompetence: agentCompetence,
            agentRatingTrust: agentTrust,
-           agentReassignRatingCompetence: agentReassignCompetence,
-           agentReassignRatingTrust: agentReassignTrust
+           agentReassignRatingCompetence: agentReassignCompetenceValue,
+           agentReassignRatingTrust: agentReassignTrustValue
          };
 
         // if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
@@ -3212,13 +3234,10 @@
              initScore: initScore,
              reassignmentScore: reassignmentScore,
              scoreEarned: scoreEarned,
-             scoreEarned: scoreEarned,
-             // Add the new agent rating fields
-             agentRatingCompetence: agentCompetence,
-             agentRatingTrust: agentTrust,
-             agentReassignRatingCompetence: agentReassignCompetence,
-             agentReassignRatingTrust: agentReassignTrust,
-             // Also include other relevant fields from ratingObject if they are not derived from globals that get reset immediately
+             agentRatingCompetence: ratingObject.agentRatingCompetence,
+             agentRatingTrust: ratingObject.agentRatingTrust,
+             agentReassignRatingCompetence: ratingObject.agentReassignRatingCompetence,
+             agentReassignRatingTrust: ratingObject.agentReassignRatingTrust,
              decisionSource: ratingObject.decisionSource,
              humanLeadershipActionTaken: ratingObject.humanLeadershipActionTaken,
              agentLeadershipActionTaken: ratingObject.agentLeadershipActionTaken
@@ -3285,7 +3304,7 @@
                          }
                      }
 
-                     const reassignedDroneCSV = entry.reassignedDroneId || ''; // The drone it was actually reassigned to
+                     const reassignedDroneCSV = isRedetectionEvent ? '' : (entry.reassignedDroneId || ''); // The drone it was actually reassigned to
                      const agentObjCompetenceCSV = entry.agentRatingCompetence || '';
                      const agentObjTrustCSV = entry.agentRatingTrust || '';
                      const agentReassignCompetenceCSV = entry.agentReassignRatingCompetence || '';
