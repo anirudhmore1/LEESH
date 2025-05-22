@@ -2652,8 +2652,14 @@
                 isReassignment = false; // Agent not reassigning
                 originalReliability = null;
                 reassignedDroneId = ''; // No UI redetection flow for confirmButton
-                reassignmentScore = initScore; // Ensure no reassignment score
+                //reassignmentScore = initScore; // Ensure no reassignment score
                 redetectionInitialScore = 0; // Ensure no redetection score
+                if (lastDetectedObjectInfo && typeof lastDetectedObjectInfo.reliabilityPercentage === 'number') {
+                  reassignmentScore = lastDetectedObjectInfo.reliabilityPercentage;
+                } else {
+                  reassignmentScore = 0; // Fallback if reliability info is missing
+                }
+                console.log('Agent-led, no reassign: initScore:', initScore, 'reassignmentScore set to reliability:', reassignmentScore);
               }
 
               otherDrones.forEach(drone => {
@@ -2812,6 +2818,8 @@
 
         document.getElementById('droneRecommendationList').style.display = 'block';
 
+        document.getElementById('agentReassignmentRatings').style.display = 'block';
+
         const detectingDrone = lastDetectedObjectInfo.droneId;
         const objectType = lastDetectedObjectInfo.text1;
         const lightingCondition = lastDetectedObjectInfo.text2.charAt(0).toUpperCase() +
@@ -2922,8 +2930,14 @@
           isReassignment = false; // Agent not reassigning
           originalReliability = null;
           reassignedDroneId = ''; // No UI redetection flow for confirmButton
-          reassignmentScore = initScore; // Ensure no reassignment score
+          //reassignmentScore = initScore; // Ensure no reassignment score
           redetectionInitialScore = 0; // Ensure no redetection score
+          if (lastDetectedObjectInfo && typeof lastDetectedObjectInfo.reliabilityPercentage === 'number') {
+            reassignmentScore = lastDetectedObjectInfo.reliabilityPercentage;
+          } else {
+            reassignmentScore = 0; // Fallback if reliability info is missing
+          }
+          console.log('Agent-led, no reassign: initScore:', initScore, 'reassignmentScore set to reliability:', reassignmentScore);
         }
 
         otherDrones.forEach(drone => {
@@ -2983,22 +2997,22 @@
         }
         document.getElementById('agentReassignmentRatings').style.display = 'block';
       } else {
-        // Original code for human-led or centralized configuration
+        // Human-led or centralized configuration
         document.getElementById('agentReassignmentRecommendation').style.display = 'none';
         document.getElementById('agentReassignmentRatings').style.display = 'none';
 
         isReassignment = false;
         originalReliability = null;
 
-        reassignmentScore = 0;
+        //reassignmentScore = 0;
         redetectionInitialScore = 0;
 
         // Calculate score for non-reassignment
         const reliability = lastDetectedObjectInfo.reliabilityPercentage;
-        let scoreEarned = reliability;
-        tempScore += scoreEarned;
-        reassignmentScore = scoreEarned;
-        console.log('non-reassignment score', reassignmentScore);
+        //let scoreEarned = reliability;
+        //tempScore += scoreEarned;
+        reassignmentScore = reliability;
+        console.log('Human/Centralized No Reassign - initScore:', initScore, 'reassignmentScore (reliability):', reassignmentScore);
       }
     });
 
@@ -3077,6 +3091,15 @@
            trustSlider.value = trustSlider.defaultValue;
            document.getElementById(`trustValue${i}`).textContent = trustSlider.defaultValue;
          }
+
+         document.getElementById('agentCompetenceRange').value = 5;
+         document.getElementById('agentCompetenceValue').textContent = '5';
+         document.getElementById('agentTrustRange').value = 5;
+         document.getElementById('agentTrustValue').textContent = '5';
+         document.getElementById('agentReassignCompetenceRange').value = 5;
+         document.getElementById('agentReassignCompetenceValue').textContent = '5';
+         document.getElementById('agentReassignTrustRange').value = 5;
+         document.getElementById('agentReassignTrustValue').textContent = '5';
        }
 
        // Array to store the ratings
@@ -3113,6 +3136,11 @@
                currentRatings.push({drone: i, trust: trust, competence: competence});
            }
 
+           const agentCompetence = document.getElementById('agentCompetenceRange').value;
+           const agentTrust = document.getElementById('agentTrustRange').value;
+           const agentReassignCompetence = document.getElementById('agentReassignCompetenceRange').value;
+           const agentReassignTrust = document.getElementById('agentReassignTrustRange').value;
+
            // Retrieve the recategorized object from the select element
            let userReobject = document.getElementById('sel_obj').value;
 
@@ -3139,7 +3167,11 @@
            scoreEarned: scoreEarned,
            decisionSource: (currentConfiguration === 'shared' && currentLeader === 'agent') ? 'agent' : 'human',
            humanLeadershipActionTaken: humanLeadershipAction || 'N/A', // Human's choice
-           agentLeadershipActionTaken: agentLeadershipAction || 'N/A'  // Agent's choice
+           agentLeadershipActionTaken: agentLeadershipAction || 'N/A',  // Agent's choice
+           agentRatingCompetence: agentCompetence,
+           agentRatingTrust: agentTrust,
+           agentReassignRatingCompetence: agentReassignCompetence,
+           agentReassignRatingTrust: agentReassignTrust
          };
 
         // if (lastDetectedObjectInfo && lastDetectedObjectInfo.redetection) {
@@ -3179,7 +3211,17 @@
              reliabilityPercentage: reliabilityPercentage,
              initScore: initScore,
              reassignmentScore: reassignmentScore,
-             scoreEarned: scoreEarned
+             scoreEarned: scoreEarned,
+             scoreEarned: scoreEarned,
+             // Add the new agent rating fields
+             agentRatingCompetence: agentCompetence,
+             agentRatingTrust: agentTrust,
+             agentReassignRatingCompetence: agentReassignCompetence,
+             agentReassignRatingTrust: agentReassignTrust,
+             // Also include other relevant fields from ratingObject if they are not derived from globals that get reset immediately
+             decisionSource: ratingObject.decisionSource,
+             humanLeadershipActionTaken: ratingObject.humanLeadershipActionTaken,
+             agentLeadershipActionTaken: ratingObject.agentLeadershipActionTaken
            });
            localStorage.setItem('ratingsData', JSON.stringify(ratingsData));
 
@@ -3210,7 +3252,7 @@
                csvContent += `${reassignmentTimestamp}\n\n`;
            }
 
-           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Human Leadership, Agent Leadership, Detection Leader, Object detected, Lighting, Reliability %, User Response to recommendation, Re-categorized Object, User Reassignment Response, Actual Reassignment, Reassigned Drone, Drone ID, Trust, Competence\n"; // Header
+           csvContent += "Detection timestamp, Obj detected location, Detecting drone, Human Leadership, Agent Leadership, Detection Leader, Object detected, Lighting, Reliability %, User Response to recommendation, Re-categorized Object, User Reassignment Response, Actual Reassignment, Reassigned Drone, Agent Object Competence Rating, Agent Object Trust Rating, Agent Reassignment Competence Rating, Agent Reassignment Trust Rating, Drone ID, Trust, Competence\n"; // Header
            ratings.forEach((entry, sessionIndex) => {
              const isRedetectionEvent = entry.detectedObjectInfo && entry.detectedObjectInfo.isRedetection;
 
@@ -3244,6 +3286,10 @@
                      }
 
                      const reassignedDroneCSV = entry.reassignedDroneId || ''; // The drone it was actually reassigned to
+                     const agentObjCompetenceCSV = entry.agentRatingCompetence || '';
+                     const agentObjTrustCSV = entry.agentRatingTrust || '';
+                     const agentReassignCompetenceCSV = entry.agentReassignRatingCompetence || '';
+                     const agentReassignTrustCSV = entry.agentReassignRatingTrust || '';
 
                      // Handle specific display for redetection events' object/lighting if necessary
                      if (isRedetectionEvent) {
@@ -3257,9 +3303,11 @@
                                    `"${entry.response || ''}","${entry.userReobject || ''}",` +
                                    `"${userReassignResponseCSV}","${actualReassignmentCSV}",` + // New and modified columns
                                    `"${reassignedDroneCSV}",` +
+                                   `${agentObjCompetenceCSV},${agentObjTrustCSV},` +
+                                   `${agentReassignCompetenceCSV},${agentReassignTrustCSV},` +
                                    `${droneRating.drone},${droneRating.trust},${droneRating.competence}\n`;
                  } else {
-                     csvContent += `,,,,,,,,,,,,,,${droneRating.drone},${droneRating.trust},${droneRating.competence}\n`;
+                     csvContent += `,,,,,,,,,,,,,,,,,,${droneRating.drone},${droneRating.trust},${droneRating.competence}\n`;
                  }
              });
              if (sessionIndex < ratings.length - 1) {
