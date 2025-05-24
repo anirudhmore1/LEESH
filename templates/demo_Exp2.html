@@ -304,6 +304,10 @@
         flex-direction: column; /* Stack elements vertically */
         margin-bottom: 10px; /* Add spacing between slider groups */
     }
+    .slider-comp-value {
+      display: none;
+    }
+
     .trust-slider-group {
         display: flex; /* Align label, slider, and value horizontally */
         align-items: left; /* Vertically align elements */
@@ -4789,7 +4793,7 @@
                         <option value="3" label="3rd"></option>
                         <option value="4" label="4th"></option>
                       </datalist>
-                      <!-- <span id="competenceValue1">3</span> -->
+                      <span id="competenceValue1" class="slider-comp-value">3</span>
                     </div>
                     <div class="slider-group">
                       <label for="competenceRange2">ThermalBeta: </label>
@@ -4801,7 +4805,7 @@
                         <option value="3" label="3rd"></option>
                         <option value="4" label="4th"></option>
                       </datalist>
-                      <!-- <span id="competenceValue2">3</span> -->
+                      <span id="competenceValue2" class="slider-comp-value">3</span>
                     </div>
                     <div class="slider-group">
                       <label for="competenceRange3">InfraredGamma: </label>
@@ -4813,7 +4817,7 @@
                         <option value="3" label="3rd"></option>
                         <option value="4" label="4th"></option>
                       </datalist>
-                      <!-- <span id="competenceValue3">3</span> -->
+                      <span id="competenceValue3" class="slider-comp-value">3</span>
                     </div>
                     <div class="slider-group">
                       <label for="competenceRange4">InfraredDelta: </label>
@@ -4825,7 +4829,7 @@
                         <option value="3" label="3rd"></option>
                         <option value="4" label="4th"></option>
                       </datalist>
-                      <!-- <span id="competenceValue4">3</span> -->
+                      <span id="competenceValue4" class="slider-comp-value">3</span>
                     </div>
                 </div>
                 <hr>
