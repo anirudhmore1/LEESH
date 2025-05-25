@@ -2193,9 +2193,9 @@
           // Determine agent's leadership action based on lighting condition
           const lighting = text2.toLowerCase();
           if (lighting.includes('low')) {
-            agentLeadershipAction = 'Grant';
+            agentLeadershipAction = 'grant';
           } else if (lighting.includes('high')) {
-            agentLeadershipAction = 'Claim';
+            agentLeadershipAction = 'claim';
           } else {
             // For medium lighting, 50% chance to claim or grant
             agentLeadershipAction = Math.random() < 0.5 ? 'claim' : 'grant';
@@ -2626,6 +2626,52 @@
               // Show the reassignment ratings after recommend button is clicked
               document.getElementById('agentReassignmentRatings').style.display = 'block';
 
+              agentReassignmentDecision = determineAgentReassignment();
+
+              if (!lastDetectedObjectInfo) {
+                  console.error("recommendBtn click: lastDetectedObjectInfo is null! Cannot proceed.");
+                  return;
+              }
+
+              const reliabilityOfCurrentObjectForScoring = lastDetectedObjectInfo.reliabilityPercentage;
+              let previousGlobalOriginalReliability; // To save and restore the game-flow originalReliability
+
+              if (agentReassignmentDecision && agentReassignmentDecision.shouldReassign && agentReassignmentDecision.bestDrone) {
+                previousGlobalOriginalReliability = originalReliability; // Save game-flow value
+                originalReliability = reliabilityOfCurrentObjectForScoring; // Set for scoring calculation
+
+                handleRedetection(agentReassignmentDecision.bestDrone); // This will set global 'reassignmentScore'
+
+                originalReliability = previousGlobalOriginalReliability; // Restore game-flow value
+                console.log('Agent-led (Human "Yes"): Agent recommends reassign. SCORING reassignmentScore set to:', reassignmentScore);
+              } else {
+                // SCORING: Human said "Yes", but Agent *does NOT recommend* reassigning.
+                // Score as non-reassignment bonus based on current object's reliability.
+                if (typeof reliabilityOfCurrentObjectForScoring === 'number') {
+                  reassignmentScore = reliabilityOfCurrentObjectForScoring;
+                } else {
+                  reassignmentScore = 0; // Fallback
+                }
+                console.log('Agent-led (Human "Yes"): Agent recommends NO reassign. SCORING reassignmentScore (non-reassign bonus):', reassignmentScore);
+              }
+
+              const agentActuallyDecidesToReassign = agentReassignmentDecision && agentReassignmentDecision.shouldReassign;
+              const agentChosenDroneForGameFlow = agentActuallyDecidesToReassign ? agentReassignmentDecision.bestDrone : null;
+
+              if (agentActuallyDecidesToReassign && agentChosenDroneForGameFlow) {
+                isReassignment = true;      // GAME FLOW: A reassignment will occur
+                // This global 'originalReliability' is for the context of the drone being replaced
+                // if an actual redetection proceeds.
+                originalReliability = agentReassignmentDecision.currentReliability;
+                reassignedDroneId = agentChosenDroneForGameFlow;
+              } else {
+                // Agent's final decision is NO reassignment for game flow
+                isReassignment = false;     // GAME FLOW: No reassignment
+                originalReliability = null; // Reset if no game-flow reassignment is happening
+                reassignedDroneId = '';
+              }
+              redetectionInitialScore = 0;
+
               // Process the drone list with reassignment indication
               const detectingDrone = lastDetectedObjectInfo.droneId;
               const objectType = lastDetectedObjectInfo.text1;
@@ -2641,30 +2687,6 @@
                 'InfraredGamma': { type: 'nswir', reliability: 'high' },
                 'InfraredDelta': { type: 'nswir', reliability: 'low' }
               };
-
-              // Get the reassigned drone if there is one
-              const agentDecidedToReassign = agentReassignmentDecision && agentReassignmentDecision.shouldReassign;
-              const agentBestDrone = agentDecidedToReassign ? agentReassignmentDecision.bestDrone : null;
-
-              // If agent decided to reassign, set the reassignedDroneId
-              if (agentDecidedToReassign && agentBestDrone) {
-                isReassignment = true; // For scoring this round
-                originalReliability = agentReassignmentDecision.currentReliability; // For scoring
-                handleRedetection(agentBestDrone); // Calculate reassignment/redetection scores
-                reassignedDroneId = agentBestDrone; // For confirmButton's redetection UI flow
-              } else {
-                isReassignment = false; // Agent not reassigning
-                originalReliability = null;
-                reassignedDroneId = ''; // No UI redetection flow for confirmButton
-                //reassignmentScore = initScore; // Ensure no reassignment score
-                redetectionInitialScore = 0; // Ensure no redetection score
-                if (lastDetectedObjectInfo && typeof lastDetectedObjectInfo.reliabilityPercentage === 'number') {
-                  reassignmentScore = lastDetectedObjectInfo.reliabilityPercentage;
-                } else {
-                  reassignmentScore = 0; // Fallback if reliability info is missing
-                }
-                console.log('Agent-led, no reassign: initScore:', initScore, 'reassignmentScore set to reliability:', reassignmentScore);
-              }
 
               otherDrones.forEach(drone => {
                 const droneInfo = droneTypes[drone];
@@ -2684,7 +2706,7 @@
                     const potentialReliability = calculateReliabilityPercentage(drone, {text1: objectType, text2: lightingCondition});
 
                     // Calculate the percentage increase
-                    const reliabilityIncrease = ((potentialReliability - currentReliability) / currentReliability) * 100;
+                    const reliabilityIncrease = currentDetDroneReliability > 0 ? ((potentialReliability - currentDetDroneReliability) / currentDetDroneReliability) * 100 : (potentialReliability > 0 ? Infinity : 0) ;
 
                     // Determine description based on rank and reliability increase
                     if (rank === 1 && reliabilityIncrease >= 10) {
@@ -2697,11 +2719,11 @@
                   }
 
                   // Add "Reassigned to" text if this is the drone the agent chose
-                  if (drone === agentBestDrone) {
+                  if (drone === agentChosenDroneForGameFlow) {
                     description = `Reassigned to - ${description}`;
                   }
 
-                  console.log(`Drone: ${drone}, Rank: ${rank}, Current Reliability: ${currentReliability}, Description: ${description}`);
+                  //console.log(`Drone: ${drone}, Rank: ${rank}, Current Reliability: ${currentReliability}, Description: ${description}`);
                 } catch (e) {
                   console.error(`Error calculating description for ${drone}:`, e);
                 }
@@ -2727,8 +2749,19 @@
 
             // Insert the recommend button where the reassign button was
             const reassignBtnEl = document.getElementById('reassignBtn');
-            reassignBtn.parentNode.insertBefore(recommendBtn, reassignBtnEl);
-          } else {
+            const parentOfReassignBtn = reassignBtnEl ? reassignBtnEl.parentNode : null;
+            if (parentOfReassignBtn) {
+                parentOfReassignBtn.insertBefore(recommendBtn, reassignBtnEl);
+            } else {
+                // Fallback if reassignBtn or its parent isn't found
+                const section = document.getElementById('reassignToDroneSection');
+                if (section) {
+                    section.appendChild(recommendBtn);
+                }
+                console.warn("'reassignBtn' or its parent not found. Appended 'recommendBtn' to 'reassignToDroneSection' as fallback.");
+            }
+
+          } else { // Already existing recommendBtn, just display it
             document.getElementById('recommendBtn').style.display = 'inline';
           }
         } else {
@@ -2736,18 +2769,17 @@
           document.getElementById('reassignBtn').disabled = false;
           document.getElementById('reassignBtn').style.display = 'inline';
 
-          document.getElementById('agentReassignmentRatings').style.display = 'block';
           if (document.getElementById('recommendBtn')) {
             document.getElementById('recommendBtn').style.display = 'none';
           }
-
           document.querySelector('#agentReassignmentRecommendation > p').style.display = 'block';
           document.getElementById('droneRecommendationList').style.display = 'block';
+          document.getElementById('agentReassignmentRatings').style.display = 'block';
 
-          const pendingReassignmentElement = document.getElementById('pendingReassignmentElement');
-          if (pendingReassignmentElement) {
-            pendingReassignmentElement.style.display = 'none';
-          }
+          // const pendingReassignmentElement = document.getElementById('pendingReassignmentElement');
+          // if (pendingReassignmentElement) {
+          //   pendingReassignmentElement.style.display = 'none';
+          // }
 
           const detectingDrone = lastDetectedObjectInfo.droneId;
           const objectType = lastDetectedObjectInfo.text1;
@@ -2819,9 +2851,7 @@
         if (document.getElementById('recommendBtn')) {
           document.getElementById('recommendBtn').style.display = 'none';
         }
-
         document.getElementById('droneRecommendationList').style.display = 'block';
-
         document.getElementById('agentReassignmentRatings').style.display = 'block';
 
         const detectingDrone = lastDetectedObjectInfo.droneId;
@@ -2898,6 +2928,39 @@
       this.style.backgroundColor = 'red';
       document.getElementById('yesBtn').style.backgroundColor = '';
 
+      if (lastDetectedObjectInfo && typeof lastDetectedObjectInfo.reliabilityPercentage === 'number') {
+        reassignmentScore = lastDetectedObjectInfo.reliabilityPercentage;
+      } else {
+        reassignmentScore = 0; // Fallback
+      }
+      console.log(`Human said "No" to reassign. SCORING reassignmentScore set to non-reassign bonus: ${reassignmentScore}`);
+      redetectionInitialScore = 0;
+
+      if (currentConfiguration === 'shared' && currentLeader === 'agent') {
+        // Agent-led: Even if human says "No", agent's decision drives game flow.
+        // Ensure agentReassignmentDecision is determined HERE.
+        agentReassignmentDecision = determineAgentReassignment();
+
+        const agentActuallyDecidesToReassignForGameFlow = agentReassignmentDecision && agentReassignmentDecision.shouldReassign;
+        const agentChosenDroneForGameFlow = agentActuallyDecidesToReassignForGameFlow ? agentReassignmentDecision.bestDrone : null;
+
+        if (agentActuallyDecidesToReassignForGameFlow && agentChosenDroneForGameFlow) {
+          isReassignment = true;      // GAME FLOW: A reassignment will occur based on Agent's decision
+          originalReliability = agentReassignmentDecision.currentReliability;
+          reassignedDroneId = agentChosenDroneForGameFlow;
+        } else {
+          isReassignment = false;     // GAME FLOW: No reassignment based on Agent's decision
+          originalReliability = null;
+          reassignedDroneId = '';
+        }
+        console.log(`Agent-led (Human "No"): Agent decided game flow: isReassignment=${isReassignment}, reassignedDroneId="${reassignedDroneId}"`);
+      } else {
+        // Human-led or Centralized: Human's "No" means no game flow reassignment.
+        isReassignment = false;
+        originalReliability = null;
+        reassignedDroneId = '';
+      }
+
       // If in shared configuration with agent as leader
       if (currentConfiguration === 'shared' && currentLeader === 'agent') {
         // Show the recommendation panel
@@ -2919,69 +2982,33 @@
           'InfraredGamma': { type: 'nswir', reliability: 'high' },
           'InfraredDelta': { type: 'nswir', reliability: 'low' }
         };
-
-        // Get the reassigned drone if there is one
-        const agentDecidedToReassign = agentReassignmentDecision && agentReassignmentDecision.shouldReassign;
-        const agentBestDrone = agentDecidedToReassign ? agentReassignmentDecision.bestDrone : null;
-
-        // If agent decided to reassign, set the reassignedDroneId
-        if (agentDecidedToReassign && agentBestDrone) {
-          isReassignment = true; // For scoring this round
-          originalReliability = agentReassignmentDecision.currentReliability; // For scoring
-          handleRedetection(agentBestDrone); // Calculate reassignment/redetection scores
-          reassignedDroneId = agentBestDrone; // For confirmButton's redetection UI flow
-        } else {
-          isReassignment = false; // Agent not reassigning
-          originalReliability = null;
-          reassignedDroneId = ''; // No UI redetection flow for confirmButton
-          //reassignmentScore = initScore; // Ensure no reassignment score
-          redetectionInitialScore = 0; // Ensure no redetection score
-          if (lastDetectedObjectInfo && typeof lastDetectedObjectInfo.reliabilityPercentage === 'number') {
-            reassignmentScore = lastDetectedObjectInfo.reliabilityPercentage;
-          } else {
-            reassignmentScore = 0; // Fallback if reliability info is missing
-          }
-          console.log('Agent-led, no reassign: initScore:', initScore, 'reassignmentScore set to reliability:', reassignmentScore);
-        }
+        // Use the game flow decision for display
+        const agentWillActuallyReassign = isReassignment; // This was just set by agent's decision
+        const droneAgentWillUse = reassignedDroneId;
 
         otherDrones.forEach(drone => {
           const droneInfo = droneTypes[drone];
-          let description = 'Decent'; // Default value
-
+          let description = 'Decent';
           try {
             const rank = reliabilityRankings[droneInfo.type][droneInfo.reliability][objectType][lightingCondition];
-
-            // Calculate current reliability percentage
-            const currentReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
-
-            // If current reliability is already high (>85%), all recommendations are bad
-            if (currentReliability > 85) {
+            const currentDetDroneReliability = calculateReliabilityPercentage(detectingDrone, {text1: objectType, text2: lightingCondition});
+            if (currentDetDroneReliability > 85) {
               description = 'Bad';
             } else {
-              // Calculate potential reliability percentage for this drone
               const potentialReliability = calculateReliabilityPercentage(drone, {text1: objectType, text2: lightingCondition});
-
-              // Calculate the percentage increase
-              const reliabilityIncrease = ((potentialReliability - currentReliability) / currentReliability) * 100;
-
-              // Determine description based on rank and reliability increase
-              if (rank === 1 && reliabilityIncrease >= 10) {
-                description = 'Good';
-              } else if ((rank === 1 || rank === 2) && reliabilityIncrease > 5) {
-                description = 'Decent';
-              } else {
-                description = 'Bad';
-              }
+              const reliabilityIncrease = currentDetDroneReliability > 0 ? ((potentialReliability - currentDetDroneReliability) / currentDetDroneReliability) * 100 : (potentialReliability > 0 ? Infinity : 0);
+              if (rank === 1 && reliabilityIncrease >= 10) description = 'Good';
+              else if ((rank === 1 || rank === 2) && reliabilityIncrease > 5) description = 'Decent';
+              else description = 'Bad';
             }
-
-            // Add "Reassigned to" text if this is the drone the agent chose
-            if (drone === agentBestDrone) {
+            if (agentWillActuallyReassign && drone === droneAgentWillUse) { // Display agent's ACTUAL game flow choice
               description = `Reassigned to - ${description}`;
+            } else if (!agentWillActuallyReassign && agentReassignmentDecision && agentReassignmentDecision.bestDrone === drone && agentReassignmentDecision.shouldReassign) {
+                // If agent *would have* reassigned to this drone but game flow is no reassignment
+                description = `Agent would have reassigned to - ${description}`;
             }
+          } catch (e) { console.error(`Error calculating description for ${drone}:`, e); }
 
-          } catch (e) {
-            console.error(`Error calculating description for ${drone}:`, e);
-          }
 
           const element = document.getElementById('rec' + drone);
           if (element) {
@@ -2995,28 +3022,13 @@
         if (detectingDroneElement && detectingDroneElement.parentElement) {
           detectingDroneElement.parentElement.style.display = 'none';
         }
-        // Don't show the humanReassignmentRating
         if (document.getElementById('humanReassignmentRating')) {
           document.getElementById('humanReassignmentRating').style.display = 'none';
         }
-        document.getElementById('agentReassignmentRatings').style.display = 'block';
       } else {
-        // Human-led or centralized configuration
+        // Human-led shared or Centralized, human said "No": Hide agent reassignment UI.
         document.getElementById('agentReassignmentRecommendation').style.display = 'none';
         document.getElementById('agentReassignmentRatings').style.display = 'none';
-
-        isReassignment = false;
-        originalReliability = null;
-
-        //reassignmentScore = 0;
-        redetectionInitialScore = 0;
-
-        // Calculate score for non-reassignment
-        const reliability = lastDetectedObjectInfo.reliabilityPercentage;
-        //let scoreEarned = reliability;
-        //tempScore += scoreEarned;
-        reassignmentScore = reliability;
-        console.log('Human/Centralized No Reassign - initScore:', initScore, 'reassignmentScore (reliability):', reassignmentScore);
       }
     });
 
@@ -3547,13 +3559,13 @@
                       reviewWindow.document.write('<h2>Detailed detection information</h2>');
                       reviewWindow.document.write('<table>');
 
-                      let headerRowHtml = '<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th>';
+                      let headerRowHtml = '<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th><th>Drone\'s recommendation</th><th>Actual object</th>';
 
                       if (currentConfiguration === 'shared') {
                         headerRowHtml += '<th>Your leadership action</th><th>Agent leadership action</th><th>Detection Leader</th>';
                       }
 
-                      headerRowHtml += '<th>Drone\'s recommendation</th><th>Actual object</th><th>User response to: "Object was a target"</th><th>Re-categorized object</th>';
+                      headerRowHtml += '<th>User response to: "Object was a target"</th><th>Re-categorized object</th>';
 
                       if (currentConfiguration === 'shared') {
                         headerRowHtml += '<th>User response to reassigning</th><th>Was the detection reassigned? (Actual)</th>';
@@ -3612,7 +3624,8 @@
                           <td>${detectingDroneDisplay}</td>
                           <td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td>
                           <td>${detailsToShow}</td>
-
+                          <td>${objectRecommendation}</td>
+                          <td>${trueObject}</td>
                         `);
 
                         if (currentConfiguration === 'shared') {
@@ -3626,8 +3639,6 @@
                           `);
                         }
                         reviewWindow.document.write(`
-                          <td>${objectRecommendation}</td>
-                          <td>${trueObject}</td>
                           <td>${rating.response || ''}</td>
                           <td>${rating.userReobject || ''}</td>
                         `);
@@ -4175,7 +4186,7 @@
 
          // Leadership claim button event listeners
          document.getElementById('claimLeadershipBtn').addEventListener('click', function() {
-           humanLeadershipAction = 'Claim';
+           humanLeadershipAction = 'claim';
            this.style.backgroundColor = 'green';
            document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
            document.getElementById('agentLeadershipStatus').textContent = ''; // Clear the agent status text
@@ -4184,8 +4195,8 @@
          });
 
          document.getElementById('grantLeadershipBtn').addEventListener('click', function() {
-           humanLeadershipAction = 'Grant';
-           this.style.backgroundColor = 'Green';
+           humanLeadershipAction = 'grant';
+           this.style.backgroundColor = 'green';
            document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
            document.getElementById('agentLeadershipStatus').textContent = ''; // Clear the agent status text
            document.getElementById('agentLeadershipStatus').style.borderTop = 'none'; // Remove the border
