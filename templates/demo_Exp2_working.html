@@ -3547,13 +3547,13 @@
                       reviewWindow.document.write('<h2>Detailed detection information</h2>');
                       reviewWindow.document.write('<table>');
 
-                      let headerRowHtml = '<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th><th>Drone\'s recommendation</th><th>Actual object</th>';
+                      let headerRowHtml = '<tr><th>Detection no</th><th>Detecting drone</th><th>Object image</th><th>Detection details</th>';
 
                       if (currentConfiguration === 'shared') {
                         headerRowHtml += '<th>Your leadership action</th><th>Agent leadership action</th><th>Detection Leader</th>';
                       }
 
-                      headerRowHtml += '<th>User response to: "Object was a target"</th><th>Re-categorized object</th>';
+                      headerRowHtml += '<th>Drone\'s recommendation</th><th>Actual object</th><th>User response to: "Object was a target"</th><th>Re-categorized object</th>';
 
                       if (currentConfiguration === 'shared') {
                         headerRowHtml += '<th>User response to reassigning</th><th>Was the detection reassigned? (Actual)</th>';
@@ -3612,8 +3612,7 @@
                           <td>${detectingDroneDisplay}</td>
                           <td><img src="${detectedImages[index]}" alt="Detected Image" width="250"></td>
                           <td>${detailsToShow}</td>
-                          <td>${objectRecommendation}</td>
-                          <td>${trueObject}</td>
+
                         `);
 
                         if (currentConfiguration === 'shared') {
@@ -3627,6 +3626,8 @@
                           `);
                         }
                         reviewWindow.document.write(`
+                          <td>${objectRecommendation}</td>
+                          <td>${trueObject}</td>
                           <td>${rating.response || ''}</td>
                           <td>${rating.userReobject || ''}</td>
                         `);
@@ -4097,6 +4098,7 @@
          const configPopup = document.getElementById('configPopup');
          const centralizedBtn = document.getElementById('centralizedBtn');
          const sharedBtn = document.getElementById('sharedBtn');
+         const experimentalBriefElement = document.getElementById('experimentalBriefText');
 
          // Show popup when Configuration button is clicked
          configButton.addEventListener('click', function() {
@@ -4110,6 +4112,12 @@
 
            // Set configuration type
            currentConfiguration = 'centralized';
+
+           if (experimentalBriefElement) {
+             experimentalBriefElement.innerHTML = "You have to work with an Autonomous Agent in <b>centralized leadership</b> to correctly identify objects. In this scenario, <b>you</b> will be the <b>designated leader for all detections.</b>" +
+                                        "<br><br>" + // Adding two <br> for a paragraph-like break, or one <br> for a simple new line
+                                        "The drones detect objects, one at a time, with varying levels of object detection reliability. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras.";
+           }
 
            // Hide the configuration button
            document.getElementById('configButton').style.display = 'none';
@@ -4148,6 +4156,12 @@
 
            // Set configuration type
            currentConfiguration = 'shared';
+
+           if (experimentalBriefElement) {
+             experimentalBriefElement.innerHTML = "You have to work with an Autonomous Agent in <b>shared leadership</b> to correctly identify objects. In this scenario, you will <b>claim or grant leadership to the Agent</b> for each detection, and <b>one of you will</b> become the leader for <b>that detection.</b> " +
+                                        "<br><br>" + // Adding two <br> for a paragraph-like break, or one <br> for a simple new line
+                                        "The drones detect objects, one at a time, with varying levels of object detection reliability. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras.";
+           }
 
            // Hide the configuration button
            document.getElementById('configButton').style.display = 'none';
@@ -4616,10 +4630,11 @@
               <div id="popup" class="popup">
                 <div class="popup-content">
                   <!-- <span class="close">&times;</span> -->
-                  <p>You are tasked with correctly identifying objects with the help of an autonomous agent and four autonomous drones. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras. The drones detect objects with varying levels of object detection reliability.</p>
+                  <p id="experimentalBriefText">You have to work with an Autonomous Agent to correctly identify objects detected by four autonomous drones. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras. The drones detect objects, one at a time, with varying levels of object detection reliability.</p>
                   <button id="closePopupBtn">Close</button>
                 </div>
               </div>
+
 
               <form id="droneSelectionForm">
                  <h4 class="main-heading">Initial Drone assignment</h4>

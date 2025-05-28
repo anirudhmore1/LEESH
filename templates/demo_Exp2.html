@@ -2193,9 +2193,9 @@
           // Determine agent's leadership action based on lighting condition
           const lighting = text2.toLowerCase();
           if (lighting.includes('low')) {
-            agentLeadershipAction = 'Grant';
+            agentLeadershipAction = 'grant';
           } else if (lighting.includes('high')) {
-            agentLeadershipAction = 'Claim';
+            agentLeadershipAction = 'claim';
           } else {
             // For medium lighting, 50% chance to claim or grant
             agentLeadershipAction = Math.random() < 0.5 ? 'claim' : 'grant';
@@ -4098,6 +4098,7 @@
          const configPopup = document.getElementById('configPopup');
          const centralizedBtn = document.getElementById('centralizedBtn');
          const sharedBtn = document.getElementById('sharedBtn');
+         const experimentalBriefElement = document.getElementById('experimentalBriefText');
 
          // Show popup when Configuration button is clicked
          configButton.addEventListener('click', function() {
@@ -4111,6 +4112,12 @@
 
            // Set configuration type
            currentConfiguration = 'centralized';
+
+           if (experimentalBriefElement) {
+             experimentalBriefElement.innerHTML = "You have to work with an Autonomous Agent in <b>centralized leadership</b> to correctly identify objects. In this scenario, <b>you</b> will be the <b>designated leader for all detections.</b>" +
+                                        "<br><br>" + // Adding two <br> for a paragraph-like break, or one <br> for a simple new line
+                                        "The drones detect objects, one at a time, with varying levels of object detection reliability. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras.";
+           }
 
            // Hide the configuration button
            document.getElementById('configButton').style.display = 'none';
@@ -4150,6 +4157,12 @@
            // Set configuration type
            currentConfiguration = 'shared';
 
+           if (experimentalBriefElement) {
+             experimentalBriefElement.innerHTML = "You have to work with an Autonomous Agent in <b>shared leadership</b> to correctly identify objects. In this scenario, you will <b>claim or grant leadership to the Agent</b> for each detection, and <b>one of you will</b> become the leader for <b>that detection.</b> " +
+                                        "<br><br>" + // Adding two <br> for a paragraph-like break, or one <br> for a simple new line
+                                        "The drones detect objects, one at a time, with varying levels of object detection reliability. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras.";
+           }
+
            // Hide the configuration button
            document.getElementById('configButton').style.display = 'none';
 
@@ -4175,7 +4188,7 @@
 
          // Leadership claim button event listeners
          document.getElementById('claimLeadershipBtn').addEventListener('click', function() {
-           humanLeadershipAction = 'Claim';
+           humanLeadershipAction = 'claim';
            this.style.backgroundColor = 'green';
            document.getElementById('grantLeadershipBtn').style.backgroundColor = '';
            document.getElementById('agentLeadershipStatus').textContent = ''; // Clear the agent status text
@@ -4184,8 +4197,8 @@
          });
 
          document.getElementById('grantLeadershipBtn').addEventListener('click', function() {
-           humanLeadershipAction = 'Grant';
-           this.style.backgroundColor = 'Green';
+           humanLeadershipAction = 'grant';
+           this.style.backgroundColor = 'green';
            document.getElementById('claimLeadershipBtn').style.backgroundColor = '';
            document.getElementById('agentLeadershipStatus').textContent = ''; // Clear the agent status text
            document.getElementById('agentLeadershipStatus').style.borderTop = 'none'; // Remove the border
@@ -4617,10 +4630,11 @@
               <div id="popup" class="popup">
                 <div class="popup-content">
                   <!-- <span class="close">&times;</span> -->
-                  <p>You are tasked with correctly identifying objects with the help of an autonomous agent and four autonomous drones. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras. The drones detect objects with varying levels of object detection reliability.</p>
+                  <p id="experimentalBriefText">You have to work with an Autonomous Agent to correctly identify objects detected by four autonomous drones. Two drones are equipped with thermal cameras and the other two are equipped with near/short-wave infrared cameras. The drones detect objects, one at a time, with varying levels of object detection reliability.</p>
                   <button id="closePopupBtn">Close</button>
                 </div>
               </div>
+
 
               <form id="droneSelectionForm">
                  <h4 class="main-heading">Initial Drone assignment</h4>
