@@ -3872,21 +3872,21 @@
            document.getElementById('agentRecommendation').style.display = 'block';
            document.getElementById('agentObjectType').textContent = agentOrDroneClassification; // Show agent's/drone's classification
 
-           // For UI feedback: Was the HUMAN's "Accept" action consistent with the ground truth (text1)?
-           const humanActionCorrectForUI = groundTruth.toLowerCase().includes('target');
-
-           let humanRatingElement = document.getElementById('humanRatingElement');
-           if (!humanRatingElement) {
-               humanRatingElement = document.createElement('p');
-               humanRatingElement.id = 'humanRatingElement';
-               const agentRecPanel = document.getElementById('agentRecommendation');
-               if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
-           } else { // Ensure it's cleared and re-appended if it exists to update content correctly
-               humanRatingElement.remove();
-               const agentRecPanel = document.getElementById('agentRecommendation');
-               if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
-           }
-           humanRatingElement.innerHTML = `<b>Your response:</b> ${humanActionCorrectForUI ? 'Correct' : 'Incorrect'}`;
+           // // For UI feedback: Was the HUMAN's "Accept" action consistent with the ground truth (text1)?
+           // const humanActionCorrectForUI = groundTruth.toLowerCase().includes('target');
+           //
+           // let humanRatingElement = document.getElementById('humanRatingElement');
+           // if (!humanRatingElement) {
+           //     humanRatingElement = document.createElement('p');
+           //     humanRatingElement.id = 'humanRatingElement';
+           //     const agentRecPanel = document.getElementById('agentRecommendation');
+           //     if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
+           // } else { // Ensure it's cleared and re-appended if it exists to update content correctly
+           //     humanRatingElement.remove();
+           //     const agentRecPanel = document.getElementById('agentRecommendation');
+           //     if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
+           // }
+           // humanRatingElement.innerHTML = `<b>Your response:</b> ${humanActionCorrectForUI ? 'Correct' : 'Incorrect'}`;
 
            // Determine agent's reassignment decision
            if (typeof determineAgentReassignment === 'function') { // Check if function exists
@@ -3938,21 +3938,21 @@
            document.getElementById('agentRecommendation').style.display = 'block';
            document.getElementById('agentObjectType').textContent = agentOrDroneClassification; // Show agent's/drone's classification
 
-           // For UI feedback: Was the HUMAN's "Reject" action consistent with the ground truth (text1)?
-           const humanActionCorrectForUI = !groundTruth.toLowerCase().includes('target');
-
-           let humanRatingElement = document.getElementById('humanRatingElement');
-           if (!humanRatingElement) {
-               humanRatingElement = document.createElement('p');
-               humanRatingElement.id = 'humanRatingElement';
-               const agentRecPanel = document.getElementById('agentRecommendation');
-               if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
-           } else { // Ensure it's cleared and re-appended if it exists to update content correctly
-               humanRatingElement.remove();
-               const agentRecPanel = document.getElementById('agentRecommendation');
-               if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
-           }
-           humanRatingElement.innerHTML = `<b>Your response (Rejected object as target):</b> ${humanActionCorrectForUI ? 'Correct' : 'Incorrect'}`;
+           // // For UI feedback: Was the HUMAN's "Reject" action consistent with the ground truth (text1)?
+           // const humanActionCorrectForUI = !groundTruth.toLowerCase().includes('target');
+           //
+           // let humanRatingElement = document.getElementById('humanRatingElement');
+           // if (!humanRatingElement) {
+           //     humanRatingElement = document.createElement('p');
+           //     humanRatingElement.id = 'humanRatingElement';
+           //     const agentRecPanel = document.getElementById('agentRecommendation');
+           //     if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
+           // } else { // Ensure it's cleared and re-appended if it exists to update content correctly
+           //     humanRatingElement.remove();
+           //     const agentRecPanel = document.getElementById('agentRecommendation');
+           //     if (agentRecPanel) agentRecPanel.appendChild(humanRatingElement);
+           // }
+           // humanRatingElement.innerHTML = `<b>Your response (Rejected object as target):</b> ${humanActionCorrectForUI ? 'Correct' : 'Incorrect'}`;
 
            // Determine agent's reassignment decision
            if (typeof determineAgentReassignment === 'function') { // Check if function exists
